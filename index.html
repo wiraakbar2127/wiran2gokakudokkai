@@ -453,6 +453,41 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
   100%{transform:translateY(-125vh) scale(1.18);opacity:.15}
 }
 
+
+.sort-bar{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+  margin:0 0 18px;
+}
+.sort-bar label{
+  margin:0;
+  color:var(--brown);
+  font-weight:800;
+}
+.sort-select{
+  width:auto;
+  min-width:130px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:9px 13px;
+  background:white;
+  color:var(--ink);
+}
+.move-folder-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:12px;
+}
+.move-folder-row .story-folder-select{
+  flex:1;
+  min-width:150px;
+}
+
 @media(max-width:700px){.two{grid-template-columns:1fr}.nav{align-items:flex-start;gap:12px;flex-direction:column}.jp{font-size:19px}}
 </style>
 </head>
@@ -566,6 +601,13 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
     <p>Kumpulan bacaan bahasa Jepang yang dimulai dari DAY 1, dengan furigana interaktif dan arti per kalimat.</p>
   </div>
   <h2 class="section-title">Cerita Pilihan</h2>
+  <div class="sort-bar">
+    <label for="homeSort">Urutkan cerita</label>
+    <select id="homeSort" class="sort-select" onchange="renderHome()">
+      <option value="az">A–Z</option>
+      <option value="za">Z–A</option>
+    </select>
+  </div>
   <div id="homeStoryGrid" class="grid"></div>
 </section>
 
@@ -581,6 +623,14 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
     </div>
   </div>
 
+  <div class="sort-bar">
+    <label for="categorySort">Urutkan folder</label>
+    <select id="categorySort" class="sort-select" onchange="renderCategories()">
+      <option value="az">A–Z</option>
+      <option value="za">Z–A</option>
+    </select>
+  </div>
+
   <div id="categoryGrid" class="category-grid"></div>
 
   <div id="categoryResults" class="category-results">
@@ -590,6 +640,13 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
         <div id="categoryActions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
       </div>
       <button class="btn light" onclick="closeCategory()">← Kembali ke folder</button>
+    </div>
+    <div class="sort-bar">
+      <label for="folderStorySort">Urutkan cerita</label>
+      <select id="folderStorySort" class="sort-select" onchange="refreshCurrentFolder()">
+        <option value="az">A–Z</option>
+        <option value="za">Z–A</option>
+      </select>
     </div>
     <div id="storyList" class="grid"></div>
   </div>
@@ -603,7 +660,7 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
   <div class="controls">
     <button class="btn" onclick="showAll()">Tampilkan semua furigana</button>
     <button class="btn secondary" onclick="hideAll()">Sembunyikan semua furigana</button>
-    <button class="btn light" onclick="go('stories')">← Kembali ke judul</button>
+    <button class="btn light" onclick="goBackToCurrentFolder()">← Kembali ke folder</button>
   </div>
   <div id="storyContent"></div>
 </section>
@@ -638,6 +695,13 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
 <section id="manage" class="page">
   <h1 class="section-title">Kelola Cerita</h1>
   <p style="color:var(--muted)">Edit isi cerita, judul, tema, deskripsi, atau hapus cerita.</p>
+  <div class="sort-bar">
+    <label for="manageSort">Urutkan cerita</label>
+    <select id="manageSort" class="sort-select" onchange="renderManageList()">
+      <option value="az">A–Z</option>
+      <option value="za">Z–A</option>
+    </select>
+  </div>
   <div id="manageList"></div>
 
   <div id="editorPanel" class="form-card" style="display:none;margin-top:24px">
@@ -898,11 +962,27 @@ function confirmFinishedReading(){
 
 function goBackToCurrentFolder(){
   const folder=currentStoryFolder;
-  go("stories");
+
+  document.querySelectorAll(".page").forEach(page=>{
+    page.classList.remove("active");
+  });
+
+  const storiesPage=document.getElementById("stories");
+  if(storiesPage){
+    storiesPage.classList.add("active");
+  }
+
+  document.querySelectorAll(".navbtn").forEach(button=>{
+    button.classList.toggle("active",button.dataset.page==="stories");
+  });
+
+  renderCategories();
 
   if(folder && getFolders().includes(folder)){
     openCategory(folder);
   }
+
+  window.scrollTo({top:0,behavior:"smooth"});
 }
 
 function go(id){
@@ -915,10 +995,31 @@ function go(id){
   window.scrollTo({top:0,behavior:"smooth"});
 }
 
+
+function sortByTitle(items,order="az"){
+  return [...items].sort((a,b)=>{
+    const aName=String(a.title||a).trim();
+    const bName=String(b.title||b).trim();
+    const result=aName.localeCompare(bName,"ja",{numeric:true,sensitivity:"base"});
+    return order==="za" ? -result : result;
+  });
+}
+
+function getSortValue(id,defaultValue="az"){
+  const element=document.getElementById(id);
+  return element ? element.value : defaultValue;
+}
+
+function refreshCurrentFolder(){
+  if(currentOpenFolder){
+    openCategory(currentOpenFolder);
+  }
+}
+
 function renderHome(){
   const grid=document.getElementById("homeStoryGrid");
   if(!grid)return;
-  const stories=getStories();
+  const stories=sortByTitle(getStories(),getSortValue("homeSort"));
   const featured=stories.slice(0,3);
   grid.innerHTML=featured.map(s=>`
     <article class="story-card" data-story-id="${encodeURIComponent(String(s.id))}" onclick="openStory(decodeURIComponent(this.dataset.storyId))">
@@ -1059,7 +1160,11 @@ function renderCategories(){
   if(!grid) return;
 
   const stories=getStories();
-  const folders=getFolders();
+  const folderOrder=getSortValue("categorySort");
+  const folders=[...getFolders()].sort((a,b)=>{
+    const result=String(a).localeCompare(String(b),"ja",{numeric:true,sensitivity:"base"});
+    return folderOrder==="za" ? -result : result;
+  });
 
   renderFolderManager();
 
@@ -1086,7 +1191,10 @@ function renderCategories(){
 function openCategory(folder){
   currentOpenFolder=folder;
 
-  const stories=getStories().filter(s=>(s.level||"N2")===folder);
+  const stories=sortByTitle(
+    getStories().filter(s=>(s.level||"N2")===folder),
+    getSortValue("folderStorySort")
+  );
   const folders=getFolders();
 
   const grid=document.getElementById("categoryGrid");
@@ -1117,12 +1225,15 @@ function openCategory(folder){
           <p>${s.description||"Cerita bahasa Jepang dengan furigana interaktif."}</p>
 
           <label style="margin-top:14px">Pindahkan ke folder</label>
-          <select class="story-folder-select" onchange="moveStoryToFolder('${s.id}',this.value)">
-            ${folders.map(target=>`
-              <option value="${escapeHtml(target)}" ${target===folder?"selected":""}>
-                ${escapeHtml(target)}
-              </option>`).join("")}
-          </select>
+          <div class="move-folder-row">
+            <select id="move-${encodeURIComponent(String(s.id))}" class="story-folder-select">
+              ${folders.map(target=>`
+                <option value="${escapeHtml(target)}" ${target===folder?"selected":""}>
+                  ${escapeHtml(target)}
+                </option>`).join("")}
+            </select>
+            <button class="btn smallbtn" data-story-id="${encodeURIComponent(String(s.id))}" onclick="saveStoryFolderMove(decodeURIComponent(this.dataset.storyId))">Simpan</button>
+          </div>
 
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
             <button class="btn light smallbtn" data-story-id="${encodeURIComponent(String(s.id))}" onclick="openStory(decodeURIComponent(this.dataset.storyId))">Baca</button>
@@ -1254,33 +1365,74 @@ function deleteFolder(name){
   renderCategories();
 }
 
-function moveStoryToFolder(id,newFolder){
-  showLoading(`Sedang memproses ${files.length} file cerita...`);
 
-  let saved=[];
-  try{
-    saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
-  }catch(e){
-    saved=[];
+function saveStoryFolderMove(id){
+  const selectId=`move-${encodeURIComponent(String(id))}`;
+  const select=document.getElementById(selectId);
+
+  if(!select){
+    alert("Pilihan folder tidak ditemukan.");
+    return;
   }
 
-  const story=saved.find(item=>item.id===id);
+  const newFolder=select.value;
+  const story=getStories().find(
+    item=>String(item.id)===String(id)
+  );
 
   if(!story){
     alert("Cerita tidak ditemukan.");
     return;
   }
 
+  const oldFolder=story.level||"N2";
+
+  if(oldFolder===newFolder){
+    alert("Cerita masih berada di folder yang sama.");
+    return;
+  }
+
+  const moved=moveStoryToFolder(id,newFolder);
+
+  if(moved){
+    alert(`Cerita berhasil dipindahkan ke folder "${newFolder}".`);
+  }
+}
+
+function moveStoryToFolder(id,newFolder){
+  let saved=[];
+
+  try{
+    saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
+    if(!Array.isArray(saved)) saved=[];
+  }catch(error){
+    saved=[];
+  }
+
+  const story=saved.find(
+    item=>String(item.id)===String(id)
+  );
+
+  if(!story){
+    alert("Cerita tidak ditemukan.");
+    return false;
+  }
+
   story.level=newFolder;
   localStorage.setItem("wiraStories",JSON.stringify(saved));
+
+  const folderBeingViewed=currentOpenFolder;
 
   renderHome();
   renderManageList();
   renderCategories();
 
-  if(currentOpenFolder){
-    openCategory(currentOpenFolder);
+  if(folderBeingViewed && getFolders().includes(folderBeingViewed)){
+    currentOpenFolder=folderBeingViewed;
+    openCategory(folderBeingViewed);
   }
+
+  return true;
 }
 
 async function importStoryFiles(){
@@ -1395,7 +1547,7 @@ async function importStoryFiles(){
 
 function renderManageList(){
   const wrap=document.getElementById("manageList");
-  const stories=getStories();
+  const stories=sortByTitle(getStories(),getSortValue("manageSort"));
   const folders=getFolders();
 
 
