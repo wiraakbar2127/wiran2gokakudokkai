@@ -134,31 +134,6 @@ textarea{min-height:220px;resize:vertical;line-height:1.7}
   box-shadow:var(--shadow);
   margin-bottom:22px;
 }
-.folder-list{
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-  margin-top:14px;
-}
-.folder-chip{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:8px 12px;
-  background:var(--soft);
-  border:1px solid var(--line);
-  border-radius:999px;
-}
-.folder-chip strong{color:var(--brown)}
-.folder-chip button{
-  border:0;
-  background:transparent;
-  color:var(--brown);
-  cursor:pointer;
-  font-weight:800;
-  padding:2px 4px;
-}
-
 .folder-create{
   display:grid;
   grid-template-columns:1fr auto;
@@ -311,7 +286,6 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
       <input id="newFolderName" placeholder="Contoh: N1, N2, N3, Misteri">
       <button class="btn" onclick="addFolder()">+ Tambah</button>
     </div>
-    <div id="folderList" class="folder-list"></div>
   </div>
 
   <div id="categoryGrid" class="category-grid"></div>
@@ -422,8 +396,13 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
 const defaultStories = [];
 
 function getStories(){
-  const saved = JSON.parse(localStorage.getItem("wiraStories") || "[]");
-  return saved;
+  try{
+    const saved=JSON.parse(localStorage.getItem("wiraStories") || "[]");
+    return Array.isArray(saved) ? saved : [];
+  }catch(error){
+    console.error("Data cerita rusak:",error);
+    return [];
+  }
 }
 function go(id){
   document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
@@ -441,7 +420,7 @@ function renderHome(){
   const stories=getStories();
   const featured=stories.slice(0,3);
   grid.innerHTML=featured.map(s=>`
-    <article class="story-card" onclick="openStory('${s.id}')">
+    <article class="story-card" data-story-id="${encodeURIComponent(String(s.id))}" onclick="openStory(decodeURIComponent(this.dataset.storyId))">
       <span class="tag">${s.theme||"読解"}</span>
       <h3>${s.title}</h3>
       <p>${s.description||"Cerita bahasa Jepang dengan furigana interaktif."}</p>
@@ -454,6 +433,60 @@ function renderHome(){
 }
 
 
+
+
+function bindRuby(){
+  document.querySelectorAll("#storyContent ruby").forEach(ruby=>{
+    ruby.onclick=()=>ruby.classList.toggle("show");
+  });
+}
+
+function showAll(){
+  document.querySelectorAll("#storyContent ruby")
+    .forEach(ruby=>ruby.classList.add("show"));
+}
+
+function hideAll(){
+  document.querySelectorAll("#storyContent ruby")
+    .forEach(ruby=>ruby.classList.remove("show"));
+}
+
+function openStory(id){
+  const story=getStories().find(item=>String(item.id)===String(id));
+
+  if(!story){
+    alert("Cerita tidak ditemukan.");
+    return;
+  }
+
+  document.getElementById("storyTitle").textContent=
+    story.title || "Tanpa Judul";
+
+  document.getElementById("storyMeta").textContent=
+    `Level ${story.level || "N2"}・Tema ${story.theme || "読解"}`;
+
+  const content=Array.isArray(story.content) ? story.content : [];
+
+  document.getElementById("storyContent").innerHTML=
+    content.map(item=>{
+      const japanese=Array.isArray(item)
+        ? String(item[0] || "")
+        : String(item?.japanese || "");
+
+      const indonesian=Array.isArray(item)
+        ? String(item[1] || "")
+        : String(item?.indonesian || "");
+
+      return `
+        <section class="sentence">
+          <div class="jp">${japanese}</div>
+          <div class="id">${indonesian}</div>
+        </section>`;
+    }).join("");
+
+  bindRuby();
+  go("story");
+}
 
 function sortFolders(folders){
   return [...new Set(folders.map(x => String(x).trim()).filter(Boolean))]
@@ -501,18 +534,8 @@ function escapeJs(text){
 let currentOpenFolder=null;
 
 function renderFolderManager(){
-  const list=document.getElementById("folderList");
-  if(!list) return;
-
-  const folders=getFolders();
-
-  list.innerHTML=folders.map(folder=>`
-    <div class="folder-chip">
-      <strong>${escapeHtml(folder)}</strong>
-      <button title="Ubah nama folder" onclick="renameFolder('${escapeJs(folder)}')">✎</button>
-      <button title="Hapus folder" onclick="deleteFolder('${escapeJs(folder)}')">×</button>
-    </div>
-  `).join("");
+  // Daftar riwayat folder sengaja tidak ditampilkan.
+  // Folder langsung muncul sebagai kartu di halaman Kumpulan Cerita.
 }
 
 function renderCategories(){
@@ -575,7 +598,7 @@ function openCategory(folder){
       ? stories.map(s=>`
         <article class="story-card">
           <span class="tag">${s.theme||"読解"}</span>
-          <h3 onclick="openStory('${s.id}')" style="cursor:pointer">${s.title}</h3>
+          <h3 data-story-id="${encodeURIComponent(String(s.id))}" onclick="openStory(decodeURIComponent(this.dataset.storyId))" style="cursor:pointer">${s.title}</h3>
           <p>${s.description||"Cerita bahasa Jepang dengan furigana interaktif."}</p>
 
           <label style="margin-top:14px">Pindahkan ke folder</label>
@@ -587,7 +610,7 @@ function openCategory(folder){
           </select>
 
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-            <button class="btn light smallbtn" onclick="openStory('${s.id}')">Baca</button>
+            <button class="btn light smallbtn" data-story-id="${encodeURIComponent(String(s.id))}" onclick="openStory(decodeURIComponent(this.dataset.storyId))">Baca</button>
             <button class="btn smallbtn" onclick="editStory('${s.id}');go('manage')">Edit</button>
           </div>
         </article>`).join("")
@@ -606,7 +629,6 @@ function closeCategory(){
   if(manager) manager.style.display="block";
   if(results) results.classList.remove("active");
 
-  renderFolderManager();
   renderCategories();
 }
 
@@ -631,7 +653,6 @@ function addFolder(){
   saveFolders([...folders,name]);
   input.value="";
 
-  renderFolderManager();
   renderCategories();
 }
 
@@ -669,11 +690,9 @@ function renameFolder(oldName){
 
   if(currentOpenFolder===oldName){
     currentOpenFolder=newName;
-    renderFolderManager();
     renderCategories();
     openCategory(newName);
   }else{
-    renderFolderManager();
     renderCategories();
   }
 
@@ -717,7 +736,6 @@ function deleteFolder(name){
   const manager=document.querySelector("#stories .folder-manager");
   if(manager) manager.style.display="block";
 
-  renderFolderManager();
   renderCategories();
 }
 
@@ -769,22 +787,38 @@ function importStoryFile(){
         throw new Error("Bagian content tidak ditemukan atau kosong.");
       }
 
+      const existingStories=getStories();
+      let proposedId=String(data.id||("story-"+Date.now())).trim();
+
+      if(!proposedId){
+        proposedId="story-"+Date.now();
+      }
+
       const story={
-        id:String(data.id||("story-"+Date.now())),
-        title:String(data.title||"Tanpa Judul").trim(),
-        theme:String(data.theme||"読解").trim(),
-        level:String(data.level||"N2").trim().toUpperCase(),
+        id:proposedId,
+        title:String(data.title||"Tanpa Judul").trim() || "Tanpa Judul",
+        theme:String(data.theme||"読解").trim() || "読解",
+        level:String(data.level||"N2").trim().toUpperCase() || "N2",
         description:String(data.description||"").trim(),
         content:data.content.map(item=>{
           if(Array.isArray(item)){
             return [String(item[0]||""),String(item[1]||"")];
           }
+
           if(item && typeof item==="object"){
-            return [String(item.japanese||""),String(item.indonesian||"")];
+            return [
+              String(item.japanese||item.jp||""),
+              String(item.indonesian||item.id||"")
+            ];
           }
+
           return null;
-        }).filter(Boolean)
+        }).filter(item=>item && (item[0] || item[1]))
       };
+
+      if(!story.content.length){
+        throw new Error("Isi cerita tidak valid.");
+      }
 
       let folders=getFolders();
       if(!folders.includes(story.level)){
@@ -835,119 +869,6 @@ function exportStories(){
 }
 
 
-function renderFolderManager(){
-  const folders=getFolders();
-  const list=document.getElementById("folderList");
-  if(!list)return;
-
-  list.innerHTML=folders.map(folder=>`
-    <div class="folder-chip">
-      <strong>${escapeHtml(folder)}</strong>
-      <button title="Ubah nama" onclick="renameFolder('${escapeJs(folder)}')">✎</button>
-      <button title="Hapus folder" onclick="deleteFolder('${escapeJs(folder)}')">×</button>
-    </div>
-  `).join("");
-}
-
-function addFolder(){
-  const input=document.getElementById("newFolderName");
-  const name=input.value.trim();
-  if(!name){
-    alert("Masukkan nama folder.");
-    return;
-  }
-
-  const folders=getFolders();
-  if(folders.includes(name)){
-    alert("Folder tersebut sudah ada.");
-    return;
-  }
-
-  folders.push(name);
-  saveFolders(sortFolders(folders));
-  input.value="";
-  renderFolderManager();
-  renderCategories();
-}
-
-function renameFolder(oldName){
-  const newName=prompt("Nama folder baru:",oldName);
-  if(!newName || newName.trim()===oldName) return;
-
-  const clean=newName.trim();
-  const folders=getFolders();
-
-  if(folders.includes(clean)){
-    alert("Nama folder tersebut sudah dipakai.");
-    return;
-  }
-
-  const updatedFolders=sortFolders(folders.map(f=>f===oldName?clean:f));
-  saveFolders(updatedFolders);
-
-  const editedDefault=JSON.parse(localStorage.getItem("editedDefaultStory")||"null");
-  if(editedDefault && editedDefault.level===oldName){
-    editedDefault.level=clean;
-    localStorage.setItem("editedDefaultStory",JSON.stringify(editedDefault));
-  }
-
-  const saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
-  saved.forEach(story=>{
-    if(story.level===oldName) story.level=clean;
-  });
-  localStorage.setItem("wiraStories",JSON.stringify(saved));
-
-  renderFolderManager();
-  renderCategories();
-  renderManageList();
-  renderHome();
-
-  if(currentOpenFolder===oldName){
-    currentOpenFolder=clean;
-    openCategory(clean);
-  }
-}
-
-function deleteFolder(name){
-  const stories=getStories().filter(s=>(s.level||"N2")===name);
-
-  if(stories.length){
-    alert(
-      `Folder "${name}" masih berisi ${stories.length} cerita. ` +
-      `Pindahkan semua ceritanya ke folder lain terlebih dahulu.`
-    );
-    return;
-  }
-
-  if(!confirm(`Yakin ingin menghapus folder "${name}"?`)) return;
-
-  const folders=sortFolders(getFolders().filter(folder=>folder!==name));
-  saveFolders(folders);
-
-  currentOpenFolder=null;
-  closeCategory();
-  renderFolderManager();
-  renderCategories();
-}
-
-function moveStoryToFolder(id,newFolder){
-  const saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
-  const story=saved.find(s=>s.id===id);
-
-  if(story){
-    story.level=newFolder;
-    localStorage.setItem("wiraStories",JSON.stringify(saved));
-  }
-
-  renderManageList();
-  renderCategories();
-  renderHome();
-
-  if(currentOpenFolder){
-    openCategory(currentOpenFolder);
-  }
-}
-
 function renderManageList(){
   const wrap=document.getElementById("manageList");
   const stories=getStories();
@@ -964,7 +885,7 @@ function renderManageList(){
         </div>
 
         <div class="manage-actions">
-          <button class="btn light smallbtn" onclick="openStory('${s.id}')">Lihat</button>
+          <button class="btn light smallbtn" data-story-id="${encodeURIComponent(String(s.id))}" onclick="openStory(decodeURIComponent(this.dataset.storyId))">Lihat</button>
           <button class="btn smallbtn" onclick="editStory('${s.id}')">Edit</button>
           <button class="btn danger smallbtn" onclick="deleteStory('${s.id}')">Hapus</button>
         </div>
