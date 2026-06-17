@@ -187,6 +187,89 @@ footer{text-align:center;color:var(--muted);padding:30px}
 .brand{font-family:"Avenir Next Rounded","Nunito","Arial Rounded MT Bold","Hiragino Maru Gothic ProN",sans-serif}
 h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
 
+
+.read-status{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:#dff5e7;
+  color:#28704a;
+  border:1px solid #bce5cc;
+  border-radius:999px;
+  padding:5px 10px;
+  font-size:12px;
+  font-weight:900;
+  margin-left:6px;
+}
+.read-status.unread{
+  background:#eef4fa;
+  color:#6b8298;
+  border-color:#d7e5f2;
+}
+.finish-reading{
+  background:linear-gradient(145deg,#ffffff,#edf7ff);
+  border:1px solid var(--line);
+  border-radius:26px;
+  padding:28px 22px;
+  margin-top:28px;
+  text-align:center;
+  box-shadow:var(--shadow);
+}
+.finish-reading h2{
+  color:var(--brown);
+  margin:0 0 8px;
+}
+.finish-reading p{
+  color:var(--muted);
+  margin:0 0 18px;
+}
+.finish-reading .btn{
+  font-size:17px;
+  padding:13px 24px;
+}
+.finish-reading.done{
+  background:linear-gradient(145deg,#f5fff8,#e7f8ed);
+  border-color:#bce5cc;
+}
+.finish-reading.done h2{color:#28704a}
+
+.read-modal{
+  position:fixed;
+  inset:0;
+  z-index:100;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(18,45,70,.42);
+  backdrop-filter:blur(5px);
+}
+.read-modal.active{display:flex}
+.read-modal-card{
+  width:min(460px,100%);
+  background:white;
+  border:1px solid var(--line);
+  border-radius:26px;
+  padding:26px;
+  text-align:center;
+  box-shadow:0 24px 70px rgba(22,61,95,.24);
+}
+.read-modal-card h2{
+  color:var(--brown);
+  margin:0 0 10px;
+}
+.read-modal-card p{
+  color:var(--muted);
+  line-height:1.7;
+  margin:0 0 20px;
+}
+.read-modal-actions{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
 @media(max-width:700px){.two{grid-template-columns:1fr}.nav{align-items:flex-start;gap:12px;flex-direction:column}.jp{font-size:19px}}
 </style>
 </head>
@@ -390,6 +473,18 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
 
 </main>
 
+<div id="readConfirmModal" class="read-modal" role="dialog" aria-modal="true" aria-labelledby="readConfirmTitle">
+  <div class="read-modal-card">
+    <h2 id="readConfirmTitle">Kosakata sudah hafal?</h2>
+    <p>Apakah kamu sudah memahami dan menghafal semua kosakata dalam cerita ini?</p>
+    <div class="read-modal-actions">
+      <button class="btn" onclick="confirmFinishedReading()">Iya, sudah</button>
+      <button class="btn light" onclick="cancelFinishedReading()">Belum</button>
+    </div>
+  </div>
+</div>
+
+
 <footer>ウィラN2合格読解</footer>
 
 <script>
@@ -404,6 +499,84 @@ function getStories(){
     return [];
   }
 }
+
+function getCompletedStories(){
+  try{
+    const saved=JSON.parse(localStorage.getItem("wiraCompletedStories")||"[]");
+    return Array.isArray(saved) ? saved.map(String) : [];
+  }catch(error){
+    return [];
+  }
+}
+
+function isStoryCompleted(id){
+  return getCompletedStories().includes(String(id));
+}
+
+function setStoryCompleted(id){
+  const completed=new Set(getCompletedStories());
+  completed.add(String(id));
+  localStorage.setItem("wiraCompletedStories",JSON.stringify([...completed]));
+}
+
+function completionBadge(id){
+  return isStoryCompleted(id)
+    ? '<span class="read-status">✓ Sudah Dibaca</span>'
+    : '<span class="read-status unread">Belum Dibaca</span>';
+}
+
+let currentStoryId=null;
+let currentStoryFolder=null;
+
+function renderFinishReadingButton(){
+  const holder=document.getElementById("finishReadingArea");
+  if(!holder || !currentStoryId) return;
+
+  const done=isStoryCompleted(currentStoryId);
+
+  holder.className="finish-reading"+(done?" done":"");
+  holder.innerHTML=done
+    ? `
+      <h2>✓ 読みました！</h2>
+      <p>Cerita ini sudah ditandai selesai dibaca.</p>
+      <button class="btn light" onclick="goBackToCurrentFolder()">Kembali ke folder</button>
+    `
+    : `
+      <h2>Sudah selesai membaca?</h2>
+      <p>Tekan tombol ini setelah kamu selesai membaca dan mempelajari kosakatanya.</p>
+      <button class="btn" onclick="askFinishedReading()">読みました！</button>
+    `;
+}
+
+function askFinishedReading(){
+  if(!currentStoryId) return;
+  document.getElementById("readConfirmModal").classList.add("active");
+}
+
+function cancelFinishedReading(){
+  document.getElementById("readConfirmModal").classList.remove("active");
+}
+
+function confirmFinishedReading(){
+  if(!currentStoryId) return;
+
+  setStoryCompleted(currentStoryId);
+  cancelFinishedReading();
+  renderHome();
+  renderCategories();
+  renderManageList();
+  goBackToCurrentFolder();
+}
+
+function goBackToCurrentFolder(){
+  const folder=currentStoryFolder;
+  go("stories");
+
+  if(folder && getFolders().includes(folder)){
+    openCategory(folder);
+  }
+}
+
 function go(id){
   document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
   document.getElementById(id).classList.add("active");
@@ -421,7 +594,7 @@ function renderHome(){
   const featured=stories.slice(0,3);
   grid.innerHTML=featured.map(s=>`
     <article class="story-card" data-story-id="${encodeURIComponent(String(s.id))}" onclick="openStory(decodeURIComponent(this.dataset.storyId))">
-      <span class="tag">${s.theme||"読解"}</span>
+      <span class="tag">${s.theme||"読解"}</span>${completionBadge(s.id)}
       <h3>${s.title}</h3>
       <p>${s.description||"Cerita bahasa Jepang dengan furigana interaktif."}</p>
     </article>`).join("") + `
@@ -459,11 +632,14 @@ function openStory(id){
     return;
   }
 
+  currentStoryId=String(story.id);
+  currentStoryFolder=story.level || "N2";
+
   document.getElementById("storyTitle").textContent=
     story.title || "Tanpa Judul";
 
-  document.getElementById("storyMeta").textContent=
-    `Level ${story.level || "N2"}・Tema ${story.theme || "読解"}`;
+  document.getElementById("storyMeta").innerHTML=
+    `Level ${story.level || "N2"}・Tema ${story.theme || "読解"} ${completionBadge(story.id)}`;
 
   const content=Array.isArray(story.content) ? story.content : [];
 
@@ -482,9 +658,10 @@ function openStory(id){
           <div class="jp">${japanese}</div>
           <div class="id">${indonesian}</div>
         </section>`;
-    }).join("");
+    }).join("") + '<div id="finishReadingArea" class="finish-reading"></div>';
 
   bindRuby();
+  renderFinishReadingButton();
   go("story");
 }
 
@@ -597,7 +774,7 @@ function openCategory(folder){
     list.innerHTML=stories.length
       ? stories.map(s=>`
         <article class="story-card">
-          <span class="tag">${s.theme||"読解"}</span>
+          <span class="tag">${s.theme||"読解"}</span>${completionBadge(s.id)}
           <h3 data-story-id="${encodeURIComponent(String(s.id))}" onclick="openStory(decodeURIComponent(this.dataset.storyId))" style="cursor:pointer">${s.title}</h3>
           <p>${s.description||"Cerita bahasa Jepang dengan furigana interaktif."}</p>
 
@@ -879,7 +1056,7 @@ function renderManageList(){
     <div class="manage-card">
       <div class="manage-head">
         <div>
-          <span class="tag">${s.theme||"読解"}</span>
+          <span class="tag">${s.theme||"読解"}</span>${completionBadge(s.id)}
           <h3 style="margin:10px 0 5px">${s.title}</h3>
           <p style="margin:0;color:var(--muted)">${s.description||""}</p>
         </div>
@@ -971,13 +1148,23 @@ function deleteStory(id){
   saved = saved.filter(x => x.id !== id);
   localStorage.setItem("wiraStories", JSON.stringify(saved));
 
+  const completed=getCompletedStories().filter(storyId=>storyId!==String(id));
+  localStorage.setItem("wiraCompletedStories",JSON.stringify(completed));
+
   renderManageList();
   renderCategories();
   renderHome();
 }
 
+
+document.getElementById("readConfirmModal").addEventListener("click",event=>{
+  if(event.target.id==="readConfirmModal"){
+    cancelFinishedReading();
+  }
+});
+
 renderHome();
-renderCategories();openStory;
+renderCategories();
 </script>
 </body>
 </html>
