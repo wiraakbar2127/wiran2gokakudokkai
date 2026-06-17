@@ -1,480 +1,562 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ウィラN２合格読解</title>
-<style>
-:root{
-  --bg:#eef6ff;
-  --card:#ffffff;
-  --ink:#18324a;
-  --muted:#6b8298;
-  --brown:#2f6fae;
-  --brown2:#5c97cf;
-  --soft:#dceeff;
-  --line:#c8def2;
-  --shadow:0 12px 35px rgba(40,95,145,.10);
-}
-*{box-sizing:border-box}
-body{margin:0;background:linear-gradient(180deg,#eaf4ff,#f8fbff);color:var(--ink);
-font-family:"Avenir Next Rounded","Nunito","Arial Rounded MT Bold","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif}
-button,input,textarea{font:inherit}
-.topbar{position:sticky;top:0;z-index:10;background:rgba(248,252,255,.94);backdrop-filter:blur(12px);
-border-bottom:1px solid var(--line)}
-.nav{max-width:1100px;margin:auto;display:flex;align-items:center;justify-content:space-between;padding:14px 20px}
-.brand{font-weight:900;color:var(--brown);font-size:21px;letter-spacing:.02em;cursor:pointer}
-.navlinks{display:flex;gap:8px;flex-wrap:wrap}
-.navbtn{border:0;background:transparent;color:var(--muted);padding:9px 13px;border-radius:999px;cursor:pointer}
-.navbtn.active,.navbtn:hover{background:var(--soft);color:var(--brown)}
-.page{display:none;max-width:1100px;margin:auto;padding:38px 20px 70px}
-.page.active{display:block}
-.hero{padding:48px 26px;border-radius:28px;background:
-radial-gradient(circle at top right,#cfe8ff,transparent 34%),linear-gradient(135deg,#fafdff,#e8f4ff);
-border:1px solid var(--line);box-shadow:var(--shadow);margin-bottom:30px;position:relative;overflow:hidden}
-.hero h1{font-size:clamp(32px,6vw,62px);margin:0;color:var(--brown);line-height:1.15}
-.hero p{max-width:680px;color:var(--muted);font-size:17px;margin:16px 0 0}
-.section-title{font-size:25px;color:var(--brown);margin:24px 0 14px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}
-.story-card{background:var(--card);border:1px solid var(--line);border-radius:26px;padding:22px;
-box-shadow:var(--shadow);cursor:pointer;transition:.2s}
-.story-card:hover{transform:translateY(-3px)}
-.story-card .tag{display:inline-block;background:var(--soft);color:var(--brown);border-radius:999px;padding:4px 10px;font-size:12px}
-.story-card h3{font-size:23px;margin:12px 0 7px}
-.story-card p{color:var(--muted);margin:0}
-.empty{padding:30px;text-align:center;border:1px dashed var(--line);border-radius:18px;color:var(--muted)}
-.story-head{text-align:center;margin-bottom:22px}
-.story-head h1{font-size:clamp(29px,5vw,48px);color:var(--brown);margin:0 0 5px}
-.story-head p{color:var(--muted)}
-.controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:24px}
-.btn{border:0;background:linear-gradient(135deg,var(--brown),var(--brown2));color:white;padding:11px 18px;border-radius:999px;cursor:pointer}
-.btn.secondary{background:#7aa7cf}.btn.light{background:var(--soft);color:var(--brown)}
-.sentence{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:20px;margin:14px 0;box-shadow:var(--shadow)}
-.jp{font-size:21px;line-height:2.2}.id{border-top:1px dashed var(--line);margin-top:10px;padding-top:10px;color:#355b7d}
-strong{color:#286fb4;font-weight:900}
-ruby{cursor:pointer;border-radius:4px;padding:0 1px}ruby:hover{background:#f3e7df}
-rt{font-size:.58em;color:transparent;text-shadow:0 0 4px rgba(15,63,110,.95);user-select:none;transition:.2s}
-ruby.show rt{color:#0f4f86;text-shadow:none;user-select:text;font-weight:800}
-.form-card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:var(--shadow)}
-label{display:block;font-weight:800;margin:14px 0 7px;color:var(--brown)}
-input,textarea{width:100%;border:1px solid var(--line);border-radius:13px;padding:13px;background:white;color:var(--ink)}
-textarea{min-height:220px;resize:vertical;line-height:1.7}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.help{font-size:13px;color:var(--muted);margin-top:8px}
-.prompt-box{display:none;margin-top:18px;padding:18px;border-radius:16px;background:#eef7ff;border:1px solid var(--line);white-space:pre-wrap}
-.notice{margin-top:16px;padding:14px 16px;background:#eef7ff;border:1px solid #c8def2;border-radius:14px;color:#6b5a20}
-.manage-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
-.manage-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap}
-.manage-actions{display:flex;gap:8px;flex-wrap:wrap}
-.editor-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
-.sentence-editor{border:1px solid var(--line);background:#f4f9ff;border-radius:16px;padding:15px;margin:12px 0}
-.sentence-editor textarea{min-height:120px}
-.danger{background:#4e86b8!important}
-.smallbtn{padding:8px 12px;font-size:13px}
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ウィラN２合格読解</title>
+  <style>
+    :root{
+      --bg:#f3f7ff;
+      --card:#ffffff;
+      --text:#0b1c36;
+      --muted:#5b6f95;
+      --border:#dbe7ff;
+      --blue:#2f76ff;
+      --blue2:#1d4ed8;
+      --danger:#e11d48;
+      --shadow: 0 10px 30px rgba(18, 46, 122, 0.10);
+    }
 
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(900px 500px at 90% 10%, rgba(47,118,255,0.10), transparent 55%),
+        radial-gradient(900px 500px at 10% 90%, rgba(47,118,255,0.10), transparent 55%),
+        var(--bg);
+    }
 
+    .shell{max-width:1020px;margin:0 auto;padding:18px}
 
+    .topbar{
+      background:rgba(255,255,255,0.72);
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid var(--border);
+      position:sticky;top:0;z-index:10;
+    }
+    .topbar-inner{max-width:1020px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{font-weight:800;color:var(--blue);letter-spacing:1px}
+    .nav{display:flex;gap:8px;flex-wrap:wrap}
+    .navbtn{
+      border:1px solid var(--border);
+      background:rgba(255,255,255,0.72);
+      color:var(--text);
+      padding:9px 11px;
+      border-radius:10px;
+      cursor:pointer;
+      transition:transform .1s ease, background .1s ease;
+      font-weight:600;
+      box-shadow: 0 4px 12px rgba(18,46,122,0.05);
+    }
+    .navbtn:hover{transform:translateY(-1px)}
+    .navbtn.active{background:var(--blue);border-color:var(--blue2);color:#fff}
 
-.sea-decor{
-  position:fixed;
-  z-index:0;
-  pointer-events:none;
-  opacity:.14;
-}
-.sea-decor svg{width:100%;height:100%;display:block}
-.fish-a{width:120px;height:72px;top:125px;left:24px;transform:rotate(-5deg)}
-.fish-b{width:95px;height:58px;top:42%;right:28px;transform:rotate(6deg)}
-.fish-c{width:110px;height:66px;bottom:36px;left:8%;transform:rotate(2deg)}
-.bubble{
-  position:fixed;
-  z-index:0;
-  border:2px solid rgba(43,120,197,.14);
-  border-radius:50%;
-  pointer-events:none;
-}
-.b1{width:16px;height:16px;top:170px;right:12%}
-.b2{width:9px;height:9px;top:210px;right:9%}
-.b3{width:20px;height:20px;bottom:120px;right:8%}
-main,.topbar,footer{position:relative;z-index:1}
+    main{padding:18px 0}
+    .page{display:none}
+    .page.active{display:block}
 
+    .hero{
+      background:linear-gradient(180deg, rgba(47,118,255,0.15), rgba(255,255,255,0));
+      border:1px solid var(--border);
+      padding:18px;
+      border-radius:16px;
+      box-shadow: var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+    .hero h1{margin:0;font-size:26px}
+    .hero p{margin:8px 0 0;color:var(--muted)}
+    .section-title{margin:16px 0 10px;font-size:18px;color:var(--blue2)}
 
+    .grid{display:grid;grid-template-columns:repeat(3, 1fr);gap:12px}
+    @media (max-width:860px){.grid{grid-template-columns:repeat(2, 1fr)}}
+    @media (max-width:560px){.grid{grid-template-columns:1fr}}
 
+    .story-card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:14px;
+      box-shadow: var(--shadow);
+      cursor:pointer;
+      transition:transform .1s ease, box-shadow .1s ease;
+    }
+    .story-card:hover{transform:translateY(-2px); box-shadow: 0 14px 36px rgba(18, 46, 122, 0.16)}
+    .tag{
+      display:inline-block;
+      font-size:12px;
+      color:#fff;
+      background:linear-gradient(135deg, var(--blue), var(--blue2));
+      padding:3px 8px;
+      border-radius:999px;
+    }
+    .story-card h3{margin:8px 0 6px}
+    .story-card p{margin:0;color:var(--muted);font-size:14px}
 
-footer{text-align:center;color:var(--muted);padding:30px}
+    .story-head{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+    .story-head h1{margin:0}
+    .story-head p{margin:6px 0 0;color:var(--muted)}
 
+    .controls{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+    .btn{
+      background:var(--blue);
+      border:1px solid var(--blue2);
+      color:#fff;
+      border-radius:12px;
+      padding:10px 12px;
+      cursor:pointer;
+      font-weight:700;
+      transition:transform .1s ease, filter .1s ease;
+      box-shadow: var(--shadow);
+    }
+    .btn:hover{transform:translateY(-1px);filter:brightness(1.05)}
+    .btn.secondary{background:#fff;border:1px solid var(--border);color:var(--text)}
+    .btn.light{background:#fff;border:1px solid var(--border);color:var(--muted)}
+    .btn.danger{background:linear-gradient(135deg,#fb7185,#e11d48);border:1px solid #be123c}
 
-.brand{font-family:"Avenir Next Rounded","Nunito","Arial Rounded MT Bold","Hiragino Maru Gothic ProN",sans-serif}
-h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
+    .sentence{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;margin:10px 0;box-shadow: var(--shadow)}
+    .jp{font-size:18px;line-height:1.6}
+    .id{margin-top:8px;color:var(--muted);font-size:14px;line-height:1.55}
 
-@media(max-width:700px){.two{grid-template-columns:1fr}.nav{align-items:flex-start;gap:12px;flex-direction:column}.jp{font-size:19px}}
-</style>
+    ruby{cursor:pointer;filter:blur(0px)}
+    ruby rt{opacity:0;filter:blur(5px);transition:opacity .15s ease, filter .15s ease}
+    ruby.show rt{opacity:1;filter:blur(0px)}
+
+    .form-card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:16px;
+      box-shadow: var(--shadow);
+    }
+    input,textarea{
+      width:100%;
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:10px 12px;
+      font-size:15px;
+      outline:none;
+    }
+    textarea{min-height:110px;resize:vertical}
+    label{font-weight:700;font-size:13px;color:var(--muted)}
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:560px){.two{grid-template-columns:1fr}}
+
+    .notice{
+      border-radius:12px;
+      border:1px dashed var(--border);
+      background:rgba(47,118,255,0.07);
+      padding:10px 12px;
+      color:var(--text);
+      margin-top:10px;
+    }
+
+    .manage-card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:14px;
+      box-shadow: var(--shadow);
+      margin:10px 0;
+    }
+    .manage-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+    .smallbtn{padding:8px 10px;border-radius:10px}
+    .editor-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:560px){.editor-row{grid-template-columns:1fr}}
+
+    footer{margin-top:16px;color:var(--muted);text-align:center;font-weight:700;padding:10px 0}
+  </style>
 </head>
+
 <body>
-
-<div class="sea-decor fish-a" aria-hidden="true">
-  <svg viewBox="0 0 180 110" fill="none">
-    <path d="M48 55C70 28 112 24 143 46C151 51 158 54 169 55C158 56 151 60 143 66C112 88 70 82 48 55Z" stroke="#2f6fae" stroke-width="4" stroke-linejoin="round"/>
-    <path d="M48 55L17 31V79L48 55Z" stroke="#2f6fae" stroke-width="4" stroke-linejoin="round"/>
-    <circle cx="132" cy="48" r="4" fill="#2f6fae"/>
-  </svg>
-</div>
-
-<div class="sea-decor fish-b" aria-hidden="true">
-  <svg viewBox="0 0 180 110" fill="none">
-    <path d="M48 55C70 28 112 24 143 46C151 51 158 54 169 55C158 56 151 60 143 66C112 88 70 82 48 55Z" stroke="#5c97cf" stroke-width="4" stroke-linejoin="round"/>
-    <path d="M48 55L17 31V79L48 55Z" stroke="#5c97cf" stroke-width="4" stroke-linejoin="round"/>
-    <circle cx="132" cy="48" r="4" fill="#5c97cf"/>
-  </svg>
-</div>
-
-<div class="sea-decor fish-c" aria-hidden="true">
-  <svg viewBox="0 0 180 110" fill="none">
-    <path d="M48 55C70 28 112 24 143 46C151 51 158 54 169 55C158 56 151 60 143 66C112 88 70 82 48 55Z" stroke="#2f6fae" stroke-width="4" stroke-linejoin="round"/>
-    <path d="M48 55L17 31V79L48 55Z" stroke="#2f6fae" stroke-width="4" stroke-linejoin="round"/>
-    <circle cx="132" cy="48" r="4" fill="#2f6fae"/>
-  </svg>
-</div>
-
-<div class="bubble b1" aria-hidden="true"></div>
-<div class="bubble b2" aria-hidden="true"></div>
-<div class="bubble b3" aria-hidden="true"></div>
-
-
-<div class="topbar">
-  <div class="nav">
-    <div class="brand" onclick="go('home')">𓆝 ウィラN２合格読解</div>
-    <div class="navlinks">
-      <button class="navbtn active" data-page="home" onclick="go('home')">Beranda</button>
-      <button class="navbtn" data-page="stories" onclick="go('stories')">Kumpulan Cerita</button>
-      <button class="navbtn" data-page="generator" onclick="go('generator')">Buat dari Kosakata</button>
-      <button class="navbtn" data-page="manage" onclick="go('manage')">Kelola Cerita</button>
-    </div>
-  </div>
-</div>
-
-<main>
-<section id="home" class="page active">
-  <div class="hero">
-    <h1>ウィラN２合格読解</h1>
-    <p>Tempat membaca cerita bahasa Jepang level N2 dengan furigana interaktif, arti per kalimat, dan kosakata penting yang ditandai.</p>
-  </div>
-  <h2 class="section-title">Cerita Pilihan</h2>
-  <div id="homeStoryGrid" class="grid"></div>
-</section>
-
-<section id="stories" class="page">
-  <h1 class="section-title">Kumpulan Judul</h1>
-  <div id="storyList" class="grid"></div>
-</section>
-
-<section id="story" class="page">
-  <div class="story-head">
-    <h1 id="storyTitle">古い屋敷の秘密</h1>
-    <p id="storyMeta">Level N2・Tema Misteri</p>
-  </div>
-  <div class="controls">
-    <button class="btn" onclick="showAll()">Tampilkan semua furigana</button>
-    <button class="btn secondary" onclick="hideAll()">Sembunyikan semua furigana</button>
-    <button class="btn light" onclick="go('stories')">← Kembali ke judul</button>
-  </div>
-  <div id="storyContent"></div>
-</section>
-
-<section id="generator" class="page">
-  <h1 class="section-title">Buat Cerita dari Kosakata</h1>
-  <div class="form-card">
-    <div class="two">
-      <div>
-        <label for="newTitle">Judul sementara</label>
-        <input id="newTitle" placeholder="Contoh: 森の中の古い時計">
-      </div>
-      <div>
-        <label for="theme">Tema cerita</label>
-        <input id="theme" placeholder="Contoh: misteri, sekolah, keluarga">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">ウィラN２合格読解</div>
+      <div class="nav">
+        <button class="navbtn active" data-page="home" onclick="go('home')">Beranda</button>
+        <button class="navbtn" data-page="stories" onclick="go('stories')">Kumpulan Cerita</button>
+        <button class="navbtn" data-page="generator" onclick="go('generator')">Import dari File</button>
+        <button class="navbtn" data-page="manage" onclick="go('manage')">Kelola Cerita</button>
       </div>
     </div>
-    <label for="vocab">Masukkan kosakata</label>
-    <textarea id="vocab" placeholder="Masukkan satu kosakata per baris atau pisahkan dengan koma."></textarea>
-    <div class="help">Semua kosakata akan diminta masuk ke cerita dan dicetak tebal.</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
-      <button class="btn" onclick="makePrompt()">Buat Prompt GPT</button>
-      <button class="btn secondary" onclick="copyPrompt()">Salin Prompt</button>
-      <button class="btn light" onclick="clearForm()">Bersihkan</button>
-    </div>
-    <div class="notice">
-      Web ini menyiapkan prompt otomatis. Untuk menghasilkan cerita langsung di dalam web diperlukan koneksi ke OpenAI API melalui server dan API key.
-    </div>
-    <div id="promptBox" class="prompt-box"></div>
   </div>
-</section>
 
-<section id="manage" class="page">
-  <h1 class="section-title">Kelola Cerita Terbit</h1>
-  <p style="color:var(--muted);margin-top:-5px">Pilih cerita yang ingin diedit. Perubahan akan tersimpan di browser ini.</p>
-  <div id="manageList"></div>
+  <div class="shell">
+    <main>
+      <section id="home" class="page active">
+        <div class="hero">
+          <h1>ウィラN２合格読解</h1>
+          <p>Tempat membaca cerita bahasa Jepang level N2 dengan furigana interaktif, arti per kalimat, dan kosakata penting yang ditandai.</p>
+        </div>
 
-  <div id="editorPanel" class="form-card" style="display:none;margin-top:24px">
-    <h2 style="color:var(--brown);margin-top:0">Edit Cerita</h2>
-    <input type="hidden" id="editId">
-    <div class="editor-row">
-      <div>
-        <label for="editTitle">Judul</label>
-        <input id="editTitle">
-      </div>
-      <div>
-        <label for="editTheme">Tema</label>
-        <input id="editTheme">
-      </div>
-    </div>
-    <div class="editor-row">
-      <div>
-        <label for="editLevel">Level</label>
-        <input id="editLevel" value="N2">
-      </div>
-      <div>
-        <label for="editDescription">Deskripsi singkat</label>
-        <input id="editDescription">
-      </div>
-    </div>
+        <h2 class="section-title">Cerita Pilihan</h2>
+        <div id="homeStoryGrid" class="grid"></div>
+      </section>
 
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px">
-      <h3 style="margin:0;color:var(--brown)">Isi per Kalimat</h3>
-      <button class="btn light smallbtn" onclick="addSentenceEditor()">+ Tambah Kalimat</button>
-    </div>
-    <div id="sentenceEditors"></div>
+      <section id="stories" class="page">
+        <h1 class="section-title">Kumpulan Judul</h1>
+        <div id="storyList" class="grid"></div>
+      </section>
 
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
-      <button class="btn" onclick="saveEditedStory()">Simpan Perubahan</button>
-      <button class="btn secondary" onclick="cancelEdit()">Batal</button>
-    </div>
+      <section id="story" class="page">
+        <div class="story-head">
+          <h1 id="storyTitle">古い屋敷の秘密</h1>
+          <p id="storyMeta">Level N2・Tema Misteri</p>
+        </div>
+
+        <div class="controls">
+          <button class="btn" onclick="showAll()">Tampilkan semua furigana</button>
+          <button class="btn secondary" onclick="hideAll()">Sembunyikan semua furigana</button>
+          <button class="btn light" onclick="go('stories')">← Kembali ke judul</button>
+        </div>
+
+        <div id="storyContent"></div>
+      </section>
+
+      <section id="generator" class="page">
+        <h1 class="section-title">Import Cerita dari File</h1>
+
+        <div class="form-card">
+          <p style="margin-top:0">Upload file <strong>.json</strong> yang sudah sesuai format. Cerita akan disimpan di browser (localStorage) perangkat ini.</p>
+
+          <input id="storyFile" type="file" accept=".json,.txt" />
+          <br /><br />
+          <div class="two" style="margin-top:0">
+            <button class="btn" onclick="importStoryFile()">Proses &amp; Simpan</button>
+            <button class="btn secondary" onclick="exportStories()">Export semua cerita (JSON)</button>
+          </div>
+
+          <div id="importResult" class="notice" style="display:none;margin-top:14px;"></div>
+        </div>
+
+        <div class="notice">
+          Kalau kamu mau cerita yang sama di semua perangkat, kamu bisa pakai tombol export dan import di perangkat lain, atau update repo GitHub-mu.
+        </div>
+      </section>
+
+      <section id="manage" class="page">
+        <h1 class="section-title">Kelola Cerita Terbit</h1>
+        <p style="color:var(--muted);margin-top:-5px">Pilih cerita yang ingin diedit. Perubahan akan tersimpan di browser ini.</p>
+
+        <div id="manageList"></div>
+
+        <div id="editorPanel" class="form-card" style="display:none;margin-top:24px">
+          <h2 style="margin-top:0;color:var(--blue2)">Edit Cerita</h2>
+
+          <input type="hidden" id="editId">
+
+          <div class="editor-row">
+            <div>
+              <label for="editTitle">Judul</label>
+              <input id="editTitle">
+            </div>
+
+            <div>
+              <label for="editTheme">Tema</label>
+              <input id="editTheme">
+            </div>
+          </div>
+
+          <div class="editor-row">
+            <div>
+              <label for="editLevel">Level</label>
+              <input id="editLevel" value="N2">
+            </div>
+
+            <div>
+              <label for="editDescription">Deskripsi singkat</label>
+              <input id="editDescription">
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px">
+            <h3 style="margin:0;color:var(--blue2)">Isi per Kalimat</h3>
+            <button class="btn light smallbtn" type="button" onclick="addSentenceEditor()">+ Tambah Kalimat</button>
+          </div>
+
+          <div id="sentenceEditors"></div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
+            <button class="btn" type="button" onclick="saveEditedStory()">Simpan Perubahan</button>
+            <button class="btn secondary" type="button" onclick="cancelEdit()">Batal</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>ウィラN２合格読解</footer>
   </div>
-</section>
 
-</main>
+  <script>
+    const baseStory = [
+      ["<ruby>村<rt>むら</rt></ruby>の<ruby>外<rt>はず</rt></ruby>れに、<ruby>大<rt>おお</rt></ruby>きな<ruby>木々<rt>きぎ</rt></ruby>に<strong><ruby>囲<rt>かこ</rt></ruby>まれた</strong><ruby>古<rt>ふる</rt></ruby>い<ruby>屋敷<rt>やしき</rt></ruby>があった。", "Di pinggir desa, ada rumah tua yang <strong>dikelilingi</strong> pepohonan besar."],
+      ["<ruby>庭<rt>にわ</rt></ruby>には<ruby>枯<rt>か</rt></ruby>れた<ruby>木<rt>き</rt></ruby>が<strong><ruby>並<rt>なら</rt></ruby>び</strong>、<ruby>夜<rt>よる</rt></ruby>になると、<ruby>誰<rt>だれ</rt></ruby>もいないはずの<ruby>屋敷<rt>やしき</rt></ruby>から<ruby>鈴<rt>すず</rt></ruby>の<ruby>音<rt>おと</rt></ruby>が<ruby>聞<rt>き</rt></ruby>こえるという。", "Di taman, pepohonan kering <strong>berjajar</strong>, dan katanya pada malam hari terdengar suara lonceng dari rumah kosong itu."],
+      ["ある<ruby>夜<rt>よる</rt></ruby>、<ruby>大学<rt>だいがく</rt></ruby>のメンバーが<ruby>屋敷<rt>やしき</rt></ruby>の<ruby>前<rt>まえ</rt></ruby>に<strong><ruby>集<rt>あつ</rt></ruby>まった</strong>。", "Suatu malam, beberapa mahasiswa <strong>berkumpul</strong> di depan rumah itu."],
+      ["<ruby>彼<rt>かれ</rt></ruby>らは<strong><ruby>力<rt>ちから</rt></ruby>を<ruby>合<rt>あ</rt></ruby>わせる</strong>ことを<ruby>約束<rt>やくそく</rt></ruby>し、<ruby>壁<rt>かべ</rt></ruby>に<strong><ruby>沿<rt>そ</rt></ruby>って</strong><ruby>歩<rt>ある</rt></ruby>きながら、<ruby>入口<rt>いりぐち</rt></ruby>を<ruby>探<rt>さが</rt></ruby>した。", "Mereka berjanji untuk <strong>bekerja sama</strong> dan sambil <strong>menyusuri</strong> dinding, mencari pintu masuk."]
+    ];
 
-<footer>ウィラN２合格読解</footer>
+    const defaultStories = [
+      {
+        id: "mystery",
+        title: "古い屋敷の秘密",
+        theme: "Misteri",
+        level: "N2",
+        description: "Cerita misteri singkat dengan furigana klik.",
+        content: baseStory
+      }
+    ];
 
-<script>
-const baseStory = [
-["<ruby>村<rt>むら</rt></ruby>の<ruby>外<rt>はず</rt></ruby>れに、<ruby>大<rt>おお</rt></ruby>きな<ruby>木々<rt>きぎ</rt></ruby>に<strong><ruby>囲<rt>かこ</rt></ruby>まれた</strong><ruby>古<rt>ふる</rt></ruby>い<ruby>屋敷<rt>やしき</rt></ruby>があった。","Di pinggir desa, terdapat sebuah rumah tua yang <strong>dikelilingi</strong> pohon-pohon besar."],
-["<ruby>庭<rt>にわ</rt></ruby>には<ruby>枯<rt>か</rt></ruby>れた<ruby>木<rt>き</rt></ruby>が<strong><ruby>並<rt>なら</rt></ruby>び</strong>、<ruby>夜<rt>よる</rt></ruby>になると、<ruby>誰<rt>だれ</rt></ruby>もいないはずの<ruby>屋敷<rt>やしき</rt></ruby>から<ruby>鈴<rt>すず</rt></ruby>の<ruby>音<rt>おと</rt></ruby>が<ruby>聞<rt>き</rt></ruby>こえるという。","Di taman, pohon-pohon mati <strong>berjajar</strong>, dan konon pada malam hari terdengar suara lonceng dari rumah yang seharusnya kosong itu."],
-["ある<ruby>夜<rt>よる</rt></ruby>、<ruby>大学<rt>だいがく</rt></ruby>のミステリー<ruby>研究会<rt>けんきゅうかい</rt></ruby>のメンバーが<ruby>屋敷<rt>やしき</rt></ruby>の<ruby>前<rt>まえ</rt></ruby>に<strong><ruby>集<rt>あつ</rt></ruby>まった</strong>。","Pada suatu malam, anggota klub penelitian misteri dari universitas <strong>berkumpul</strong> di depan rumah itu."],
-["<ruby>彼<rt>かれ</rt></ruby>らは<strong><ruby>力<rt>ちから</rt></ruby>を<ruby>合<rt>あ</rt></ruby>わせる</strong>ことを<ruby>約束<rt>やくそく</rt></ruby>し、<ruby>壁<rt>かべ</rt></ruby>に<strong><ruby>沿<rt>そ</rt></ruby>って</strong><ruby>歩<rt>ある</rt></ruby>きながら、<ruby>入口<rt>いりぐち</rt></ruby>を<ruby>探<rt>さが</rt></ruby>した。","Mereka berjanji untuk <strong>bekerja sama</strong>, lalu mencari pintu masuk sambil berjalan <strong>menyusuri</strong> dinding."],
-["「<ruby>少<rt>すこ</rt></ruby>しこっちに<strong><ruby>寄<rt>よ</rt></ruby>って</strong>」","“Tolong <strong>mendekat</strong> sedikit ke sini.”"],
-["リーダーの<ruby>美咲<rt>みさき</rt></ruby>が<ruby>小<rt>ちい</rt></ruby>さな<ruby>声<rt>こえ</rt></ruby>で<ruby>仲間<rt>なかま</rt></ruby>を<strong><ruby>呼<rt>よ</rt></ruby>んだ</strong>。","Misaki, sang pemimpin, <strong>memanggil</strong> teman-temannya dengan suara pelan."],
-["<ruby>地面<rt>じめん</rt></ruby>には、<ruby>白<rt>しろ</rt></ruby>い<ruby>布<rt>ぬの</rt></ruby>で<strong><ruby>包<rt>つつ</rt></ruby>まれた</strong><ruby>箱<rt>はこ</rt></ruby>が<strong><ruby>置<rt>お</rt></ruby>かれて</strong>いた。","Di tanah terdapat sebuah kotak yang <strong>dibungkus</strong> kain putih dan <strong>diletakkan</strong> di sana."],
-["<ruby>箱<rt>はこ</rt></ruby>の<ruby>中<rt>なか</rt></ruby>には、<ruby>何枚<rt>なんまい</rt></ruby>も<strong><ruby>重<rt>かさ</rt></ruby>ねた</strong><ruby>写真<rt>しゃしん</rt></ruby>と、<ruby>順番<rt>じゅんばん</rt></ruby>に<strong><ruby>並<rt>なら</rt></ruby>べられた</strong><ruby>手紙<rt>てがみ</rt></ruby>が<ruby>入<rt>はい</rt></ruby>っていた。","Di dalam kotak terdapat foto-foto yang <strong>ditumpuk</strong> dan surat-surat yang <strong>disusun berjajar</strong> sesuai urutan."],
-["そのとき、<ruby>強<rt>つよ</rt></ruby>い<ruby>風<rt>かぜ</rt></ruby>が<strong><ruby>吹<rt>ふ</rt></ruby>き</strong>、<ruby>屋敷<rt>やしき</rt></ruby><ruby>全体<rt>ぜんたい</rt></ruby>が<ruby>大<rt>おお</rt></ruby>きく<strong><ruby>揺<rt>ゆ</rt></ruby>れた</strong>。","Saat itu, angin kencang <strong>bertiup</strong> dan seluruh rumah <strong>berguncang</strong> hebat."],
-["<ruby>古<rt>ふる</rt></ruby>い<ruby>柱<rt>はしら</rt></ruby>が<strong><ruby>傾<rt>かたむ</rt></ruby>き</strong>、<ruby>庭<rt>にわ</rt></ruby>の<ruby>木<rt>き</rt></ruby>が<ruby>一本<rt>いっぽん</rt></ruby><strong><ruby>倒<rt>たお</rt></ruby>れた</strong>。","Tiang tua itu <strong>miring</strong>, dan satu pohon di taman <strong>tumbang</strong>."],
-["<ruby>枝<rt>えだ</rt></ruby>が<ruby>途中<rt>とちゅう</rt></ruby>で<strong><ruby>折<rt>お</rt></ruby>れ</strong>、<ruby>窓<rt>まど</rt></ruby>ガラスが<ruby>地面<rt>じめん</rt></ruby>に<strong><ruby>落<rt>お</rt></ruby>ちた</strong>。","Dahannya <strong>patah</strong> di tengah, dan kaca jendela <strong>jatuh</strong> ke tanah."],
-["<ruby>電気<rt>でんき</rt></ruby>のコードも<strong><ruby>切<rt>き</rt></ruby>れて</strong>、<ruby>辺<rt>あた</rt></ruby>りは<ruby>真<rt>ま</rt></ruby>っ<ruby>暗<rt>くら</rt></ruby>になった。","Kabel listrik juga <strong>putus</strong>, dan keadaan di sekitarnya menjadi gelap gulita."],
-["<ruby>誰<rt>だれ</rt></ruby>かが<ruby>扉<rt>とびら</rt></ruby>を<ruby>強<rt>つよ</rt></ruby>く<strong><ruby>叩<rt>たた</rt></ruby>いた</strong>。","Seseorang <strong>mengetuk</strong> pintu dengan keras."],
-["<ruby>鍋<rt>なべ</rt></ruby>の<ruby>中<rt>なか</rt></ruby>には<ruby>何<rt>なに</rt></ruby>かを<strong><ruby>煮<rt>に</rt></ruby>た</strong><ruby>跡<rt>あと</rt></ruby>があり、<ruby>棚<rt>たな</rt></ruby>には<ruby>野菜<rt>やさい</rt></ruby>を<strong><ruby>炒<rt>いた</rt></ruby>める</strong>ためのフライパンや、<ruby>料理<rt>りょうり</rt></ruby>を<strong><ruby>蒸<rt>む</rt></ruby>す</strong>ための<ruby>道具<rt>どうぐ</rt></ruby>が<ruby>残<rt>のこ</rt></ruby>っていた。","Di dalam panci terdapat bekas sesuatu yang pernah <strong>direbus</strong>, sedangkan di rak tersisa penggorengan untuk <strong>menumis</strong> sayuran dan alat untuk <strong>mengukus</strong> makanan."],
-["<ruby>人形<rt>にんぎょう</rt></ruby>は<ruby>赤<rt>あか</rt></ruby>い<ruby>布<rt>ぬの</rt></ruby>で<ruby>丁寧<rt>ていねい</rt></ruby>に<strong><ruby>包<rt>つつ</rt></ruby>まれ</strong>、<ruby>髪<rt>かみ</rt></ruby>は<ruby>黒<rt>くろ</rt></ruby>い<ruby>糸<rt>いと</rt></ruby>で<strong><ruby>編<rt>あ</rt></ruby>まれて</strong>いた。","Boneka itu <strong>dibungkus</strong> dengan kain merah secara rapi, dan rambutnya <strong>dianyam</strong> dengan benang hitam."],
-["<ruby>服<rt>ふく</rt></ruby>の<ruby>破<rt>やぶ</rt></ruby>れた<ruby>部分<rt>ぶぶん</rt></ruby>は<ruby>手<rt>て</rt></ruby>で<strong><ruby>縫<rt>ぬ</rt></ruby>われ</strong>、<ruby>首<rt>くび</rt></ruby>には<ruby>細<rt>ほそ</rt></ruby>い<ruby>紐<rt>ひも</rt></ruby>が<ruby>固<rt>かた</rt></ruby>く<strong><ruby>結<rt>むす</rt></ruby>ばれて</strong>いた。","Bagian pakaian yang robek telah <strong>dijahit</strong> dengan tangan, dan seutas tali tipis <strong>diikat</strong> erat pada lehernya."],
-["「<ruby>私<rt>わたし</rt></ruby>は、あなたたちをずっと<strong><ruby>待<rt>ま</rt></ruby>って</strong>いました」","“Aku sudah lama <strong>menunggu</strong> kalian.”"],
-["それから<ruby>老女<rt>ろうじょ</rt></ruby>にもう<ruby>一度<rt>いちど</rt></ruby><strong><ruby>会<rt>あ</rt></ruby>う</strong>ため<ruby>屋敷<rt>やしき</rt></ruby>へ<ruby>戻<rt>もど</rt></ruby>ったが、<ruby>屋敷<rt>やしき</rt></ruby>は<ruby>消<rt>き</rt></ruby>えていた。","Mereka kembali ke rumah itu untuk <strong>bertemu</strong> sekali lagi dengan wanita tua tersebut, tetapi rumahnya telah menghilang."]
-];
+    function go(id){
+      document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+      document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active", b.dataset.page===id));
+      if(id==="home" || id==="stories" || id==="manage"){
+        renderHome();renderList();renderManageList();
+      }
+    }
 
-const defaultStories = [{
-  id:"mystery", title:"古い屋敷の秘密", theme:"ミステリー", level:"N2",
-  description:"Rumah tua, boneka terkubur, dan wanita misterius.", content:baseStory
-}];
+    function bindRuby(){
+      document.querySelectorAll("#storyContent ruby").forEach(r=>{
+        r.onclick=()=>r.classList.toggle("show");
+      });
+    }
 
-function getStories(){
-  const saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
-  const editedDefault=JSON.parse(localStorage.getItem("editedDefaultStory")||"null");
-  const defaults=editedDefault ? [editedDefault] : defaultStories;
-  return [...defaults,...saved];
-}
-function go(id){
-  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-  document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.dataset.page===id));
-  if(id==="home") renderHome();
-  if(id==="stories") renderList();
-  if(id==="manage") renderManageList();
-  window.scrollTo({top:0,behavior:"smooth"});
-}
+    function showAll(){document.querySelectorAll("#storyContent ruby").forEach(r=>r.classList.add("show"))}
+    function hideAll(){document.querySelectorAll("#storyContent ruby").forEach(r=>r.classList.remove("show"))}
 
-function renderHome(){
-  const grid=document.getElementById("homeStoryGrid");
-  if(!grid)return;
-  const stories=getStories();
-  const featured=stories.slice(0,3);
-  grid.innerHTML=featured.map(s=>`
-    <article class="story-card" onclick="openStory('${s.id}')">
-      <span class="tag">${s.theme||"読解"}</span>
-      <h3>${s.title}</h3>
-      <p>${s.description||"Cerita bahasa Jepang dengan furigana interaktif."}</p>
-    </article>`).join("") + `
-    <article class="story-card" onclick="go('generator')">
-      <span class="tag">新しい物語</span>
-      <h3>Tambah Cerita Baru</h3>
-      <p>Masukkan daftar kosakata, lalu siapkan prompt GPT untuk membuat cerita dengan format yang sama.</p>
-    </article>`;
-}
+    function getStories(){
+      const saved = JSON.parse(localStorage.getItem("wiraStories")||"[]");
+      const editedDefault = JSON.parse(localStorage.getItem("editedDefaultStory")||"null");
+      const defaults = editedDefault ? [editedDefault] : defaultStories;
+      return [...defaults, ...saved];
+    }
 
-function renderList(){
-  const list=document.getElementById("storyList");
-  const stories=getStories();
-  list.innerHTML=stories.map(s=>`
-    <article class="story-card" onclick="openStory('${s.id}')">
-      <span class="tag">${s.theme||"読解"}</span>
-      <h3>${s.title}</h3>
-      <p>${s.description||"Cerita bahasa Jepang dengan furigana interaktif."}</p>
-    </article>`).join("");
-}
-function openStory(id){
-  const s=getStories().find(x=>x.id===id)||defaultStories[0];
-  document.getElementById("storyTitle").textContent=s.title;
-  document.getElementById("storyMeta").textContent=`Level ${s.level||"N2"}・Tema ${s.theme||"読解"}`;
-  document.getElementById("storyContent").innerHTML=s.content.map(x=>`
-    <section class="sentence"><div class="jp">${x[0]}</div><div class="id">${x[1]}</div></section>`).join("");
-  bindRuby();go("story");
-}
-function bindRuby(){
-  document.querySelectorAll("#storyContent ruby").forEach(r=>r.onclick=()=>r.classList.toggle("show"));
-}
-function showAll(){document.querySelectorAll("#storyContent ruby").forEach(r=>r.classList.add("show"))}
-function hideAll(){document.querySelectorAll("#storyContent ruby").forEach(r=>r.classList.remove("show"))}
+    function renderHome(){
+      const grid=document.getElementById("homeStoryGrid");
+      const stories=getStories();
 
-function makePrompt(){
-  const title=document.getElementById("newTitle").value.trim()||"Judul dibuat oleh GPT";
-  const theme=document.getElementById("theme").value.trim()||"misteri";
-  const vocab=document.getElementById("vocab").value.trim();
-  if(!vocab){alert("Masukkan kosakata terlebih dahulu.");return}
-  const prompt=`Buatkan cerita bahasa Jepang yang sederhana, nyambung, enak dibaca, tidak terlalu panjang, dan level bacaan N2.
-
-Judul sementara: ${title}
-Tema: ${theme}
-
-Semua kosakata berikut WAJIB masuk:
-${vocab}
-
-Aturan format:
-1. Semua kosakata target wajib dicetak tebal.
-2. Berikan arti bahasa Indonesia untuk setiap kalimat.
-3. Pada arti bahasa Indonesia, arti dari kosakata target juga wajib dicetak tebal.
-4. Tambahkan furigana pada semua kanji menggunakan format HTML ruby, contoh: <ruby>屋敷<rt>やしき</rt></ruby>.
-5. Pisahkan setiap kalimat Jepang dan terjemahannya.
-6. Hasil akhir harus mudah dimasukkan ke web ウィラN２合格読解.
-7. Jangan membuat alur terputus-putus.
-8. Pastikan tidak ada satu pun kosakata yang terlewat.`;
-  const box=document.getElementById("promptBox");
-  box.textContent=prompt;box.style.display="block";
-}
-async function copyPrompt(){
-  makePrompt();
-  const text=document.getElementById("promptBox").textContent;
-  if(!text)return;
-  await navigator.clipboard.writeText(text);
-  alert("Prompt berhasil disalin.");
-}
-function clearForm(){
-  ["newTitle","theme","vocab"].forEach(id=>document.getElementById(id).value="");
-  document.getElementById("promptBox").style.display="none";
-}
-
-function renderManageList(){
-  const wrap=document.getElementById("manageList");
-  const stories=getStories();
-  wrap.innerHTML=stories.map(s=>`
-    <div class="manage-card">
-      <div class="manage-head">
-        <div>
+      const featured=stories.slice(0,3);
+      grid.innerHTML=featured.map(s=>`
+        <article class="story-card" onclick="openStory('${s.id}')">
           <span class="tag">${s.theme||"読解"}</span>
-          <h3 style="margin:10px 0 5px">${s.title}</h3>
-          <p style="margin:0;color:var(--muted)">${s.description||""}</p>
+          <h3>${s.title}</h3>
+          <p>${s.description||"Cerita bahasa Jepang dengan furigana interaktif."}</p>
+        </article>
+      `).join("") + `
+        <article class="story-card" onclick="go('generator')">
+          <span class="tag">新しい物語</span>
+          <h3>Import Cerita</h3>
+          <p>Upload file JSON hasil ceritamu, proses, lalu simpan.</p>
+        </article>
+      `;
+    }
+
+    function renderList(){
+      const list=document.getElementById("storyList");
+      const stories=getStories();
+      list.innerHTML=stories.map(s=>`
+        <article class="story-card" onclick="openStory('${s.id}')">
+          <span class="tag">${s.theme||"読解"}</span>
+          <h3>${s.title}</h3>
+          <p>${s.description||"Cerita bahasa Jepang dengan furigana interaktif."}</p>
+        </article>
+      `).join("");
+    }
+
+    function openStory(id){
+      const s=getStories().find(x=>x.id===id)||defaultStories[0];
+      document.getElementById("storyTitle").textContent=s.title;
+      document.getElementById("storyMeta").textContent=`Level ${s.level||"N2"}・Tema ${s.theme||"読解"}`;
+      document.getElementById("storyContent").innerHTML=(s.content||[]).map(x=>`
+        <section class="sentence">
+          <div class="jp">${x[0]}</div>
+          <div class="id">${x[1]}</div>
+        </section>
+      `).join("");
+
+      bindRuby();go("story");
+    }
+
+    function importStoryFile(){
+      const file=document.getElementById("storyFile").files[0];
+      const box=document.getElementById("importResult");
+
+      if(!file){
+        box.style.display="block";
+        box.textContent="Pilih file dulu ya 🙂";
+        box.className="notice";
+        return;
+      }
+
+      const reader=new FileReader();
+      reader.onload=()=>{
+        try{
+          const data=JSON.parse(reader.result);
+
+          if(!data.content || !Array.isArray(data.content) || data.content.length===0){
+            throw new Error("Format content tidak sesuai (harus array kalimat).");
+          }
+
+          if(!data.id) data.id="story-"+Date.now();
+
+          const updated={
+            id: data.id,
+            title: (data.title||"").toString().trim() || "Tanpa Judul",
+            theme: (data.theme||"").toString().trim() || "読解",
+            level: (data.level||"").toString().trim() || "N2",
+            description: (data.description||"").toString().trim() || "",
+            content: data.content
+              .map(pair => Array.isArray(pair) ? pair : null)
+              .filter(Boolean)
+              .map(pair => [String(pair[0]||""), String(pair[1]||"")])
+              .filter(pair => pair[0]||pair[1])
+          };
+
+          let saved=[];
+          try{saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");}catch(e){}
+
+          const idx=saved.findIndex(x=>x.id===updated.id);
+          if(idx>=0) saved[idx]=updated; else saved.push(updated);
+
+          localStorage.setItem("wiraStories", JSON.stringify(saved));
+
+          renderHome();renderList();renderManageList();
+
+          box.style.display="block";
+          box.textContent=`Cerita berhasil disimpan. ID: ${updated.id}`;
+          box.className="notice";
+        }catch(e){
+          box.style.display="block";
+          box.textContent="Gagal membaca file: "+e.message;
+          box.className="notice";
+        }
+      };
+      reader.readAsText(file,"utf-8");
+    }
+
+    function exportStories(){
+      let saved=[];
+      try{saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");}catch(e){}
+
+      const blob=new Blob([JSON.stringify({stories:saved}, null, 2)], {type:"application/json"});
+      const url=URL.createObjectURL(blob);
+
+      const a=document.createElement("a");
+      a.href=url;
+      a.download="wiraN2_stories.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function renderManageList(){
+      const wrap=document.getElementById("manageList");
+      const stories=getStories();
+
+      wrap.innerHTML=stories.map(s=>`
+        <div class="manage-card">
+          <div class="manage-head">
+            <div>
+              <span class="tag">${s.theme||"読解"}</span>
+              <h3 style="margin:10px 0 5px">${s.title}</h3>
+              <p style="margin:0;color:var(--muted)">${s.description||""}</p>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn light smallbtn" onclick="openStory('${s.id}')">Lihat</button>
+              <button class="btn smallbtn" onclick="editStory('${s.id}')">Edit</button>
+              ${s.id!=="mystery" ? `<button class="btn danger smallbtn" onclick="deleteStory('${s.id}')">Hapus</button>` : ""}
+            </div>
+          </div>
         </div>
-        <div class="manage-actions">
-          <button class="btn light smallbtn" onclick="openStory('${s.id}')">Lihat</button>
-          <button class="btn smallbtn" onclick="editStory('${s.id}')">Edit</button>
-          ${s.id!=="mystery" ? `<button class="btn danger smallbtn" onclick="deleteStory('${s.id}')">Hapus</button>` : ""}
-        </div>
-      </div>
-    </div>`).join("");
-}
+      `).join("");
+    }
 
-function editStory(id){
-  const s=getStories().find(x=>x.id===id);
-  if(!s)return;
-  document.getElementById("editId").value=s.id;
-  document.getElementById("editTitle").value=s.title||"";
-  document.getElementById("editTheme").value=s.theme||"";
-  document.getElementById("editLevel").value=s.level||"N2";
-  document.getElementById("editDescription").value=s.description||"";
-  const holder=document.getElementById("sentenceEditors");
-  holder.innerHTML="";
-  (s.content||[]).forEach(pair=>addSentenceEditor(pair[0],pair[1]));
-  document.getElementById("editorPanel").style.display="block";
-  document.getElementById("editorPanel").scrollIntoView({behavior:"smooth"});
-}
+    function editStory(id){
+      const s=getStories().find(x=>x.id===id);
+      if(!s)return;
 
-function addSentenceEditor(jp="",idn=""){
-  const holder=document.getElementById("sentenceEditors");
-  const div=document.createElement("div");
-  div.className="sentence-editor";
-  div.innerHTML=`
-    <label>Kalimat Jepang (boleh memakai HTML ruby dan strong)</label>
-    <textarea class="edit-jp">${escapeHtml(jp)}</textarea>
-    <label>Arti bahasa Indonesia</label>
-    <textarea class="edit-id">${escapeHtml(idn)}</textarea>
-    <button class="btn danger smallbtn" type="button" onclick="this.parentElement.remove()">Hapus Kalimat</button>`;
-  holder.appendChild(div);
-}
+      document.getElementById("editId").value=s.id;
+      document.getElementById("editTitle").value=s.title||"";
+      document.getElementById("editTheme").value=s.theme||"";
+      document.getElementById("editLevel").value=s.level||"N2";
+      document.getElementById("editDescription").value=s.description||"";
 
-function escapeHtml(text){
-  return String(text).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}
+      const holder=document.getElementById("sentenceEditors");
+      holder.innerHTML="";
 
-function saveEditedStory(){
-  const id=document.getElementById("editId").value;
-  const updated={
-    id,
-    title:document.getElementById("editTitle").value.trim()||"Tanpa Judul",
-    theme:document.getElementById("editTheme").value.trim()||"読解",
-    level:document.getElementById("editLevel").value.trim()||"N2",
-    description:document.getElementById("editDescription").value.trim(),
-    content:[...document.querySelectorAll(".sentence-editor")].map(box=>[
-      box.querySelector(".edit-jp").value.trim(),
-      box.querySelector(".edit-id").value.trim()
-    ]).filter(x=>x[0]||x[1])
-  };
+      (s.content||[]).forEach(pair=>addSentenceEditor(pair[0],pair[1]));
 
-  if(id==="mystery"){
-    localStorage.setItem("editedDefaultStory",JSON.stringify(updated));
-  }else{
-    let saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
-    const index=saved.findIndex(x=>x.id===id);
-    if(index>=0)saved[index]=updated;
-    else saved.push(updated);
-    localStorage.setItem("wiraStories",JSON.stringify(saved));
-  }
-  alert("Perubahan cerita berhasil disimpan.");
-  cancelEdit();
-  renderManageList();
-  renderList();
-  renderHome();
-}
+      document.getElementById("editorPanel").style.display="block";
+      document.getElementById("editorPanel").scrollIntoView({behavior:"smooth"});
+    }
 
-function cancelEdit(){
-  document.getElementById("editorPanel").style.display="none";
-  document.getElementById("sentenceEditors").innerHTML="";
-}
+    function addSentenceEditor(jp="",idn=""){
+      const holder=document.getElementById("sentenceEditors");
+      const div=document.createElement("div");
+      div.className="sentence-editor";
+      div.innerHTML=`
+        <label>Kalimat Jepang (boleh memakai HTML ruby dan strong)</label>
+        <textarea class="edit-jp">${escapeHtml(jp)}</textarea>
 
-function deleteStory(id){
-  if(!confirm("Yakin ingin menghapus cerita ini?"))return;
-  let saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
-  saved=saved.filter(x=>x.id!==id);
-  localStorage.setItem("wiraStories",JSON.stringify(saved));
-  renderManageList();
-  renderList();
-  renderHome();
-}
+        <label>Arti bahasa Indonesia</label>
+        <textarea class="edit-id">${escapeHtml(idn)}</textarea>
 
-renderHome();
-renderList();openStory;
-</script>
+        <button class="btn danger smallbtn" type="button" onclick="this.parentElement.remove()">Hapus Kalimat</button>
+      `;
+      holder.appendChild(div);
+    }
+
+    function escapeHtml(text){
+      return String(text).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    }
+
+    function saveEditedStory(){
+      const id=document.getElementById("editId").value;
+
+      const updated={
+        id,
+        title:document.getElementById("editTitle").value.trim()||"Tanpa Judul",
+        theme:document.getElementById("editTheme").value.trim()||"読解",
+        level:document.getElementById("editLevel").value.trim()||"N2",
+        description:document.getElementById("editDescription").value.trim(),
+        content:[...document.querySelectorAll(".sentence-editor")].map(box=>[
+          box.querySelector(".edit-jp").value.trim(),
+          box.querySelector(".edit-id").value.trim()
+        ]).filter(x=>x[0]||x[1])
+      };
+
+      if(id==="mystery"){
+        localStorage.setItem("editedDefaultStory", JSON.stringify(updated));
+      }else{
+        let saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
+        const index=saved.findIndex(x=>x.id===id);
+        if(index>=0) saved[index]=updated; else saved.push(updated);
+        localStorage.setItem("wiraStories", JSON.stringify(saved));
+      }
+
+      alert("Perubahan cerita berhasil disimpan.");
+      cancelEdit();
+      renderManageList();renderList();renderHome();
+    }
+
+    function cancelEdit(){
+      document.getElementById("editorPanel").style.display="none";
+      document.getElementById("sentenceEditors").innerHTML="";
+    }
+
+    function deleteStory(id){
+      if(!confirm("Yakin ingin menghapus cerita ini?"))return;
+      let saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
+      saved=saved.filter(x=>x.id!==id);
+      localStorage.setItem("wiraStories", JSON.stringify(saved));
+      renderManageList();renderList();renderHome();
+    }
+
+    // init
+    renderHome();renderList();renderManageList();
+  </script>
 </body>
 </html>
