@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ウィラN２合格読解</title>
+<title>ウィラN2合格読解</title>
 <style>
 :root{
   --bg:#eef6ff;
@@ -158,6 +158,7 @@ textarea{min-height:220px;resize:vertical;line-height:1.7}
   font-weight:800;
   padding:2px 4px;
 }
+
 .folder-create{
   display:grid;
   grid-template-columns:1fr auto;
@@ -280,7 +281,7 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
 
 <div class="topbar">
   <div class="nav">
-    <div class="brand" onclick="go('home')">𓆝 ウィラN２合格読解</div>
+    <div class="brand" onclick="go('home')">𓆝 ウィラN2合格読解</div>
     <div class="navlinks">
       <button class="navbtn active" data-page="home" onclick="go('home')">Beranda</button>
       <button class="navbtn" data-page="stories" onclick="go('stories')">Kumpulan Cerita</button>
@@ -293,8 +294,8 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
 <main>
 <section id="home" class="page active">
   <div class="hero">
-    <h1>ウィラN２合格読解</h1>
-    <p>Tempat membaca cerita bahasa Jepang level N2 dengan furigana interaktif, arti per kalimat, dan kosakata penting yang ditandai.</p>
+    <h1>ウィラN2合格読解</h1>
+    <p>Kumpulan bacaan bahasa Jepang yang dimulai dari DAY 1, dengan furigana interaktif dan arti per kalimat.</p>
   </div>
   <h2 class="section-title">Cerita Pilihan</h2>
   <div id="homeStoryGrid" class="grid"></div>
@@ -304,11 +305,23 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
   <h1 class="section-title">Kumpulan Cerita</h1>
   <p style="color:var(--muted);margin-top:-6px">Pilih folder berdasarkan level bacaan.</p>
 
+  <div class="folder-manager">
+    <h2 style="margin:0;color:var(--brown)">Tambah Folder</h2>
+    <div class="folder-create">
+      <input id="newFolderName" placeholder="Contoh: N1, N2, N3, Misteri">
+      <button class="btn" onclick="addFolder()">+ Tambah</button>
+    </div>
+    <div id="folderList" class="folder-list"></div>
+  </div>
+
   <div id="categoryGrid" class="category-grid"></div>
 
   <div id="categoryResults" class="category-results">
     <div class="category-toolbar">
-      <h2 id="categoryTitle" class="section-title" style="margin:0"></h2>
+      <div>
+        <h2 id="categoryTitle" class="section-title" style="margin:0"></h2>
+        <div id="categoryActions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
+      </div>
       <button class="btn light" onclick="closeCategory()">← Kembali ke folder</button>
     </div>
     <div id="storyList" class="grid"></div>
@@ -317,8 +330,8 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
 
 <section id="story" class="page">
   <div class="story-head">
-    <h1 id="storyTitle">古い屋敷の秘密</h1>
-    <p id="storyMeta">Level N2・Tema Misteri</p>
+    <h1 id="storyTitle">Cerita</h1>
+    <p id="storyMeta">Pilih cerita dari kumpulan cerita</p>
   </div>
   <div class="controls">
     <button class="btn" onclick="showAll()">Tampilkan semua furigana</button>
@@ -357,23 +370,8 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
 </section>
 
 <section id="manage" class="page">
-  <h1 class="section-title">Kelola Cerita & Folder</h1>
-
-  <div class="folder-manager">
-    <h2 style="margin:0;color:var(--brown)">Kelola Folder</h2>
-    <p style="color:var(--muted);margin:6px 0 0">
-      Tambahkan folder baru, ubah nama folder, atau hapus folder yang tidak dipakai.
-    </p>
-
-    <div class="folder-create">
-      <input id="newFolderName" placeholder="Contoh: N1, Misteri, Sekolah">
-      <button class="btn" onclick="addFolder()">+ Tambah Folder</button>
-    </div>
-
-    <div id="folderList" class="folder-list"></div>
-  </div>
-
-  <p style="color:var(--muted)">Pindahkan cerita ke folder yang sesuai, edit, lihat, atau hapus.</p>
+  <h1 class="section-title">Kelola Cerita</h1>
+  <p style="color:var(--muted)">Edit isi cerita, judul, tema, deskripsi, atau hapus cerita.</p>
   <div id="manageList"></div>
 
   <div id="editorPanel" class="form-card" style="display:none;margin-top:24px">
@@ -418,46 +416,14 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
 
 </main>
 
-<footer>ウィラN２合格読解</footer>
+<footer>ウィラN2合格読解</footer>
 
 <script>
-const baseStory = [
-["<ruby>村<rt>むら</rt></ruby>の<ruby>外<rt>はず</rt></ruby>れに、<ruby>大<rt>おお</rt></ruby>きな<ruby>木々<rt>きぎ</rt></ruby>に<strong><ruby>囲<rt>かこ</rt></ruby>まれた</strong><ruby>古<rt>ふる</rt></ruby>い<ruby>屋敷<rt>やしき</rt></ruby>があった。","Di pinggir desa, terdapat sebuah rumah tua yang <strong>dikelilingi</strong> pohon-pohon besar."],
-["<ruby>庭<rt>にわ</rt></ruby>には<ruby>枯<rt>か</rt></ruby>れた<ruby>木<rt>き</rt></ruby>が<strong><ruby>並<rt>なら</rt></ruby>び</strong>、<ruby>夜<rt>よる</rt></ruby>になると、<ruby>誰<rt>だれ</rt></ruby>もいないはずの<ruby>屋敷<rt>やしき</rt></ruby>から<ruby>鈴<rt>すず</rt></ruby>の<ruby>音<rt>おと</rt></ruby>が<ruby>聞<rt>き</rt></ruby>こえるという。","Di taman, pohon-pohon mati <strong>berjajar</strong>, dan konon pada malam hari terdengar suara lonceng dari rumah yang seharusnya kosong itu."],
-["ある<ruby>夜<rt>よる</rt></ruby>、<ruby>大学<rt>だいがく</rt></ruby>のミステリー<ruby>研究会<rt>けんきゅうかい</rt></ruby>のメンバーが<ruby>屋敷<rt>やしき</rt></ruby>の<ruby>前<rt>まえ</rt></ruby>に<strong><ruby>集<rt>あつ</rt></ruby>まった</strong>。","Pada suatu malam, anggota klub penelitian misteri dari universitas <strong>berkumpul</strong> di depan rumah itu."],
-["<ruby>彼<rt>かれ</rt></ruby>らは<strong><ruby>力<rt>ちから</rt></ruby>を<ruby>合<rt>あ</rt></ruby>わせる</strong>ことを<ruby>約束<rt>やくそく</rt></ruby>し、<ruby>壁<rt>かべ</rt></ruby>に<strong><ruby>沿<rt>そ</rt></ruby>って</strong><ruby>歩<rt>ある</rt></ruby>きながら、<ruby>入口<rt>いりぐち</rt></ruby>を<ruby>探<rt>さが</rt></ruby>した。","Mereka berjanji untuk <strong>bekerja sama</strong>, lalu mencari pintu masuk sambil berjalan <strong>menyusuri</strong> dinding."],
-["「<ruby>少<rt>すこ</rt></ruby>しこっちに<strong><ruby>寄<rt>よ</rt></ruby>って</strong>」","“Tolong <strong>mendekat</strong> sedikit ke sini.”"],
-["リーダーの<ruby>美咲<rt>みさき</rt></ruby>が<ruby>小<rt>ちい</rt></ruby>さな<ruby>声<rt>こえ</rt></ruby>で<ruby>仲間<rt>なかま</rt></ruby>を<strong><ruby>呼<rt>よ</rt></ruby>んだ</strong>。","Misaki, sang pemimpin, <strong>memanggil</strong> teman-temannya dengan suara pelan."],
-["<ruby>地面<rt>じめん</rt></ruby>には、<ruby>白<rt>しろ</rt></ruby>い<ruby>布<rt>ぬの</rt></ruby>で<strong><ruby>包<rt>つつ</rt></ruby>まれた</strong><ruby>箱<rt>はこ</rt></ruby>が<strong><ruby>置<rt>お</rt></ruby>かれて</strong>いた。","Di tanah terdapat sebuah kotak yang <strong>dibungkus</strong> kain putih dan <strong>diletakkan</strong> di sana."],
-["<ruby>箱<rt>はこ</rt></ruby>の<ruby>中<rt>なか</rt></ruby>には、<ruby>何枚<rt>なんまい</rt></ruby>も<strong><ruby>重<rt>かさ</rt></ruby>ねた</strong><ruby>写真<rt>しゃしん</rt></ruby>と、<ruby>順番<rt>じゅんばん</rt></ruby>に<strong><ruby>並<rt>なら</rt></ruby>べられた</strong><ruby>手紙<rt>てがみ</rt></ruby>が<ruby>入<rt>はい</rt></ruby>っていた。","Di dalam kotak terdapat foto-foto yang <strong>ditumpuk</strong> dan surat-surat yang <strong>disusun berjajar</strong> sesuai urutan."],
-["そのとき、<ruby>強<rt>つよ</rt></ruby>い<ruby>風<rt>かぜ</rt></ruby>が<strong><ruby>吹<rt>ふ</rt></ruby>き</strong>、<ruby>屋敷<rt>やしき</rt></ruby><ruby>全体<rt>ぜんたい</rt></ruby>が<ruby>大<rt>おお</rt></ruby>きく<strong><ruby>揺<rt>ゆ</rt></ruby>れた</strong>。","Saat itu, angin kencang <strong>bertiup</strong> dan seluruh rumah <strong>berguncang</strong> hebat."],
-["<ruby>古<rt>ふる</rt></ruby>い<ruby>柱<rt>はしら</rt></ruby>が<strong><ruby>傾<rt>かたむ</rt></ruby>き</strong>、<ruby>庭<rt>にわ</rt></ruby>の<ruby>木<rt>き</rt></ruby>が<ruby>一本<rt>いっぽん</rt></ruby><strong><ruby>倒<rt>たお</rt></ruby>れた</strong>。","Tiang tua itu <strong>miring</strong>, dan satu pohon di taman <strong>tumbang</strong>."],
-["<ruby>枝<rt>えだ</rt></ruby>が<ruby>途中<rt>とちゅう</rt></ruby>で<strong><ruby>折<rt>お</rt></ruby>れ</strong>、<ruby>窓<rt>まど</rt></ruby>ガラスが<ruby>地面<rt>じめん</rt></ruby>に<strong><ruby>落<rt>お</rt></ruby>ちた</strong>。","Dahannya <strong>patah</strong> di tengah, dan kaca jendela <strong>jatuh</strong> ke tanah."],
-["<ruby>電気<rt>でんき</rt></ruby>のコードも<strong><ruby>切<rt>き</rt></ruby>れて</strong>、<ruby>辺<rt>あた</rt></ruby>りは<ruby>真<rt>ま</rt></ruby>っ<ruby>暗<rt>くら</rt></ruby>になった。","Kabel listrik juga <strong>putus</strong>, dan keadaan di sekitarnya menjadi gelap gulita."],
-["<ruby>誰<rt>だれ</rt></ruby>かが<ruby>扉<rt>とびら</rt></ruby>を<ruby>強<rt>つよ</rt></ruby>く<strong><ruby>叩<rt>たた</rt></ruby>いた</strong>。","Seseorang <strong>mengetuk</strong> pintu dengan keras."],
-["<ruby>鍋<rt>なべ</rt></ruby>の<ruby>中<rt>なか</rt></ruby>には<ruby>何<rt>なに</rt></ruby>かを<strong><ruby>煮<rt>に</rt></ruby>た</strong><ruby>跡<rt>あと</rt></ruby>があり、<ruby>棚<rt>たな</rt></ruby>には<ruby>野菜<rt>やさい</rt></ruby>を<strong><ruby>炒<rt>いた</rt></ruby>める</strong>ためのフライパンや、<ruby>料理<rt>りょうり</rt></ruby>を<strong><ruby>蒸<rt>む</rt></ruby>す</strong>ための<ruby>道具<rt>どうぐ</rt></ruby>が<ruby>残<rt>のこ</rt></ruby>っていた。","Di dalam panci terdapat bekas sesuatu yang pernah <strong>direbus</strong>, sedangkan di rak tersisa penggorengan untuk <strong>menumis</strong> sayuran dan alat untuk <strong>mengukus</strong> makanan."],
-["<ruby>人形<rt>にんぎょう</rt></ruby>は<ruby>赤<rt>あか</rt></ruby>い<ruby>布<rt>ぬの</rt></ruby>で<ruby>丁寧<rt>ていねい</rt></ruby>に<strong><ruby>包<rt>つつ</rt></ruby>まれ</strong>、<ruby>髪<rt>かみ</rt></ruby>は<ruby>黒<rt>くろ</rt></ruby>い<ruby>糸<rt>いと</rt></ruby>で<strong><ruby>編<rt>あ</rt></ruby>まれて</strong>いた。","Boneka itu <strong>dibungkus</strong> dengan kain merah secara rapi, dan rambutnya <strong>dianyam</strong> dengan benang hitam."],
-["<ruby>服<rt>ふく</rt></ruby>の<ruby>破<rt>やぶ</rt></ruby>れた<ruby>部分<rt>ぶぶん</rt></ruby>は<ruby>手<rt>て</rt></ruby>で<strong><ruby>縫<rt>ぬ</rt></ruby>われ</strong>、<ruby>首<rt>くび</rt></ruby>には<ruby>細<rt>ほそ</rt></ruby>い<ruby>紐<rt>ひも</rt></ruby>が<ruby>固<rt>かた</rt></ruby>く<strong><ruby>結<rt>むす</rt></ruby>ばれて</strong>いた。","Bagian pakaian yang robek telah <strong>dijahit</strong> dengan tangan, dan seutas tali tipis <strong>diikat</strong> erat pada lehernya."],
-["「<ruby>私<rt>わたし</rt></ruby>は、あなたたちをずっと<strong><ruby>待<rt>ま</rt></ruby>って</strong>いました」","“Aku sudah lama <strong>menunggu</strong> kalian.”"],
-["それから<ruby>老女<rt>ろうじょ</rt></ruby>にもう<ruby>一度<rt>いちど</rt></ruby><strong><ruby>会<rt>あ</rt></ruby>う</strong>ため<ruby>屋敷<rt>やしき</rt></ruby>へ<ruby>戻<rt>もど</rt></ruby>ったが、<ruby>屋敷<rt>やしき</rt></ruby>は<ruby>消<rt>き</rt></ruby>えていた。","Mereka kembali ke rumah itu untuk <strong>bertemu</strong> sekali lagi dengan wanita tua tersebut, tetapi rumahnya telah menghilang."]
-];
-
-const defaultStories = [{
-  id:"mystery", title:"古い屋敷の秘密", theme:"ミステリー", level:"N2",
-  description:"Rumah tua, boneka terkubur, dan wanita misterius.", content:baseStory
-}];
+const defaultStories = [];
 
 function getStories(){
-  const saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
-  const editedDefault=JSON.parse(localStorage.getItem("editedDefaultStory")||"null");
-  const defaultDeleted=localStorage.getItem("defaultStoryDeleted")==="true";
-
-  let defaults=[];
-  if(!defaultDeleted){
-    defaults=editedDefault ? [editedDefault] : defaultStories;
-  }
-
-  return [...defaults,...saved];
+  const saved = JSON.parse(localStorage.getItem("wiraStories") || "[]");
+  return saved;
 }
 function go(id){
   document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
@@ -487,28 +453,81 @@ function renderHome(){
     </article>`;
 }
 
+
+
+function sortFolders(folders){
+  return [...new Set(folders.map(x => String(x).trim()).filter(Boolean))]
+    .sort((a,b)=>{
+      const am=a.match(/^N(\d+)$/i);
+      const bm=b.match(/^N(\d+)$/i);
+
+      if(am && bm) return Number(am[1])-Number(bm[1]);
+      if(am) return -1;
+      if(bm) return 1;
+
+      return a.localeCompare(b,"id",{numeric:true,sensitivity:"base"});
+    });
+}
+
 function getFolders(){
-  const saved=JSON.parse(localStorage.getItem("wiraFolders")||"null");
-  if(Array.isArray(saved) && saved.length) return saved;
-  const defaults=["N3","N2","N1"];
-  localStorage.setItem("wiraFolders",JSON.stringify(defaults));
-  return defaults;
+  let folders;
+  try{
+    folders=JSON.parse(localStorage.getItem("wiraFolders")||"null");
+  }catch(e){
+    folders=null;
+  }
+
+  if(!Array.isArray(folders) || folders.length===0){
+    folders=["N1","N2","N3"];
+  }
+
+  folders=sortFolders(folders);
+  localStorage.setItem("wiraFolders",JSON.stringify(folders));
+  return folders;
 }
 
 function saveFolders(folders){
-  localStorage.setItem("wiraFolders",JSON.stringify(folders));
+  const sorted=sortFolders(folders);
+  localStorage.setItem("wiraFolders",JSON.stringify(sorted));
+  return sorted;
+}
+
+function escapeJs(text){
+  return String(text)
+    .replace(/\\/g,"\\\\")
+    .replace(/'/g,"\\'");
+}
+
+let currentOpenFolder=null;
+
+function renderFolderManager(){
+  const list=document.getElementById("folderList");
+  if(!list) return;
+
+  const folders=getFolders();
+
+  list.innerHTML=folders.map(folder=>`
+    <div class="folder-chip">
+      <strong>${escapeHtml(folder)}</strong>
+      <button title="Ubah nama folder" onclick="renameFolder('${escapeJs(folder)}')">✎</button>
+      <button title="Hapus folder" onclick="deleteFolder('${escapeJs(folder)}')">×</button>
+    </div>
+  `).join("");
 }
 
 function renderCategories(){
   const grid=document.getElementById("categoryGrid");
   const results=document.getElementById("categoryResults");
-  if(!grid)return;
+  if(!grid) return;
 
   const stories=getStories();
   const folders=getFolders();
 
+  renderFolderManager();
+
   grid.innerHTML=folders.map(folder=>{
     const count=stories.filter(s=>(s.level||"N2")===folder).length;
+
     return `
       <article class="category-card" onclick="openCategory('${escapeJs(folder)}')">
         <span class="category-count">${count} cerita</span>
@@ -518,87 +537,216 @@ function renderCategories(){
       </article>`;
   }).join("");
 
-  results.classList.remove("active");
+  if(results) results.classList.remove("active");
+
+  const folderManager=document.querySelector("#stories .folder-manager");
+  if(folderManager) folderManager.style.display="block";
+
+  grid.style.display="grid";
 }
 
 function openCategory(folder){
+  currentOpenFolder=folder;
+
   const stories=getStories().filter(s=>(s.level||"N2")===folder);
+  const folders=getFolders();
 
-  document.getElementById("categoryGrid").style.display="none";
-  document.getElementById("categoryTitle").textContent=`Folder ${folder}`;
+  const grid=document.getElementById("categoryGrid");
+  const manager=document.querySelector("#stories .folder-manager");
   const results=document.getElementById("categoryResults");
-  results.classList.add("active");
-
+  const title=document.getElementById("categoryTitle");
+  const actions=document.getElementById("categoryActions");
   const list=document.getElementById("storyList");
-  list.innerHTML=stories.length
-    ? stories.map(s=>`
-      <article class="story-card" onclick="openStory('${s.id}')">
-        <span class="tag">${s.theme||"読解"}</span>
-        <h3>${s.title}</h3>
-        <p>${s.description||"Cerita bahasa Jepang dengan furigana interaktif."}</p>
-      </article>`).join("")
-    : `<div class="empty">Belum ada cerita di folder ${escapeHtml(folder)}.</div>`;
+
+  if(grid) grid.style.display="none";
+  if(manager) manager.style.display="none";
+  if(results) results.classList.add("active");
+  if(title) title.textContent=`Folder ${folder}`;
+
+  if(actions){
+    actions.innerHTML=`
+      <button class="btn light smallbtn" onclick="renameFolder('${escapeJs(folder)}')">✎ Ganti Nama</button>
+      <button class="btn secondary smallbtn" onclick="deleteFolder('${escapeJs(folder)}')">× Hapus Folder</button>
+    `;
+  }
+
+  if(list){
+    list.innerHTML=stories.length
+      ? stories.map(s=>`
+        <article class="story-card">
+          <span class="tag">${s.theme||"読解"}</span>
+          <h3 onclick="openStory('${s.id}')" style="cursor:pointer">${s.title}</h3>
+          <p>${s.description||"Cerita bahasa Jepang dengan furigana interaktif."}</p>
+
+          <label style="margin-top:14px">Pindahkan ke folder</label>
+          <select class="story-folder-select" onchange="moveStoryToFolder('${s.id}',this.value)">
+            ${folders.map(target=>`
+              <option value="${escapeHtml(target)}" ${target===folder?"selected":""}>
+                ${escapeHtml(target)}
+              </option>`).join("")}
+          </select>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+            <button class="btn light smallbtn" onclick="openStory('${s.id}')">Baca</button>
+            <button class="btn smallbtn" onclick="editStory('${s.id}');go('manage')">Edit</button>
+          </div>
+        </article>`).join("")
+      : `<div class="empty">Belum ada cerita di folder ${escapeHtml(folder)}.</div>`;
+  }
 }
 
 function closeCategory(){
-  document.getElementById("categoryGrid").style.display="grid";
-  document.getElementById("categoryResults").classList.remove("active");
+  currentOpenFolder=null;
+
+  const grid=document.getElementById("categoryGrid");
+  const manager=document.querySelector("#stories .folder-manager");
+  const results=document.getElementById("categoryResults");
+
+  if(grid) grid.style.display="grid";
+  if(manager) manager.style.display="block";
+  if(results) results.classList.remove("active");
+
+  renderFolderManager();
+  renderCategories();
 }
 
-function escapeJs(text){
-  return String(text).replace(/\/g,"\\").replace(/'/g,"\'");
-}
-function openStory(id){
-  const s=getStories().find(x=>x.id===id)||defaultStories[0];
-  document.getElementById("storyTitle").textContent=s.title;
-  document.getElementById("storyMeta").textContent=`Level ${s.level||"N2"}・Tema ${s.theme||"読解"}`;
-  document.getElementById("storyContent").innerHTML=s.content.map(x=>`
-    <section class="sentence"><div class="jp">${x[0]}</div><div class="id">${x[1]}</div></section>`).join("");
-  bindRuby();go("story");
-}
-function bindRuby(){
-  document.querySelectorAll("#storyContent ruby").forEach(r=>r.onclick=()=>r.classList.toggle("show"));
-}
-function showAll(){document.querySelectorAll("#storyContent ruby").forEach(r=>r.classList.add("show"))}
-function hideAll(){document.querySelectorAll("#storyContent ruby").forEach(r=>r.classList.remove("show"))}
+function addFolder(){
+  const input=document.getElementById("newFolderName");
+  if(!input) return;
 
-function makePrompt(){
-  const title=document.getElementById("newTitle").value.trim()||"Judul dibuat oleh GPT";
-  const theme=document.getElementById("theme").value.trim()||"misteri";
-  const vocab=document.getElementById("vocab").value.trim();
-  if(!vocab){alert("Masukkan kosakata terlebih dahulu.");return}
-  const prompt=`Buatkan cerita bahasa Jepang yang sederhana, nyambung, enak dibaca, tidak terlalu panjang, dan level bacaan N2.
+  const name=input.value.trim();
 
-Judul sementara: ${title}
-Tema: ${theme}
+  if(!name){
+    alert("Masukkan nama folder.");
+    return;
+  }
 
-Semua kosakata berikut WAJIB masuk:
-${vocab}
+  const folders=getFolders();
 
-Aturan format:
-1. Semua kosakata target wajib dicetak tebal.
-2. Berikan arti bahasa Indonesia untuk setiap kalimat.
-3. Pada arti bahasa Indonesia, arti dari kosakata target juga wajib dicetak tebal.
-4. Tambahkan furigana pada semua kanji menggunakan format HTML ruby, contoh: <ruby>屋敷<rt>やしき</rt></ruby>.
-5. Pisahkan setiap kalimat Jepang dan terjemahannya.
-6. Hasil akhir harus mudah dimasukkan ke web ウィラN２合格読解.
-7. Jangan membuat alur terputus-putus.
-8. Pastikan tidak ada satu pun kosakata yang terlewat.`;
-  const box=document.getElementById("promptBox");
-  box.textContent=prompt;box.style.display="block";
-}
-async function copyPrompt(){
-  makePrompt();
-  const text=document.getElementById("promptBox").textContent;
-  if(!text)return;
-  await navigator.clipboard.writeText(text);
-  alert("Prompt berhasil disalin.");
-}
-function clearForm(){
-  ["newTitle","theme","vocab"].forEach(id=>document.getElementById(id).value="");
-  document.getElementById("promptBox").style.display="none";
+  if(folders.some(folder=>folder.toLowerCase()===name.toLowerCase())){
+    alert("Folder tersebut sudah ada.");
+    return;
+  }
+
+  saveFolders([...folders,name]);
+  input.value="";
+
+  renderFolderManager();
+  renderCategories();
 }
 
+function renameFolder(oldName){
+  const next=prompt("Masukkan nama folder baru:",oldName);
+  if(next===null) return;
+
+  const newName=next.trim();
+
+  if(!newName || newName===oldName) return;
+
+  const folders=getFolders();
+
+  if(folders.some(folder=>folder.toLowerCase()===newName.toLowerCase())){
+    alert("Nama folder tersebut sudah dipakai.");
+    return;
+  }
+
+  saveFolders(folders.map(folder=>folder===oldName?newName:folder));
+
+  let stories=[];
+  try{
+    stories=JSON.parse(localStorage.getItem("wiraStories")||"[]");
+  }catch(e){
+    stories=[];
+  }
+
+  stories.forEach(story=>{
+    if((story.level||"N2")===oldName){
+      story.level=newName;
+    }
+  });
+
+  localStorage.setItem("wiraStories",JSON.stringify(stories));
+
+  if(currentOpenFolder===oldName){
+    currentOpenFolder=newName;
+    renderFolderManager();
+    renderCategories();
+    openCategory(newName);
+  }else{
+    renderFolderManager();
+    renderCategories();
+  }
+
+  renderManageList();
+  renderHome();
+}
+
+function deleteFolder(name){
+  const storiesInside=getStories().filter(
+    story=>(story.level||"N2")===name
+  );
+
+  if(storiesInside.length>0){
+    alert(
+      `Folder "${name}" masih berisi ${storiesInside.length} cerita.\n` +
+      `Pindahkan semua cerita ke folder lain terlebih dahulu.`
+    );
+    return;
+  }
+
+  const folders=getFolders();
+
+  if(folders.length<=1){
+    alert("Minimal harus ada satu folder.");
+    return;
+  }
+
+  const ok=confirm(`Yakin ingin menghapus folder "${name}"?`);
+  if(!ok) return;
+
+  saveFolders(folders.filter(folder=>folder!==name));
+
+  currentOpenFolder=null;
+
+  const results=document.getElementById("categoryResults");
+  if(results) results.classList.remove("active");
+
+  const grid=document.getElementById("categoryGrid");
+  if(grid) grid.style.display="grid";
+
+  const manager=document.querySelector("#stories .folder-manager");
+  if(manager) manager.style.display="block";
+
+  renderFolderManager();
+  renderCategories();
+}
+
+function moveStoryToFolder(id,newFolder){
+  let saved=[];
+  try{
+    saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
+  }catch(e){
+    saved=[];
+  }
+
+  const story=saved.find(item=>item.id===id);
+
+  if(!story){
+    alert("Cerita tidak ditemukan.");
+    return;
+  }
+
+  story.level=newFolder;
+  localStorage.setItem("wiraStories",JSON.stringify(saved));
+
+  renderHome();
+  renderManageList();
+  renderCategories();
+
+  if(currentOpenFolder){
+    openCategory(currentOpenFolder);
+  }
+}
 
 function importStoryFile(){
   const input=document.getElementById("storyFile");
@@ -716,11 +864,10 @@ function addFolder(){
   }
 
   folders.push(name);
-  saveFolders(folders);
+  saveFolders(sortFolders(folders));
   input.value="";
   renderFolderManager();
   renderCategories();
-  renderManageList();
 }
 
 function renameFolder(oldName){
@@ -735,7 +882,7 @@ function renameFolder(oldName){
     return;
   }
 
-  const updatedFolders=folders.map(f=>f===oldName?clean:f);
+  const updatedFolders=sortFolders(folders.map(f=>f===oldName?clean:f));
   saveFolders(updatedFolders);
 
   const editedDefault=JSON.parse(localStorage.getItem("editedDefaultStory")||"null");
@@ -754,42 +901,51 @@ function renameFolder(oldName){
   renderCategories();
   renderManageList();
   renderHome();
+
+  if(currentOpenFolder===oldName){
+    currentOpenFolder=clean;
+    openCategory(clean);
+  }
 }
 
 function deleteFolder(name){
   const stories=getStories().filter(s=>(s.level||"N2")===name);
 
   if(stories.length){
-    alert(`Folder "${name}" masih berisi ${stories.length} cerita. Pindahkan atau hapus ceritanya terlebih dahulu.`);
+    alert(
+      `Folder "${name}" masih berisi ${stories.length} cerita. ` +
+      `Pindahkan semua ceritanya ke folder lain terlebih dahulu.`
+    );
     return;
   }
 
-  if(!confirm(`Hapus folder "${name}"?`)) return;
+  if(!confirm(`Yakin ingin menghapus folder "${name}"?`)) return;
 
-  const folders=getFolders().filter(f=>f!==name);
+  const folders=sortFolders(getFolders().filter(folder=>folder!==name));
   saveFolders(folders);
+
+  currentOpenFolder=null;
+  closeCategory();
   renderFolderManager();
   renderCategories();
 }
 
-function changeStoryFolder(id,newFolder){
-  if(id==="mystery"){
-    const current=getStories().find(s=>s.id===id);
-    if(!current)return;
-    const updated={...current,level:newFolder};
-    localStorage.setItem("editedDefaultStory",JSON.stringify(updated));
-  }else{
-    const saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
-    const story=saved.find(s=>s.id===id);
-    if(story){
-      story.level=newFolder;
-      localStorage.setItem("wiraStories",JSON.stringify(saved));
-    }
+function moveStoryToFolder(id,newFolder){
+  const saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
+  const story=saved.find(s=>s.id===id);
+
+  if(story){
+    story.level=newFolder;
+    localStorage.setItem("wiraStories",JSON.stringify(saved));
   }
 
   renderManageList();
   renderCategories();
   renderHome();
+
+  if(currentOpenFolder){
+    openCategory(currentOpenFolder);
+  }
 }
 
 function renderManageList(){
@@ -797,7 +953,6 @@ function renderManageList(){
   const stories=getStories();
   const folders=getFolders();
 
-  renderFolderManager();
 
   wrap.innerHTML=stories.map(s=>`
     <div class="manage-card">
@@ -809,13 +964,6 @@ function renderManageList(){
         </div>
 
         <div class="manage-actions">
-          <select class="story-folder-select" onchange="changeStoryFolder('${s.id}',this.value)">
-            ${folders.map(folder=>`
-              <option value="${escapeHtml(folder)}" ${folder===(s.level||"N2")?"selected":""}>
-                ${escapeHtml(folder)}
-              </option>`).join("")}
-          </select>
-
           <button class="btn light smallbtn" onclick="openStory('${s.id}')">Lihat</button>
           <button class="btn smallbtn" onclick="editStory('${s.id}')">Edit</button>
           <button class="btn danger smallbtn" onclick="deleteStory('${s.id}')">Hapus</button>
@@ -874,15 +1022,12 @@ function saveEditedStory(){
     ]).filter(x=>x[0]||x[1])
   };
 
-  if(id==="mystery"){
-    localStorage.setItem("editedDefaultStory",JSON.stringify(updated));
-  }else{
+  
     let saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
     const index=saved.findIndex(x=>x.id===id);
     if(index>=0)saved[index]=updated;
     else saved.push(updated);
     localStorage.setItem("wiraStories",JSON.stringify(saved));
-  }
   alert("Perubahan cerita berhasil disimpan.");
   cancelEdit();
   renderManageList();
@@ -896,19 +1041,14 @@ function cancelEdit(){
 }
 
 function deleteStory(id){
-  const story=getStories().find(s=>s.id===id);
-  if(!story)return;
+  const story = getStories().find(s => s.id === id);
+  if(!story) return;
 
-  if(!confirm(`Yakin ingin menghapus cerita "${story.title}"?`))return;
+  if(!confirm(`Yakin ingin menghapus cerita "${story.title}"?`)) return;
 
-  if(id==="mystery"){
-    localStorage.setItem("defaultStoryDeleted","true");
-    localStorage.removeItem("editedDefaultStory");
-  }else{
-    let saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
-    saved=saved.filter(x=>x.id!==id);
-    localStorage.setItem("wiraStories",JSON.stringify(saved));
-  }
+  let saved = JSON.parse(localStorage.getItem("wiraStories") || "[]");
+  saved = saved.filter(x => x.id !== id);
+  localStorage.setItem("wiraStories", JSON.stringify(saved));
 
   renderManageList();
   renderCategories();
