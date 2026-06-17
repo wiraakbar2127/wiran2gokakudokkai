@@ -488,7 +488,380 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
   min-width:150px;
 }
 
+
+.srs-layout{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:20px;align-items:start}
+.srs-main,.srs-side{background:var(--card);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow)}
+.srs-main{padding:24px}.srs-side{padding:20px;position:sticky;top:94px}
+.srs-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.srs-stat{background:#f3f9ff;border:1px solid var(--line);border-radius:16px;padding:14px;text-align:center}
+.srs-stat strong{display:block;font-size:23px;color:var(--brown)}.srs-stat span{color:var(--muted);font-size:12px}
+.srs-card{min-height:360px;display:flex;flex-direction:column;justify-content:center}
+.srs-source{display:inline-flex;align-self:flex-start;background:var(--soft);color:var(--brown);border-radius:999px;padding:5px 10px;font-size:12px;font-weight:900;margin-bottom:18px}
+.srs-question{font-size:25px;line-height:2;color:var(--ink);margin-bottom:16px}.srs-blank{display:inline-block;min-width:110px;border-bottom:3px solid var(--brown);color:transparent;user-select:none;margin:0 4px}
+.srs-translation{background:#f5f9fd;border-left:4px solid var(--brown2);border-radius:12px;padding:14px 16px;color:#355b7d;line-height:1.7;margin-bottom:22px}
+.srs-answer-wrap{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.srs-answer{flex:1;min-width:220px;font-size:21px;letter-spacing:.03em;border:2px solid var(--line)}
+.srs-answer:focus{outline:none;border-color:var(--brown2);box-shadow:0 0 0 4px rgba(92,151,207,.12)}
+.srs-feedback{display:none;margin-top:16px;border-radius:16px;padding:16px;line-height:1.7}.srs-feedback.correct{display:block;background:#e9f8ee;border:1px solid #bce5cc;color:#28704a}.srs-feedback.wrong{display:block;background:#fff1f1;border:1px solid #f0c7c7;color:#8a3b3b}
+.srs-next-time{font-weight:900;margin-top:6px}.srs-empty{text-align:center;padding:48px 20px}.srs-empty h2{color:var(--brown)}
+.srs-list{display:flex;flex-direction:column;gap:10px}.srs-story-row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line)}.srs-story-row:last-child{border-bottom:0}.srs-story-row span{color:var(--muted);font-size:12px}
+.srs-progress{height:9px;background:#e8f2fb;border-radius:999px;overflow:hidden;margin:12px 0 20px}.srs-progress>div{height:100%;background:linear-gradient(90deg,var(--brown),var(--brown2));width:0%;transition:.25s}
+.srs-romaji-note{color:var(--muted);font-size:13px;margin-top:8px}@media(max-width:850px){.srs-layout{grid-template-columns:1fr}.srs-side{position:static}}
+
 @media(max-width:700px){.two{grid-template-columns:1fr}.nav{align-items:flex-start;gap:12px;flex-direction:column}.jp{font-size:19px}}
+
+.danger{
+  background:#d9534f!important;
+  color:#fff!important;
+}
+.danger:hover{background:#bd3f3b!important}
+
+.story-progress-wrap{margin-top:14px}
+.story-progress-head{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  font-size:12px;
+  font-weight:800;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+.story-progress{
+  height:10px;
+  border-radius:999px;
+  overflow:hidden;
+  background:#e8eef4;
+}
+.story-progress > div{height:100%;transition:.3s}
+.story-progress.red > div{background:#db6868}
+.story-progress.yellow > div{background:#e3b63f}
+.story-progress.green > div{background:#43a76f}
+
+.locked-card{
+  opacity:.68;
+  position:relative;
+}
+.locked-card::after{
+  content:"🔒 Selesaikan SRS DAY sebelumnya";
+  position:absolute;
+  inset:auto 14px 14px 14px;
+  padding:8px 10px;
+  border-radius:12px;
+  background:rgba(24,50,74,.9);
+  color:white;
+  text-align:center;
+  font-size:12px;
+  font-weight:800;
+}
+.lock-badge{
+  display:inline-block;
+  margin-left:6px;
+  padding:5px 9px;
+  border-radius:999px;
+  background:#edf0f3;
+  color:#687988;
+  font-size:12px;
+  font-weight:900;
+}
+
+.srs-correct-sentence{
+  margin-top:14px;
+  padding:15px;
+  border-radius:14px;
+  background:#fff;
+  border:1px solid rgba(138,59,59,.25);
+  color:var(--ink);
+  font-size:20px;
+  line-height:2;
+}
+.srs-correct-word{
+  background:#ffe08a;
+  color:#8a5300;
+  padding:2px 5px;
+  border-radius:6px;
+  font-weight:900;
+}
+
+.achievement-bubble{
+  position:fixed;
+  right:18px;
+  bottom:22px;
+  z-index:120;
+  width:58px;
+  height:58px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  cursor:pointer;
+  font-size:28px;
+  background:linear-gradient(145deg,#fff,#dff1ff);
+  border:1px solid var(--line);
+  box-shadow:0 12px 32px rgba(47,111,174,.22);
+  transition:.2s;
+}
+.achievement-bubble:hover{transform:translateY(-3px) scale(1.04)}
+.achievement-panel{
+  position:fixed;
+  right:18px;
+  top:92px;
+  bottom:94px;
+  z-index:119;
+  width:min(340px,calc(100vw - 36px));
+  overflow:auto;
+  padding:22px;
+  border-radius:26px;
+  background:rgba(255,255,255,.97);
+  border:1px solid var(--line);
+  box-shadow:0 18px 55px rgba(35,82,122,.22);
+  transform:translateX(calc(100% + 40px));
+  transition:.3s ease;
+}
+.achievement-panel.open{transform:translateX(0)}
+.achievement-panel h2{margin:0 0 16px;color:var(--brown)}
+.achievement-close{
+  position:absolute;
+  right:14px;
+  top:12px;
+  border:0;
+  background:var(--soft);
+  color:var(--brown);
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  cursor:pointer;
+  font-size:20px;
+}
+.daily-box{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-bottom:16px;
+}
+.daily-box div{
+  padding:13px;
+  text-align:center;
+  border-radius:16px;
+  background:#f1f8ff;
+  border:1px solid var(--line);
+}
+.daily-box strong{display:block;font-size:24px}
+.daily-box span{font-size:12px;color:var(--muted)}
+.achievement-target{padding:14px;border-radius:16px;background:#f6faff}
+.achievement-target-head{display:flex;justify-content:space-between;gap:10px}
+.achievement-progress{height:10px;margin-top:9px;background:#e4edf5;border-radius:999px;overflow:hidden}
+.achievement-progress div{height:100%;background:linear-gradient(90deg,#2f6fae,#43a76f);width:0}
+.achievement-current{
+  margin:14px 0;
+  text-align:center;
+  padding:16px;
+  border-radius:18px;
+  background:linear-gradient(145deg,#edf8ff,#fff);
+  font-weight:900;
+}
+.achievement-list{display:flex;flex-direction:column;gap:8px}
+.achievement-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px;
+  border-radius:13px;
+  background:#f5f8fb;
+  color:var(--muted);
+}
+.achievement-item.earned{
+  background:#e9f8ee;
+  color:#28704a;
+  font-weight:800;
+}
+.achievement-fish{font-size:25px}
+@media(max-width:700px){
+  .achievement-panel{top:145px}
+  .ambient-toggle{right:18px;bottom:92px}
+}
+
+
+.srs-question.correct-answer{
+  background:#eaf8ef;
+  border:1px solid #bce5cc;
+  border-radius:16px;
+  padding:16px;
+}
+.srs-question.wrong-answer{
+  background:#fff1f1;
+  border:1px solid #f0c7c7;
+  border-radius:16px;
+  padding:16px;
+}
+.srs-question.correct-answer .srs-correct-word{
+  background:#bfe8cc;
+  color:#1f6b42;
+}
+.srs-question.wrong-answer .srs-correct-word{
+  background:#ffd0d0;
+  color:#8a3030;
+}
+
+
+.ambient-toggle{
+  position:fixed;
+  right:18px;
+  bottom:92px;
+  z-index:121;
+  width:56px;
+  height:56px;
+  border-radius:50%;
+  border:1px solid var(--line);
+  background:linear-gradient(145deg,#ffffff,#dff1ff);
+  color:var(--brown);
+  font-size:25px;
+  font-weight:900;
+  cursor:pointer;
+  box-shadow:0 12px 32px rgba(47,111,174,.22);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  transition:.2s;
+}
+#srs.active ~ .ambient-toggle{display:flex}
+.ambient-toggle.visible{display:flex}
+.ambient-toggle.playing{
+  background:linear-gradient(145deg,#dff7ff,#bde7ff);
+  box-shadow:0 0 0 6px rgba(92,151,207,.12),0 12px 32px rgba(47,111,174,.22);
+  animation:ambientPulse 1.8s infinite;
+}
+@keyframes ambientPulse{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.06)}
+}
+
+
+.srs-action-btn{
+  background:linear-gradient(135deg,#7357b8,#9b7cda)!important;
+}
+.srs-card-button{
+  background:linear-gradient(135deg,#7357b8,#9b7cda)!important;
+  color:#fff!important;
+}
+.srs-overall-box{
+  background:#f8fbfd;
+  border:1px solid var(--line);
+  border-radius:17px;
+  padding:14px;
+  margin-bottom:16px;
+}
+.srs-overall-head{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  color:var(--brown);
+  margin-bottom:8px;
+}
+.srs-overall-box small{
+  display:block;
+  margin-top:7px;
+  color:var(--muted);
+}
+.srs-progress.learned > div{
+  background:linear-gradient(
+    90deg,
+    #8fc5ee 0%,
+    #5c97cf 55%,
+    #2f6fae 100%
+  );
+  box-shadow:0 0 10px rgba(47,111,174,.18);
+}
+
+
+.manage-card.editing{
+  border-color:#9fc7ea;
+  box-shadow:0 16px 42px rgba(47,111,174,.16);
+}
+.manage-card .form-card{
+  margin-top:18px;
+  box-shadow:none;
+  background:#f8fbff;
+}
+
+
+/* Transisi lembut dari Good Job ke konfirmasi SRS */
+.goodjob-screen{
+  display:flex;
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transition:
+    opacity .38s ease,
+    visibility .38s ease;
+}
+.goodjob-screen.active{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+}
+.goodjob-screen.fade-out{
+  opacity:0;
+  visibility:visible;
+  pointer-events:none;
+}
+
+#srsAfterReadingModal{
+  display:flex;
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transition:
+    opacity .38s ease,
+    visibility .38s ease;
+}
+#srsAfterReadingModal.active{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+}
+#srsAfterReadingModal .read-modal-card{
+  transform:translateY(12px) scale(.98);
+  opacity:0;
+  transition:
+    transform .42s cubic-bezier(.2,.8,.2,1),
+    opacity .42s ease;
+}
+#srsAfterReadingModal.active .read-modal-card{
+  transform:translateY(0) scale(1);
+  opacity:1;
+}
+
+
+.srs-progress.learned{
+  overflow:visible;
+  position:relative;
+}
+.srs-progress.learned > div{
+  position:relative;
+  min-width:0;
+  overflow:visible;
+}
+.srs-progress-fish{
+  position:absolute;
+  right:-24px;
+  top:50%;
+  width:48px;
+  height:32px;
+  transform:translateY(-50%);
+  filter:drop-shadow(0 4px 5px rgba(47,111,174,.20));
+  animation:srsFishSwim 1.7s ease-in-out infinite;
+  transition:right .35s ease;
+  z-index:2;
+}
+.srs-progress-fish svg{
+  width:100%;
+  height:100%;
+  display:block;
+}
+@keyframes srsFishSwim{
+  0%,100%{transform:translateY(-50%) rotate(-1deg)}
+  50%{transform:translateY(-62%) rotate(2deg)}
+}
+
 </style>
 </head>
 <body>
@@ -590,6 +963,7 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
       <button class="navbtn" data-page="stories" onclick="go('stories')">Kumpulan Cerita</button>
       <button class="navbtn" data-page="generator" onclick="go('generator')">Import dari File</button>
       <button class="navbtn" data-page="manage" onclick="go('manage')">Kelola Cerita</button>
+      <button class="navbtn" data-page="srs" onclick="go('srs')">SRS</button>
     </div>
   </div>
 </div>
@@ -604,6 +978,7 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
   <div class="sort-bar">
     <label for="homeSort">Urutkan cerita</label>
     <select id="homeSort" class="sort-select" onchange="renderHome()">
+      <option value="day" selected>Urutan DAY</option>
       <option value="az">A–Z</option>
       <option value="za">Z–A</option>
     </select>
@@ -612,10 +987,10 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
 </section>
 
 <section id="stories" class="page">
-  <h1 class="section-title">Kumpulan Cerita</h1>
-  <p style="color:var(--muted);margin-top:-6px">Pilih folder berdasarkan level bacaan.</p>
+  <h1 id="storiesPageHeading" class="section-title">Kumpulan Cerita</h1>
+  <p id="storiesPageIntro" style="color:var(--muted);margin-top:-6px">Pilih folder berdasarkan level bacaan.</p>
 
-  <div class="folder-manager">
+  <div id="folderManagerPanel" class="folder-manager">
     <h2 style="margin:0;color:var(--brown)">Tambah Folder</h2>
     <div class="folder-create">
       <input id="newFolderName" placeholder="Contoh: N1, N2, N3, Misteri">
@@ -623,7 +998,7 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
     </div>
   </div>
 
-  <div class="sort-bar">
+  <div id="folderSortBar" class="sort-bar">
     <label for="categorySort">Urutkan folder</label>
     <select id="categorySort" class="sort-select" onchange="renderCategories()">
       <option value="az">A–Z</option>
@@ -641,9 +1016,10 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
       </div>
       <button class="btn light" onclick="closeCategory()">← Kembali ke folder</button>
     </div>
-    <div class="sort-bar">
+    <div id="storySortBar" class="sort-bar" style="display:none">
       <label for="folderStorySort">Urutkan cerita</label>
       <select id="folderStorySort" class="sort-select" onchange="refreshCurrentFolder()">
+        <option value="day" selected>Urutan DAY</option>
         <option value="az">A–Z</option>
         <option value="za">Z–A</option>
       </select>
@@ -658,6 +1034,7 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
     <p id="storyMeta">Pilih cerita dari kumpulan cerita</p>
   </div>
   <div class="controls">
+    <button id="topStorySrsButton" class="btn srs-action-btn" style="display:none" onclick="startCurrentStorySrs()">SRS</button>
     <button class="btn" onclick="showAll()">Tampilkan semua furigana</button>
     <button class="btn secondary" onclick="hideAll()">Sembunyikan semua furigana</button>
     <button class="btn light" onclick="goBackToCurrentFolder()">← Kembali ke folder</button>
@@ -698,6 +1075,7 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
   <div class="sort-bar">
     <label for="manageSort">Urutkan cerita</label>
     <select id="manageSort" class="sort-select" onchange="renderManageList()">
+      <option value="day" selected>Urutan DAY</option>
       <option value="az">A–Z</option>
       <option value="za">Z–A</option>
     </select>
@@ -744,11 +1122,65 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
   </div>
 </section>
 
+
+<section id="srs" class="page">
+  <h1 class="section-title">SRS</h1>
+  <p style="color:var(--muted);margin-top:-6px">Latihan mengetik kosakata dari cerita yang sudah ditandai selesai dibaca.</p>
+  <div class="srs-stats">
+    <div class="srs-stat"><strong id="srsDueCount">0</strong><span>Jatuh Tempo</span></div>
+    <div class="srs-stat"><strong id="srsLearningCount">0</strong><span>Belajar</span></div>
+    <div class="srs-stat"><strong id="srsMasteredCount">0</strong><span>Dikuasai</span></div>
+  </div>
+  <div class="srs-layout">
+    <div class="srs-main">
+      <div class="srs-overall-box">
+        <div class="srs-overall-head">
+          <strong>Kosakata dipelajari</strong>
+          <span id="srsLearnedText">0 / 0</span>
+        </div>
+        <div class="srs-progress learned">
+          <div id="srsLearnedBar">
+            <span id="srsProgressFish" class="srs-progress-fish" aria-hidden="true">
+              <svg viewBox="0 0 80 48" fill="none">
+                <path d="M18 24C29 9 52 8 67 20C71 23 74 24 78 24C74 24 71 26 67 29C52 41 29 39 18 24Z"
+                      fill="#ffffff" stroke="#2f6fae" stroke-width="3" stroke-linejoin="round"/>
+                <path d="M18 24L3 12V36L18 24Z"
+                      fill="#dceeff" stroke="#2f6fae" stroke-width="3" stroke-linejoin="round"/>
+                <circle cx="60" cy="19" r="2.5" fill="#2f6fae"/>
+              </svg>
+            </span>
+          </div>
+        </div>
+        <small>Jawaban salah tidak dihitung sebagai kosakata yang sudah dipelajari.</small>
+      </div>
+      <div id="srsPracticeArea"></div>
+    </div>
+    <aside class="srs-side"><h3 style="margin-top:0;color:var(--brown)">Cerita Aktif</h3><div id="srsStoryList" class="srs-list"></div></aside>
+  </div>
+
+  <button id="ambientToggle" class="ambient-toggle" onclick="toggleUnderwaterAmbient()" title="Suara ambient bawah air" aria-label="Suara ambient bawah air">
+    ♪
+  </button>
+
+</section>
+
 </main>
 
 
 <div id="storyBubbleLoading" class="story-bubble-loading" aria-live="polite">
   <div class="story-bubble-text">Loading</div>
+</div>
+
+
+<div id="srsAfterReadingModal" class="read-modal" role="dialog" aria-modal="true" aria-labelledby="srsAfterReadingTitle">
+  <div class="read-modal-card">
+    <h2 id="srsAfterReadingTitle">Latihan SRS sekarang?</h2>
+    <p>Kamu sudah menyelesaikan cerita ini. Apakah kamu mau langsung melatih kosakatanya di SRS?</p>
+    <div class="read-modal-actions">
+      <button class="btn srs-action-btn" onclick="acceptSrsAfterReading()">Iya, latihan SRS</button>
+      <button class="btn light" onclick="declineSrsAfterReading()">Tidak, kembali ke folder</button>
+    </div>
+  </div>
 </div>
 
 <div id="goodJobScreen" class="goodjob-screen" aria-live="polite">
@@ -906,6 +1338,7 @@ function askReadAgain(){
       completionBadge(story.id);
   }
 
+  updateAmbientButtonVisibility();
   window.scrollTo({top:0,behavior:"smooth"});
 }
 
@@ -922,7 +1355,8 @@ function renderFinishReadingButton(){
       <h2>✓ 読みました！</h2>
       <p>Cerita ini sudah ditandai selesai dibaca.</p>
       <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
-        <button class="btn" onclick="askReadAgain()">もう一度読む</button>
+        <button class="btn" onclick="startCurrentStorySrs()">SRS</button>
+        <button class="btn light" onclick="askReadAgain()">もう一度読む</button>
         <button class="btn light" onclick="goBackToCurrentFolder()">Kembali ke folder</button>
       </div>
     `
@@ -942,21 +1376,85 @@ function cancelFinishedReading(){
   document.getElementById("readConfirmModal").classList.remove("active");
 }
 
+
+function startCurrentStorySrs(){
+  if(!currentStoryId) return;
+
+  srsFocusStoryId=String(currentStoryId);
+  go("srs");
+}
+
+
+let pendingFinishedStoryId=null;
+
+function showSrsAfterReadingModal(storyId){
+  pendingFinishedStoryId=String(storyId);
+  const modal=document.getElementById("srsAfterReadingModal");
+  if(modal) modal.classList.add("active");
+}
+
+function closeSrsAfterReadingModal(){
+  const modal=document.getElementById("srsAfterReadingModal");
+  if(!modal) return;
+
+  modal.classList.remove("active");
+}
+
+function acceptSrsAfterReading(){
+  const storyId=pendingFinishedStoryId||currentStoryId;
+  closeSrsAfterReadingModal();
+
+  if(storyId){
+    srsFocusStoryId=String(storyId);
+    go("srs");
+  }
+}
+
+function declineSrsAfterReading(){
+  closeSrsAfterReadingModal();
+  goBackToCurrentFolder();
+}
+
 function confirmFinishedReading(){
   if(!currentStoryId) return;
 
-  setStoryCompleted(currentStoryId);
+  const finishedStoryId=String(currentStoryId);
+
+  setStoryCompleted(finishedStoryId);
   cancelFinishedReading();
   renderHome();
   renderCategories();
   renderManageList();
+  renderAchievementPanel();
+  renderFinishReadingButton();
+
+  const story=getStories().find(
+    item=>String(item.id)===finishedStoryId
+  );
+
+  const meta=document.getElementById("storyMeta");
+  if(meta && story){
+    meta.innerHTML=
+      `Level ${story.level || "N2"}・Tema ${story.theme || "読解"} ` +
+      completionBadge(story.id);
+  }
 
   const screen=document.getElementById("goodJobScreen");
   if(screen) screen.classList.add("active");
 
   window.setTimeout(()=>{
     if(screen) screen.classList.remove("active");
-    goBackToCurrentFolder();
+
+    const startNow=confirm(
+      "Apakah kamu mau langsung latihan SRS?"
+    );
+
+    if(startNow){
+      srsFocusStoryId=finishedStoryId;
+      go("srs");
+    }else{
+      goBackToCurrentFolder();
+    }
   },2000);
 }
 
@@ -987,6 +1485,78 @@ function goBackToCurrentFolder(){
   window.scrollTo({top:0,behavior:"smooth"});
 }
 
+
+
+let restoringBrowserHistory=false;
+
+function pushInternalHistory(page,folder=null,storyId=null){
+  if(restoringBrowserHistory) return;
+
+  history.pushState({
+    wiraInternal:true,
+    page:String(page||"home"),
+    folder:folder ? String(folder) : null,
+    storyId:storyId ? String(storyId) : null
+  },"",window.location.href);
+}
+
+function replaceInternalHistory(page,folder=null,storyId=null){
+  history.replaceState({
+    wiraInternal:true,
+    page:String(page||"home"),
+    folder:folder ? String(folder) : null,
+    storyId:storyId ? String(storyId) : null
+  },"",window.location.href);
+}
+
+function restoreInternalBrowserState(state){
+  restoringBrowserHistory=true;
+
+  if(state.page==="story" && state.storyId){
+    openStoryNow(state.storyId);
+  }else if(state.page==="stories"){
+    activatePageWithoutScroll("stories");
+    renderCategories();
+
+    if(state.folder && getFolders().includes(state.folder)){
+      openCategory(state.folder);
+    }else{
+      currentOpenFolder=null;
+    }
+  }else{
+    activatePageWithoutScroll(state.page||"home");
+
+    if(state.page==="home") renderHome();
+    if(state.page==="manage") renderManageList();
+    if(state.page==="srs") renderSrsPage();
+  }
+
+  saveNavigationState(
+    state.page||"home",
+    state.folder||null,
+    state.storyId||null
+  );
+
+  restoringBrowserHistory=false;
+  window.scrollTo({top:0});
+}
+
+window.addEventListener("popstate",event=>{
+  if(event.state && event.state.wiraInternal){
+    restoreInternalBrowserState(event.state);
+    return;
+  }
+
+  const fallback=getNavigationState();
+
+  replaceInternalHistory(
+    fallback.page||"home",
+    fallback.folder||null,
+    fallback.storyId||null
+  );
+
+  restoreInternalBrowserState(fallback);
+});
 
 function saveNavigationState(page,folder=null,storyId=null){
   const state={
@@ -1029,7 +1599,7 @@ function activatePageWithoutScroll(id){
 
 function restoreNavigationState(){
   const state=getNavigationState();
-  const validPages=["home","stories","story","generator","manage"];
+  const validPages=["home","stories","story","generator","manage","srs"];
 
   if(!validPages.includes(state.page)){
     activatePageWithoutScroll("home");
@@ -1074,6 +1644,10 @@ function restoreNavigationState(){
     renderManageList();
   }
 
+  if(state.page==="srs"){
+    renderSrsPage();
+  }
+
   saveNavigationState(state.page);
   window.scrollTo({top:0});
 }
@@ -1084,14 +1658,18 @@ function go(id){
   if(id==="home") renderHome();
   if(id==="stories") renderCategories();
   if(id==="manage") renderManageList();
+  if(id==="srs") renderSrsPage();
 
   if(id==="stories"){
     currentOpenFolder=null;
     saveNavigationState("stories");
+    pushInternalHistory("stories");
   }else if(id==="story"){
     saveNavigationState("story",currentStoryFolder,currentStoryId);
+    pushInternalHistory("story",currentStoryFolder,currentStoryId);
   }else{
     saveNavigationState(id);
+    pushInternalHistory(id);
   }
 
   window.scrollTo({top:0,behavior:"smooth"});
@@ -1176,6 +1754,7 @@ function openStoryNow(id){
   currentStoryId=String(story.id);
   currentStoryFolder=story.level || "N2";
   saveNavigationState("story",currentStoryFolder,currentStoryId);
+  pushInternalHistory("story",currentStoryFolder,currentStoryId);
 
   document.getElementById("storyTitle").textContent=
     story.title || "Tanpa Judul";
@@ -1294,6 +1873,7 @@ function renderCategories(){
 function openCategory(folder){
   currentOpenFolder=folder;
   saveNavigationState("stories",folder);
+  pushInternalHistory("stories",folder);
 
   const stories=sortByTitle(
     getStories().filter(s=>(s.level||"N2")===folder),
@@ -1657,7 +2237,7 @@ function renderManageList(){
 
 
   wrap.innerHTML=stories.map(s=>`
-    <div class="manage-card">
+    <div class="manage-card" id="manage-card-${encodeURIComponent(String(story.id))}">
       <div class="manage-head">
         <div>
           <span class="tag">${s.theme||"読解"}</span>${completionBadge(s.id)}
@@ -1690,7 +2270,6 @@ function editStory(id){
   holder.innerHTML="";
   (s.content||[]).forEach(pair=>addSentenceEditor(pair[0],pair[1]));
   document.getElementById("editorPanel").style.display="block";
-  document.getElementById("editorPanel").scrollIntoView({behavior:"smooth"});
 }
 
 function addSentenceEditor(jp="",idn=""){
@@ -1767,6 +2346,77 @@ function deleteStory(id){
 
 
 
+
+const SRS_INTERVALS=[10*60*1000,4*60*60*1000,24*60*60*1000,3*24*60*60*1000,7*24*60*60*1000,14*24*60*60*1000,30*24*60*60*1000];
+let srsQueue=[],srsCurrentIndex=0,srsLocked=false;
+function getSrsState(){try{const d=JSON.parse(localStorage.getItem("wiraSrsState")||"{}");return d&&typeof d==="object"?d:{}}catch(e){return {}}}
+function saveSrsState(s){localStorage.setItem("wiraSrsState",JSON.stringify(s))}
+function normalizeKana(t){return String(t||"").trim().replace(/\s+/g,"").replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60))}
+function getStrongTargets(jp){
+  const temp=document.createElement("div");
+  temp.innerHTML=String(jp||"");
+  const arr=[...temp.querySelectorAll("strong")];
+
+  function fullReading(element){
+    let result="";
+
+    element.childNodes.forEach(node=>{
+      if(node.nodeType===Node.TEXT_NODE){
+        result+=node.textContent||"";
+        return;
+      }
+
+      if(node.nodeType!==Node.ELEMENT_NODE) return;
+
+      if(node.tagName.toLowerCase()==="ruby"){
+        const rt=node.querySelector("rt");
+
+        if(rt && rt.textContent.trim()){
+          result+=rt.textContent.trim();
+        }else{
+          const copy=node.cloneNode(true);
+          copy.querySelectorAll("rt").forEach(item=>item.remove());
+          result+=copy.textContent||"";
+        }
+      }else{
+        result+=fullReading(node);
+      }
+    });
+
+    return result.trim();
+  }
+
+  return arr.map((strong,i)=>{
+    const answer=fullReading(strong);
+    const clone=temp.cloneNode(true);
+    const target=[...clone.querySelectorAll("strong")][i];
+
+    if(target){
+      const blank=document.createElement("span");
+      blank.className="srs-blank";
+      blank.textContent="＿＿＿＿";
+      target.replaceWith(blank);
+    }
+
+    return {
+      answer:normalizeKana(answer),
+      questionHtml:clone.innerHTML
+    };
+  }).filter(x=>x.answer);
+}
+function buildSrsItems(){const done=new Set(getCompletedStories().map(String));const items=[];getStories().filter(s=>done.has(String(s.id))).forEach(story=>{(story.content||[]).forEach((pair,si)=>{const jp=Array.isArray(pair)?pair[0]:pair?.japanese||pair?.jp||"";const idn=Array.isArray(pair)?pair[1]:pair?.indonesian||pair?.id||"";getStrongTargets(jp).forEach((t,ti)=>items.push({key:`${story.id}::${si}::${ti}`,storyId:String(story.id),storyTitle:story.title||"Tanpa Judul",folder:story.level||"N2",questionHtml:t.questionHtml,translationHtml:String(idn||""),answer:t.answer}))})});return items}
+function syncSrsState(items){const s=getSrsState(),now=Date.now();items.forEach(i=>{if(!s[i.key])s[i.key]={level:0,due:now,correct:0,wrong:0,lastResult:null}});saveSrsState(s);return s}
+function getDueSrsItems(){const items=buildSrsItems(),s=syncSrsState(items),now=Date.now();return items.filter(i=>(s[i.key]?.due||0)<=now).sort((a,b)=>(s[a.key]?.due||0)-(s[b.key]?.due||0))}
+function renderSrsPage(){const items=buildSrsItems(),s=syncSrsState(items),now=Date.now();document.getElementById("srsDueCount").textContent=items.filter(i=>(s[i.key]?.due||0)<=now).length;document.getElementById("srsLearningCount").textContent=items.filter(i=>{const l=s[i.key]?.level||0;return l>0&&l<SRS_INTERVALS.length-1}).length;document.getElementById("srsMasteredCount").textContent=items.filter(i=>(s[i.key]?.level||0)>=SRS_INTERVALS.length-1).length;const map=new Map();items.forEach(i=>{if(!map.has(i.storyId))map.set(i.storyId,{title:i.storyTitle,total:0,due:0});const info=map.get(i.storyId);info.total++;if((s[i.key]?.due||0)<=now)info.due++});document.getElementById("srsStoryList").innerHTML=map.size?[...map.values()].map(x=>`<div class="srs-story-row"><div><strong>${escapeHtml(x.title)}</strong></div><span>${x.due}/${x.total} due</span></div>`).join(""):'<div class="empty">Belum ada cerita yang selesai dibaca.</div>';startSrsSession()}
+function startSrsSession(){srsQueue=getDueSrsItems();srsCurrentIndex=0;srsLocked=false;renderCurrentSrsCard()}
+function renderCurrentSrsCard(){const area=document.getElementById("srsPracticeArea"),bar=document.querySelector("#srsProgress>div");if(!area)return;if(!srsQueue.length||srsCurrentIndex>=srsQueue.length){if(bar)bar.style.width="100%";area.innerHTML='<div class="srs-empty"><h2>復習完了！</h2><p>Tidak ada latihan yang jatuh tempo sekarang.</p><button class="btn" onclick="renderSrsPage()">Periksa Lagi</button></div>';return}const item=srsQueue[srsCurrentIndex];if(bar)bar.style.width=`${(srsCurrentIndex/srsQueue.length)*100}%`;area.innerHTML=`<div class="srs-card"><div class="srs-source">${escapeHtml(item.storyTitle)}・${escapeHtml(item.folder)}</div><div id="srsQuestionText" class="srs-question">${item.questionHtml}</div><div class="srs-translation">${item.translationHtml}</div><div class="srs-answer-wrap"><input id="srsAnswerInput" class="srs-answer" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Ketik romaji atau hiragana"><button class="btn" onclick="submitSrsAnswer()">Jawab</button></div><div class="srs-romaji-note">Contoh: atsumaru otomatis menjadi あつまる.</div><div id="srsFeedback" class="srs-feedback"></div></div>`;const input=document.getElementById("srsAnswerInput");input.addEventListener("input",()=>{input.value=romajiToHiragana(input.value);input.setSelectionRange(input.value.length,input.value.length)});input.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submitSrsAnswer()}});setTimeout(()=>input.focus(),80)}
+function submitSrsAnswer(){if(srsLocked)return;const item=srsQueue[srsCurrentIndex],input=document.getElementById("srsAnswerInput"),fb=document.getElementById("srsFeedback");if(!item||!input||!fb)return;const ans=normalizeKana(input.value);if(!ans)return;srsLocked=true;const correct=ans===normalizeKana(item.answer),s=getSrsState(),r=s[item.key]||{level:0,due:Date.now(),correct:0,wrong:0},now=Date.now();if(correct){r.level=Math.min((r.level||0)+1,SRS_INTERVALS.length-1);r.correct=(r.correct||0)+1;r.lastResult="correct";r.due=now+SRS_INTERVALS[r.level];fb.className="srs-feedback correct";fb.innerHTML=`<strong>Benar！</strong><br>Jawaban: <strong>${escapeHtml(item.answer)}</strong><div class="srs-next-time">Muncul lagi ${formatSrsDuration(SRS_INTERVALS[r.level])}.</div>`}else{r.level=0;r.wrong=(r.wrong||0)+1;r.lastResult="wrong";r.due=now+SRS_INTERVALS[0];fb.className="srs-feedback wrong";fb.innerHTML=`<strong>Belum tepat.</strong><br>Jawaban benar: <strong>${escapeHtml(item.answer)}</strong><div class="srs-next-time">Diulang sekitar ${formatSrsDuration(SRS_INTERVALS[0])}.</div>`}s[item.key]=r;saveSrsState(s);input.disabled=true;setTimeout(()=>{srsCurrentIndex++;srsLocked=false;renderCurrentSrsCard();updateSrsCountersOnly()},correct?700:1500)}
+function updateSrsCountersOnly(){const items=buildSrsItems(),s=syncSrsState(items),now=Date.now();document.getElementById("srsDueCount").textContent=items.filter(i=>(s[i.key]?.due||0)<=now).length;document.getElementById("srsLearningCount").textContent=items.filter(i=>{const l=s[i.key]?.level||0;return l>0&&l<SRS_INTERVALS.length-1}).length;document.getElementById("srsMasteredCount").textContent=items.filter(i=>(s[i.key]?.level||0)>=SRS_INTERVALS.length-1).length}
+function formatSrsDuration(ms){const m=Math.round(ms/60000);if(m<60)return `${m} menit`;const h=Math.round(m/60);if(h<24)return `${h} jam`;return `${Math.round(h/24)} hari`}
+function romajiToHiragana(input){let text=String(input||"").toLowerCase();if(/[ぁ-ん]/.test(text)&&!/[a-z]/.test(text))return text;const map={kya:"きゃ",kyu:"きゅ",kyo:"きょ",sha:"しゃ",shu:"しゅ",sho:"しょ",cha:"ちゃ",chu:"ちゅ",cho:"ちょ",nya:"にゃ",nyu:"にゅ",nyo:"にょ",hya:"ひゃ",hyu:"ひゅ",hyo:"ひょ",mya:"みゃ",myu:"みゅ",myo:"みょ",rya:"りゃ",ryu:"りゅ",ryo:"りょ",gya:"ぎゃ",gyu:"ぎゅ",gyo:"ぎょ",ja:"じゃ",ju:"じゅ",jo:"じょ",bya:"びゃ",byu:"びゅ",byo:"びょ",pya:"ぴゃ",pyu:"ぴゅ",pyo:"ぴょ",shi:"し",chi:"ち",tsu:"つ",fu:"ふ",ka:"か",ki:"き",ku:"く",ke:"け",ko:"こ",sa:"さ",si:"し",su:"す",se:"せ",so:"そ",ta:"た",ti:"ち",tu:"つ",te:"て",to:"と",na:"な",ni:"に",nu:"ぬ",ne:"ね",no:"の",ha:"は",hi:"ひ",hu:"ふ",he:"へ",ho:"ほ",ma:"ま",mi:"み",mu:"む",me:"め",mo:"も",ya:"や",yu:"ゆ",yo:"よ",ra:"ら",ri:"り",ru:"る",re:"れ",ro:"ろ",wa:"わ",wo:"を",ga:"が",gi:"ぎ",gu:"ぐ",ge:"げ",go:"ご",za:"ざ",ji:"じ",zu:"ず",ze:"ぜ",zo:"ぞ",da:"だ",di:"ぢ",du:"づ",de:"で",do:"ど",ba:"ば",bi:"び",bu:"ぶ",be:"べ",bo:"ぼ",pa:"ぱ",pi:"ぴ",pu:"ぷ",pe:"ぺ",po:"ぽ",a:"あ",i:"い",u:"う",e:"え",o:"お",n:"ん"};let out="",i=0;while(i<text.length){const ch=text[i];if(/[ぁ-ん]/.test(ch)){out+=ch;i++;continue}if(i+1<text.length&&text[i]===text[i+1]&&/[bcdfghjklmpqrstvwxyz]/.test(text[i])&&text[i]!=="n"){out+="っ";i++;continue}let matched=false;for(const len of [3,2,1]){const part=text.slice(i,i+len);if(map[part]){if(part==="n"&&i+1<text.length&&/[aiueoy]/.test(text[i+1]))continue;out+=map[part];i+=len;matched=true;break}}if(!matched){out+=ch;i++}}return out}
+function resetSrsProgress(){if(!confirm("Yakin ingin menghapus seluruh progres SRS?"))return;localStorage.removeItem("wiraSrsState");renderSrsPage()}
+
+
 document.getElementById("storyFile").addEventListener("change",event=>{
   const total=event.target.files.length;
   const holder=document.getElementById("selectedFileCount");
@@ -1787,6 +2437,14 @@ document.getElementById("readConfirmModal").addEventListener("click",event=>{
 
 window.addEventListener("load",()=>{
   restoreNavigationState();
+
+  const state=getNavigationState();
+  replaceInternalHistory(
+    state.page||"home",
+    state.folder||null,
+    state.storyId||null
+  );
+
   hideLoading(1800);
 });
 
@@ -1794,6 +2452,1569 @@ window.setTimeout(()=>{
   hideLoading(0);
 },2300);
 
+
+/* ===== Sistem progres, lock DAY, achievement, dan SRS lanjutan ===== */
+
+const N2_VOCAB_TARGET=6000;
+let srsFocusStoryId=null;
+
+function extractDayNumber(story){
+  const source=[
+    story?.day,
+    story?.id,
+    story?.title,
+    story?.description
+  ].filter(Boolean).join(" ");
+
+  const match=String(source).match(/(?:DAY|day)[\s_-]*(\d+)/i);
+  return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
+}
+
+function sortByTitle(items,order="day"){
+  return [...items].sort((a,b)=>{
+    if(order==="day"){
+      const dayDifference=extractDayNumber(a)-extractDayNumber(b);
+      if(dayDifference!==0) return dayDifference;
+    }
+
+    const aName=String(a.title||a).trim();
+    const bName=String(b.title||b).trim();
+    const result=aName.localeCompare(bName,"ja",{numeric:true,sensitivity:"base"});
+    return order==="za" ? -result : result;
+  });
+}
+
+function getStrongTargets(jp){
+  const temp=document.createElement("div");
+  temp.innerHTML=String(jp||"");
+  const arr=[...temp.querySelectorAll("strong")];
+
+  function fullReading(element){
+    let result="";
+
+    element.childNodes.forEach(node=>{
+      if(node.nodeType===Node.TEXT_NODE){
+        result+=node.textContent||"";
+        return;
+      }
+
+      if(node.nodeType!==Node.ELEMENT_NODE) return;
+
+      if(node.tagName.toLowerCase()==="ruby"){
+        const rt=node.querySelector("rt");
+        if(rt && rt.textContent.trim()){
+          result+=rt.textContent.trim();
+        }else{
+          const copy=node.cloneNode(true);
+          copy.querySelectorAll("rt").forEach(x=>x.remove());
+          result+=copy.textContent||"";
+        }
+      }else{
+        result+=fullReading(node);
+      }
+    });
+
+    return result.trim();
+  }
+
+  return arr.map((strong,index)=>{
+    const answer=normalizeKana(fullReading(strong));
+
+    const questionClone=temp.cloneNode(true);
+    const questionTarget=[...questionClone.querySelectorAll("strong")][index];
+    if(questionTarget){
+      const blank=document.createElement("span");
+      blank.className="srs-blank";
+      blank.textContent="＿＿＿＿";
+      questionTarget.replaceWith(blank);
+    }
+
+    const answerClone=temp.cloneNode(true);
+    const answerTarget=[...answerClone.querySelectorAll("strong")][index];
+    if(answerTarget){
+      const mark=document.createElement("mark");
+      mark.className="srs-correct-word";
+      mark.innerHTML=answerTarget.innerHTML;
+      answerTarget.replaceWith(mark);
+    }
+
+    return {
+      answer,
+      questionHtml:questionClone.innerHTML,
+      correctSentenceHtml:answerClone.innerHTML
+    };
+  }).filter(item=>item.answer);
+}
+
+function buildSrsItems(){
+  const completed=new Set(getCompletedStories().map(String));
+  const items=[];
+
+  getStories()
+    .filter(story=>completed.has(String(story.id)))
+    .forEach(story=>{
+      (story.content||[]).forEach((pair,sentenceIndex)=>{
+        const jp=Array.isArray(pair)
+          ? pair[0]
+          : pair?.japanese||pair?.jp||"";
+
+        const idn=Array.isArray(pair)
+          ? pair[1]
+          : pair?.indonesian||pair?.id||"";
+
+        getStrongTargets(jp).forEach((target,targetIndex)=>{
+          items.push({
+            key:`${story.id}::${sentenceIndex}::${targetIndex}`,
+            storyId:String(story.id),
+            storyTitle:story.title||"Tanpa Judul",
+            folder:story.level||"N2",
+            questionHtml:target.questionHtml,
+            correctSentenceHtml:target.correctSentenceHtml,
+            translationHtml:String(idn||""),
+            answer:target.answer
+          });
+        });
+      });
+    });
+
+  return items;
+}
+
+function getStorySrsProgress(storyId){
+  const items=buildSrsItems().filter(item=>String(item.storyId)===String(storyId));
+  const state=getSrsState();
+
+  if(!items.length){
+    return {total:0,learned:0,mastered:0,percent:0,complete:false};
+  }
+
+  const learned=items.filter(item=>(state[item.key]?.level||0)>0).length;
+  const mastered=items.filter(
+    item=>(state[item.key]?.level||0)>=SRS_INTERVALS.length-1
+  ).length;
+
+  const percent=Math.round((learned/items.length)*100);
+
+  return {
+    total:items.length,
+    learned,
+    mastered,
+    percent,
+    complete:learned===items.length
+  };
+}
+
+function storyProgressHtml(storyId){
+  const progress=getStorySrsProgress(storyId);
+  const color=progress.percent===100
+    ? "green"
+    : progress.percent>0
+      ? "yellow"
+      : "red";
+
+  return `
+    <div class="story-progress-wrap">
+      <div class="story-progress-head">
+        <span>Progres SRS</span>
+        <span>${progress.percent}%</span>
+      </div>
+      <div class="story-progress ${color}">
+        <div style="width:${progress.percent}%"></div>
+      </div>
+    </div>`;
+}
+
+function isStoryLocked(story){
+  const day=extractDayNumber(story);
+  if(!Number.isFinite(day) || day===Number.MAX_SAFE_INTEGER || day<=1){
+    return false;
+  }
+
+  const earlier=getStories()
+    .filter(item=>
+      (item.level||"N2")===(story.level||"N2") &&
+      extractDayNumber(item)<day
+    )
+    .sort((a,b)=>extractDayNumber(a)-extractDayNumber(b));
+
+  return earlier.some(item=>!getStorySrsProgress(item.id).complete);
+}
+
+function lockedStoryMessage(story){
+  const earlier=getStories()
+    .filter(item=>
+      (item.level||"N2")===(story.level||"N2") &&
+      extractDayNumber(item)<extractDayNumber(story) &&
+      !getStorySrsProgress(item.id).complete
+    )
+    .sort((a,b)=>extractDayNumber(a)-extractDayNumber(b));
+
+  const previous=earlier[0];
+  return previous
+    ? `Selesaikan SRS "${previous.title}" terlebih dahulu.`
+    : "Selesaikan SRS DAY sebelumnya terlebih dahulu.";
+}
+
+function rememberLastOpenedStory(id){
+  localStorage.setItem("wiraLastOpenedStory",String(id));
+}
+
+function openStory(id){
+  const story=getStories().find(item=>String(item.id)===String(id));
+
+  if(!story){
+    alert("Cerita tidak ditemukan.");
+    return;
+  }
+
+  if(isStoryLocked(story)){
+    alert(lockedStoryMessage(story));
+    return;
+  }
+
+  rememberLastOpenedStory(id);
+  showStoryBubbleLoading();
+
+  window.setTimeout(()=>{
+    openStoryNow(id);
+    hideStoryBubbleLoading();
+  },1500);
+}
+
+function renderHome(){
+  const grid=document.getElementById("homeStoryGrid");
+  if(!grid) return;
+
+  const stories=getStories();
+  const lastId=localStorage.getItem("wiraLastOpenedStory");
+  const completedIds=getCompletedStories();
+
+  let priority=stories.find(story=>String(story.id)===String(lastId));
+
+  if(!priority && completedIds.length){
+    priority=[...stories].reverse().find(
+      story=>completedIds.includes(String(story.id))
+    );
+  }
+
+  const sorted=sortByTitle(stories,getSortValue("homeSort","day"));
+  const featured=[
+    ...(priority ? [priority] : []),
+    ...sorted.filter(story=>!priority || String(story.id)!==String(priority.id))
+  ].slice(0,3);
+
+  grid.innerHTML=featured.map(story=>{
+    const locked=isStoryLocked(story);
+
+    return `
+      <article class="story-card ${locked?"locked-card":""}"
+        data-story-id="${encodeURIComponent(String(story.id))}"
+        onclick="openStory(decodeURIComponent(this.dataset.storyId))">
+        <span class="tag">${story.theme||"読解"}</span>
+        ${completionBadge(story.id)}
+        ${locked?'<span class="lock-badge">🔒 Terkunci</span>':""}
+        <h3>${story.title}</h3>
+        <p>${story.description||"Cerita bahasa Jepang dengan furigana interaktif."}</p>
+        ${storyProgressHtml(story.id)}
+      </article>`;
+  }).join("")+`
+    <article class="story-card" onclick="go('generator')">
+      <span class="tag">新しい物語</span>
+      <h3>Import Cerita Baru</h3>
+      <p>Upload file JSON yang sudah dibuat, lalu simpan ke koleksi cerita.</p>
+    </article>`;
+}
+
+function openCategory(folder){
+  currentOpenFolder=folder;
+  saveNavigationState("stories",folder);
+  pushInternalHistory("stories",folder);
+
+  const stories=sortByTitle(
+    getStories().filter(story=>(story.level||"N2")===folder),
+    "day"
+  );
+  const folders=getFolders();
+
+  const grid=document.getElementById("categoryGrid");
+  const manager=document.querySelector("#stories .folder-manager");
+  const results=document.getElementById("categoryResults");
+  const title=document.getElementById("categoryTitle");
+  const actions=document.getElementById("categoryActions");
+  const list=document.getElementById("storyList");
+
+  if(grid) grid.style.display="none";
+  if(manager) manager.style.display="none";
+  if(results) results.classList.add("active");
+  if(title) title.textContent=`Folder ${folder}`;
+
+  if(actions){
+    actions.innerHTML=`
+      <button class="btn light smallbtn" onclick="renameFolder('${escapeJs(folder)}')">✎ Ganti Nama</button>
+      <button class="btn secondary smallbtn" onclick="deleteFolder('${escapeJs(folder)}')">× Hapus Folder</button>`;
+  }
+
+  if(list){
+    list.innerHTML=stories.length
+      ? stories.map(story=>{
+          const locked=isStoryLocked(story);
+
+          return `
+            <article class="story-card ${locked?"locked-card":""}">
+              <span class="tag">${story.theme||"読解"}</span>
+              ${completionBadge(story.id)}
+              ${locked?'<span class="lock-badge">🔒 Terkunci</span>':""}
+
+              <h3 data-story-id="${encodeURIComponent(String(story.id))}"
+                onclick="openStory(decodeURIComponent(this.dataset.storyId))"
+                style="cursor:pointer">${story.title}</h3>
+
+              <p>${story.description||"Cerita bahasa Jepang dengan furigana interaktif."}</p>
+              ${storyProgressHtml(story.id)}
+
+              <label style="margin-top:14px">Pindahkan ke folder</label>
+              <div class="move-folder-row">
+                <select id="move-${encodeURIComponent(String(story.id))}" class="story-folder-select">
+                  ${folders.map(target=>`
+                    <option value="${escapeHtml(target)}" ${target===folder?"selected":""}>
+                      ${escapeHtml(target)}
+                    </option>`).join("")}
+                </select>
+
+                <button class="btn smallbtn"
+                  data-story-id="${encodeURIComponent(String(story.id))}"
+                  onclick="saveStoryFolderMove(decodeURIComponent(this.dataset.storyId))">
+                  Simpan
+                </button>
+              </div>
+
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                <button class="btn light smallbtn"
+                  data-story-id="${encodeURIComponent(String(story.id))}"
+                  onclick="openStory(decodeURIComponent(this.dataset.storyId))">
+                  ${locked?"Terkunci":"Baca"}
+                </button>
+
+                <button class="btn smallbtn" onclick="editStory('${escapeJs(story.id)}');go('manage')">
+                  Edit
+                </button>
+              </div>
+            </article>`;
+        }).join("")
+      : `<div class="empty">Belum ada cerita di folder ${escapeHtml(folder)}.</div>`;
+  }
+}
+
+function confirmFinishedReading(){
+  if(!currentStoryId) return;
+
+  const finishedStoryId=String(currentStoryId);
+  pendingFinishedStoryId=finishedStoryId;
+
+  setStoryCompleted(finishedStoryId);
+  cancelFinishedReading();
+  renderHome();
+  renderCategories();
+  renderManageList();
+  renderAchievementPanel();
+  renderFinishReadingButton();
+  updateTopStorySrsButton();
+
+  const story=getStories().find(
+    item=>String(item.id)===finishedStoryId
+  );
+
+  const meta=document.getElementById("storyMeta");
+  if(meta && story){
+    meta.innerHTML=
+      `Level ${story.level || "N2"}・Tema ${story.theme || "読解"} ` +
+      completionBadge(story.id);
+  }
+
+  const screen=document.getElementById("goodJobScreen");
+
+  if(screen){
+    screen.classList.remove("fade-out");
+    screen.classList.add("active");
+  }
+
+  window.setTimeout(()=>{
+    if(screen){
+      screen.classList.add("fade-out");
+    }
+
+    window.setTimeout(()=>{
+      if(screen){
+        screen.classList.remove("active","fade-out");
+      }
+
+      showSrsAfterReadingModal(finishedStoryId);
+    },420);
+  },2000);
+}
+
+function submitSrsAnswer(){
+  if(srsLocked) return;
+
+  const item=srsQueue[srsCurrentIndex];
+  const input=document.getElementById("srsAnswerInput");
+  const feedback=document.getElementById("srsFeedback");
+  const question=document.getElementById("srsQuestionText");
+
+  if(!item || !input || !feedback || !question) return;
+
+  const userAnswer=normalizeKana(input.value);
+  if(!userAnswer) return;
+
+  srsLocked=true;
+
+  const correct=userAnswer===normalizeKana(item.answer);
+  const state=getSrsState();
+  const record=state[item.key]||{
+    level:0,
+    due:Date.now(),
+    correct:0,
+    wrong:0
+  };
+  const now=Date.now();
+
+  question.innerHTML=item.correctSentenceHtml;
+  question.classList.remove("correct-answer","wrong-answer");
+  question.classList.add(correct ? "correct-answer" : "wrong-answer");
+
+  if(correct){
+    record.level=Math.min(
+      (record.level||0)+1,
+      SRS_INTERVALS.length-1
+    );
+    record.correct=(record.correct||0)+1;
+    record.lastResult="correct";
+    record.due=now+SRS_INTERVALS[record.level];
+
+    feedback.className="srs-feedback correct";
+    feedback.innerHTML=`
+      <strong>Benar！</strong>
+      <div class="srs-next-time">
+        Muncul lagi ${formatSrsDuration(SRS_INTERVALS[record.level])}.
+      </div>`;
+  }else{
+    record.level=0;
+    record.wrong=(record.wrong||0)+1;
+    record.lastResult="wrong";
+    record.due=now+SRS_INTERVALS[0];
+
+    feedback.className="srs-feedback wrong";
+    feedback.innerHTML=`
+      <strong>Belum tepat.</strong><br>
+      Jawaban benar: <strong>${escapeHtml(item.answer)}</strong>
+      <div class="srs-next-time">
+        Perhatikan kalimat yang sudah diperbaiki di atas.
+        Soal ini akan diulang sekitar ${formatSrsDuration(SRS_INTERVALS[0])}.
+      </div>`;
+  }
+
+  state[item.key]=record;
+  saveSrsState(state);
+  input.disabled=true;
+
+  updateDailyLearningRewards();
+  renderAchievementPanel();
+  renderHome();
+
+  const delay=correct ? 1800 : 5000;
+
+  window.setTimeout(()=>{
+    srsCurrentIndex++;
+    srsLocked=false;
+    renderCurrentSrsCard();
+    updateSrsCountersOnly();
+  },delay);
+}
+
+/* Daily login */
+function localDateKey(date=new Date()){
+  const year=date.getFullYear();
+  const month=String(date.getMonth()+1).padStart(2,"0");
+  const day=String(date.getDate()).padStart(2,"0");
+  return `${year}-${month}-${day}`;
+}
+
+function daysBetweenKeys(fromKey,toKey){
+  const from=new Date(`${fromKey}T00:00:00`);
+  const to=new Date(`${toKey}T00:00:00`);
+  return Math.round((to-from)/86400000);
+}
+
+function getDailyState(){
+  try{
+    const state=JSON.parse(localStorage.getItem("wiraDailyState")||"null");
+    if(state && typeof state==="object") return state;
+  }catch(error){}
+
+  return {
+    lastDate:null,
+    streak:0,
+    lives:2,
+    rewardedHundreds:0
+  };
+}
+
+function saveDailyState(state){
+  localStorage.setItem("wiraDailyState",JSON.stringify(state));
+}
+
+function learnedVocabularyCount(){
+  const items=buildSrsItems();
+  const state=getSrsState();
+
+  return items.filter(item=>(state[item.key]?.level||0)>0).length;
+}
+
+function updateDailyLogin(){
+  const state=getDailyState();
+  const today=localDateKey();
+
+  if(!state.lastDate){
+    state.lastDate=today;
+    state.streak=1;
+    state.lives=2;
+    saveDailyState(state);
+    return;
+  }
+
+  const difference=daysBetweenKeys(state.lastDate,today);
+
+  if(difference<=0) return;
+
+  if(difference===1){
+    state.streak=(state.streak||0)+1;
+  }else{
+    const missedDays=difference-1;
+    const protectedDays=Math.min(state.lives||0,missedDays);
+
+    state.lives=Math.max(0,(state.lives||0)-protectedDays);
+
+    if(protectedDays<missedDays){
+      state.streak=1;
+    }else{
+      state.streak=(state.streak||0)+1;
+    }
+  }
+
+  state.lastDate=today;
+  saveDailyState(state);
+}
+
+function updateDailyLearningRewards(){
+  const state=getDailyState();
+  const learned=learnedVocabularyCount();
+  const hundreds=Math.floor(learned/100);
+  const newRewards=Math.max(0,hundreds-(state.rewardedHundreds||0));
+
+  if(newRewards>0){
+    state.lives=Math.min(2,(state.lives||0)+newRewards);
+    state.rewardedHundreds=hundreds;
+    saveDailyState(state);
+  }
+}
+
+/* Achievements */
+function achievementFishFor(count){
+  if(count>=6000) return ["🐋","Penguasa Laut N2"];
+  if(count>=5000) return ["🦈","Hiu Kosakata"];
+  if(count>=4000) return ["🐬","Lumba-lumba Cerdas"];
+  if(count>=3000) return ["🦑","Cumi-cumi Tangguh"];
+  if(count>=2000) return ["🐠","Ikan Tropis"];
+  if(count>=1000) return ["🐡","Ikan Buntal"];
+  if(count>=500) return ["🐙","Penjelajah Laut"];
+  if(count>=200) return ["🐟","Ikan Kakap"];
+  if(count>=100) return ["🐠","Ikan Kecil"];
+  return ["🥚","Telur Ikan"];
+}
+
+function toggleAchievementPanel(){
+  document.getElementById("achievementPanel")?.classList.toggle("open");
+}
+
+function renderAchievementPanel(){
+  const learned=learnedVocabularyCount();
+  const daily=getDailyState();
+  const percent=Math.min(100,Math.round((learned/N2_VOCAB_TARGET)*100));
+  const [fish,title]=achievementFishFor(learned);
+
+  const streak=document.getElementById("dailyStreak");
+  const lives=document.getElementById("dailyLives");
+  const total=document.getElementById("achievementTotal");
+  const bar=document.getElementById("achievementProgressBar");
+  const current=document.getElementById("achievementCurrent");
+  const list=document.getElementById("achievementList");
+
+  if(streak) streak.textContent=daily.streak||1;
+  if(lives) lives.textContent=`${"❤️".repeat(daily.lives||0)}${"🤍".repeat(2-(daily.lives||0))}`;
+  if(total) total.textContent=`${learned} / ${N2_VOCAB_TARGET}`;
+  if(bar) bar.style.width=`${percent}%`;
+  if(current){
+    current.innerHTML=`
+      <div style="font-size:42px">${fish}</div>
+      <div>${title}</div>
+      <small style="color:var(--muted)">${learned} kosakata dipelajari</small>`;
+  }
+
+  if(list){
+    const milestones=[];
+    const currentHundred=Math.floor(learned/100)*100;
+    const start=Math.max(100,currentHundred-200);
+    const end=Math.min(N2_VOCAB_TARGET,Math.max(500,currentHundred+300));
+
+    for(let milestone=start;milestone<=end;milestone+=100){
+      const [milestoneFish,milestoneTitle]=achievementFishFor(milestone);
+      milestones.push(`
+        <div class="achievement-item ${learned>=milestone?"earned":""}">
+          <span class="achievement-fish">${milestoneFish}</span>
+          <div>
+            <strong>${milestone} kosakata</strong><br>
+            <small>${milestoneTitle}</small>
+          </div>
+        </div>`);
+    }
+
+    list.innerHTML=milestones.join("");
+  }
+}
+
+/* Perbarui manage card agar progress ikut terlihat */
+function renderManageList(){
+  const wrap=document.getElementById("manageList");
+  const stories=sortByTitle(
+    getStories(),
+    getSortValue("manageSort","day")
+  );
+
+  wrap.innerHTML=stories.map(story=>`
+    <div class="manage-card" id="manage-card-${encodeURIComponent(String(story.id))}">
+      <div class="manage-head">
+        <div>
+          <span class="tag">${story.theme||"読解"}</span>
+          ${completionBadge(story.id)}
+          <h3 style="margin:10px 0 5px">${story.title}</h3>
+          <p style="margin:0;color:var(--muted)">${story.description||""}</p>
+          ${storyProgressHtml(story.id)}
+        </div>
+
+        <div class="manage-actions">
+          <button class="btn light smallbtn"
+            data-story-id="${encodeURIComponent(String(story.id))}"
+            onclick="openStory(decodeURIComponent(this.dataset.storyId))">
+            Lihat
+          </button>
+          <button class="btn smallbtn" onclick="editStory('${escapeJs(story.id)}')">
+            Edit
+          </button>
+          <button class="btn danger smallbtn"
+            data-story-id="${encodeURIComponent(String(story.id))}"
+            onclick="deleteStory(decodeURIComponent(this.dataset.storyId))">
+            Hapus
+          </button>
+        </div>
+      </div>
+    </div>`).join("");
+}
+
+window.addEventListener("load",()=>{
+  updateDailyLogin();
+  updateDailyLearningRewards();
+  renderAchievementPanel();
+});
+
+
+const ACHIEVEMENT_MILESTONES=[
+  {count:100, icon:"🐟", title:"Ikan Kecil"},
+  {count:200, icon:"🐠", title:"Ikan Karang"},
+  {count:350, icon:"🐡", title:"Ikan Buntal"},
+  {count:500, icon:"🐟", title:"Ikan Kakap"},
+  {count:750, icon:"🐙", title:"Penjelajah Laut"},
+  {count:1000, icon:"🐬", title:"Lumba-lumba Muda"},
+  {count:1500, icon:"🐢", title:"Penyu Tekun"},
+  {count:2000, icon:"🦭", title:"Singa Laut"},
+  {count:2500, icon:"🦑", title:"Cumi-cumi Tangguh"},
+  {count:3000, icon:"🐬", title:"Lumba-lumba Cerdas"},
+  {count:4000, icon:"🦈", title:"Hiu Kosakata"},
+  {count:5000, icon:"🐋", title:"Paus Besar"},
+  {count:6000, icon:"🌊", title:"Penguasa Laut N2"}
+];
+
+function getNextAchievement(learned){
+  return ACHIEVEMENT_MILESTONES.find(item=>learned<item.count)
+    || ACHIEVEMENT_MILESTONES[ACHIEVEMENT_MILESTONES.length-1];
+}
+
+function getCurrentAchievement(learned){
+  return [...ACHIEVEMENT_MILESTONES]
+    .reverse()
+    .find(item=>learned>=item.count)
+    || {count:0,icon:"🥚",title:"Telur Ikan"};
+}
+
+function achievementFishFor(count){
+  const current=getCurrentAchievement(count);
+  return [current.icon,current.title];
+}
+
+function renderAchievementPanel(){
+  const learned=learnedVocabularyCount();
+  const daily=getDailyState();
+  const next=getNextAchievement(learned);
+  const current=getCurrentAchievement(learned);
+  const previousCount=current.count||0;
+  const range=Math.max(1,next.count-previousCount);
+  const progressInside=Math.min(
+    100,
+    Math.round(((learned-previousCount)/range)*100)
+  );
+
+  const streak=document.getElementById("dailyStreak");
+  const lives=document.getElementById("dailyLives");
+  const total=document.getElementById("achievementTotal");
+  const bar=document.getElementById("achievementProgressBar");
+  const currentBox=document.getElementById("achievementCurrent");
+  const list=document.getElementById("achievementList");
+  const bubble=document.getElementById("achievementBubble");
+
+  if(streak) streak.textContent=daily.streak||1;
+
+  if(lives){
+    lives.textContent=
+      `${"❤️".repeat(daily.lives||0)}${"🤍".repeat(2-(daily.lives||0))}`;
+  }
+
+  if(total){
+    total.textContent=learned>=N2_VOCAB_TARGET
+      ? `${learned} / ${N2_VOCAB_TARGET}`
+      : `${learned} / ${next.count}`;
+  }
+
+  if(bar){
+    bar.style.width=
+      learned>=N2_VOCAB_TARGET ? "100%" : `${progressInside}%`;
+  }
+
+  if(bubble){
+    bubble.textContent=current.icon;
+    bubble.title=`${current.title}・${learned} kosakata`;
+  }
+
+  if(currentBox){
+    currentBox.innerHTML=`
+      <div style="font-size:42px">${current.icon}</div>
+      <div>${current.title}</div>
+      <small style="color:var(--muted)">
+        ${learned} kosakata dipelajari
+      </small>
+      ${
+        learned<N2_VOCAB_TARGET
+          ? `<div style="margin-top:8px;color:var(--brown);font-weight:800">
+               Berikutnya: ${next.icon} ${next.title} di ${next.count}
+             </div>`
+          : `<div style="margin-top:8px;color:#28704a;font-weight:800">
+               Semua achievement N2 selesai!
+             </div>`
+      }`;
+  }
+
+  if(list){
+    list.innerHTML=ACHIEVEMENT_MILESTONES.map(item=>`
+      <div class="achievement-item ${learned>=item.count?"earned":""}">
+        <span class="achievement-fish">${item.icon}</span>
+        <div>
+          <strong>${item.count} kosakata</strong><br>
+          <small>${item.title}</small>
+        </div>
+      </div>
+    `).join("");
+  }
+}
+
+
+let underwaterAudioContext=null;
+let underwaterMaster=null;
+let underwaterNodes=[];
+let underwaterTimer=null;
+let underwaterPlaying=false;
+
+function createUnderwaterAmbient(){
+  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+  if(!AudioContextClass) return false;
+
+  underwaterAudioContext=new AudioContextClass();
+  underwaterMaster=underwaterAudioContext.createGain();
+  underwaterMaster.gain.value=.16;
+  underwaterMaster.connect(underwaterAudioContext.destination);
+
+  const bufferSize=underwaterAudioContext.sampleRate*2;
+  const noiseBuffer=underwaterAudioContext.createBuffer(
+    1,
+    bufferSize,
+    underwaterAudioContext.sampleRate
+  );
+  const output=noiseBuffer.getChannelData(0);
+
+  for(let i=0;i<bufferSize;i++){
+    output[i]=(Math.random()*2-1)*.28;
+  }
+
+  const noise=underwaterAudioContext.createBufferSource();
+  noise.buffer=noiseBuffer;
+  noise.loop=true;
+
+  const lowpass=underwaterAudioContext.createBiquadFilter();
+  lowpass.type="lowpass";
+  lowpass.frequency.value=430;
+  lowpass.Q.value=.8;
+
+  const noiseGain=underwaterAudioContext.createGain();
+  noiseGain.gain.value=.26;
+
+  noise.connect(lowpass);
+  lowpass.connect(noiseGain);
+  noiseGain.connect(underwaterMaster);
+  noise.start();
+
+  const hum=underwaterAudioContext.createOscillator();
+  const humGain=underwaterAudioContext.createGain();
+  hum.type="sine";
+  hum.frequency.value=58;
+  humGain.gain.value=.045;
+  hum.connect(humGain);
+  humGain.connect(underwaterMaster);
+  hum.start();
+
+  underwaterNodes=[noise,hum,lowpass,noiseGain,humGain];
+  scheduleBubbleSounds();
+  return true;
+}
+
+function scheduleBubbleSounds(){
+  if(!underwaterPlaying || !underwaterAudioContext) return;
+
+  const now=underwaterAudioContext.currentTime;
+  const bubble=underwaterAudioContext.createOscillator();
+  const bubbleGain=underwaterAudioContext.createGain();
+  const filter=underwaterAudioContext.createBiquadFilter();
+
+  bubble.type="sine";
+  bubble.frequency.setValueAtTime(180+Math.random()*240,now);
+  bubble.frequency.exponentialRampToValueAtTime(
+    420+Math.random()*380,
+    now+.18
+  );
+
+  filter.type="bandpass";
+  filter.frequency.value=500+Math.random()*500;
+  filter.Q.value=3;
+
+  bubbleGain.gain.setValueAtTime(0,now);
+  bubbleGain.gain.linearRampToValueAtTime(.08,now+.02);
+  bubbleGain.gain.exponentialRampToValueAtTime(.001,now+.22);
+
+  bubble.connect(filter);
+  filter.connect(bubbleGain);
+  bubbleGain.connect(underwaterMaster);
+
+  bubble.start(now);
+  bubble.stop(now+.24);
+
+  underwaterTimer=window.setTimeout(
+    scheduleBubbleSounds,
+    450+Math.random()*1400
+  );
+}
+
+async function toggleUnderwaterAmbient(){
+  const button=document.getElementById("ambientToggle");
+  underwaterPlaying=!underwaterPlaying;
+
+  if(underwaterPlaying){
+    if(!underwaterAudioContext){
+      createUnderwaterAmbient();
+    }
+
+    if(underwaterAudioContext?.state==="suspended"){
+      await underwaterAudioContext.resume();
+    }
+
+    if(underwaterMaster){
+      underwaterMaster.gain.setTargetAtTime(
+        .16,
+        underwaterAudioContext.currentTime,
+        .08
+      );
+    }
+
+    scheduleBubbleSounds();
+    button?.classList.add("playing");
+    if(button) button.textContent="♫";
+  }else{
+    if(underwaterTimer){
+      clearTimeout(underwaterTimer);
+      underwaterTimer=null;
+    }
+
+    if(underwaterMaster && underwaterAudioContext){
+      underwaterMaster.gain.setTargetAtTime(
+        0,
+        underwaterAudioContext.currentTime,
+        .08
+      );
+    }
+
+    button?.classList.remove("playing");
+    if(button) button.textContent="♪";
+  }
+}
+
+function updateAmbientButtonVisibility(){
+  const button=document.getElementById("ambientToggle");
+  if(!button) return;
+
+  const isSrs=document.getElementById("srs")?.classList.contains("active");
+  button.classList.toggle("visible",Boolean(isSrs));
+}
+
+
+
+document.addEventListener("click",()=>{
+  window.setTimeout(updateAmbientButtonVisibility,20);
+});
+
+window.addEventListener("load",()=>{
+  updateAmbientButtonVisibility();
+});
+
+
+/* ===== Perbaikan tampilan folder, tombol SRS, dan progres belajar ===== */
+
+function updateTopStorySrsButton(){
+  const button=document.getElementById("topStorySrsButton");
+  if(!button) return;
+
+  const visible=currentStoryId && isStoryCompleted(currentStoryId);
+  button.style.display=visible ? "inline-flex" : "none";
+}
+
+function renderFinishReadingButton(){
+  const holder=document.getElementById("finishReadingArea");
+  if(!holder || !currentStoryId) return;
+
+  const done=isStoryCompleted(currentStoryId);
+
+  holder.className="finish-reading"+(done?" done":"");
+  holder.innerHTML=done
+    ? `
+      <h2>✓ 読みました！</h2>
+      <p>Cerita ini sudah ditandai selesai dibaca.</p>
+      <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+        <button class="btn srs-action-btn" onclick="startCurrentStorySrs()">SRS</button>
+        <button class="btn light" onclick="askReadAgain()">もう一度読む</button>
+        <button class="btn light" onclick="goBackToCurrentFolder()">Kembali ke folder</button>
+      </div>
+    `
+    : `
+      <h2>Sudah selesai membaca?</h2>
+      <p>Tekan tombol ini setelah kamu selesai membaca dan mempelajari kosakatanya.</p>
+      <button class="btn" onclick="askFinishedReading()">読みました！</button>
+    `;
+
+  updateTopStorySrsButton();
+}
+
+function startStorySrsFromCard(id){
+  const story=getStories().find(
+    item=>String(item.id)===String(id)
+  );
+
+  if(!story){
+    alert("Cerita tidak ditemukan.");
+    return;
+  }
+
+  if(!isStoryCompleted(id)){
+    alert("Selesaikan membaca cerita ini terlebih dahulu sebelum latihan SRS.");
+    return;
+  }
+
+  srsFocusStoryId=String(id);
+  go("srs");
+}
+
+function updateSrsOverallProgress(){
+  const items=buildSrsItems();
+  const state=getSrsState();
+
+  const learned=items.filter(
+    item=>(state[item.key]?.level||0)>0
+  ).length;
+
+  const total=items.length;
+  const percent=total ? Math.round((learned/total)*100) : 0;
+
+  const text=document.getElementById("srsLearnedText");
+  const bar=document.getElementById("srsLearnedBar");
+
+  if(text) text.textContent=`${learned} / ${total} (${percent}%)`;
+  if(bar) bar.style.width=`${percent}%`;
+}
+
+function renderSrsPage(){
+  const items=buildSrsItems();
+  const state=syncSrsState(items);
+  const now=Date.now();
+
+  const due=items.filter(
+    item=>(state[item.key]?.due||0)<=now
+  ).length;
+
+  const learning=items.filter(item=>{
+    const level=state[item.key]?.level||0;
+    return level>0 && level<SRS_INTERVALS.length-1;
+  }).length;
+
+  const mastered=items.filter(
+    item=>(state[item.key]?.level||0)>=SRS_INTERVALS.length-1
+  ).length;
+
+  document.getElementById("srsDueCount").textContent=due;
+  document.getElementById("srsLearningCount").textContent=learning;
+  document.getElementById("srsMasteredCount").textContent=mastered;
+
+  updateSrsOverallProgress();
+
+  const storyMap=new Map();
+
+  items.forEach(item=>{
+    if(!storyMap.has(item.storyId)){
+      storyMap.set(item.storyId,{
+        title:item.storyTitle,
+        total:0,
+        due:0,
+        learned:0
+      });
+    }
+
+    const info=storyMap.get(item.storyId);
+    info.total++;
+
+    if((state[item.key]?.due||0)<=now) info.due++;
+    if((state[item.key]?.level||0)>0) info.learned++;
+  });
+
+  const list=document.getElementById("srsStoryList");
+
+  list.innerHTML=storyMap.size
+    ? [...storyMap.values()].map(info=>{
+        const percent=info.total
+          ? Math.round((info.learned/info.total)*100)
+          : 0;
+
+        return `
+          <div class="srs-story-row">
+            <div>
+              <strong>${escapeHtml(info.title)}</strong><br>
+              <span>${info.learned}/${info.total} dipelajari・${percent}%</span>
+            </div>
+            <span>${info.due} due</span>
+          </div>`;
+      }).join("")
+    : '<div class="empty">Belum ada cerita yang selesai dibaca.</div>';
+
+  startSrsSession();
+}
+
+function updateSrsCountersOnly(){
+  const items=buildSrsItems();
+  const state=syncSrsState(items);
+  const now=Date.now();
+
+  document.getElementById("srsDueCount").textContent=
+    items.filter(item=>(state[item.key]?.due||0)<=now).length;
+
+  document.getElementById("srsLearningCount").textContent=
+    items.filter(item=>{
+      const level=state[item.key]?.level||0;
+      return level>0 && level<SRS_INTERVALS.length-1;
+    }).length;
+
+  document.getElementById("srsMasteredCount").textContent=
+    items.filter(
+      item=>(state[item.key]?.level||0)>=SRS_INTERVALS.length-1
+    ).length;
+
+  updateSrsOverallProgress();
+}
+
+function showFolderOverviewUi(){
+  document.getElementById("storiesPageHeading")?.style.setProperty("display","block");
+  document.getElementById("storiesPageIntro")?.style.setProperty("display","block");
+  document.getElementById("folderManagerPanel")?.style.setProperty("display","block");
+  document.getElementById("folderSortBar")?.style.setProperty("display","flex");
+  document.getElementById("storySortBar")?.style.setProperty("display","none");
+}
+
+function showInsideFolderUi(){
+  document.getElementById("storiesPageHeading")?.style.setProperty("display","none");
+  document.getElementById("storiesPageIntro")?.style.setProperty("display","none");
+  document.getElementById("folderManagerPanel")?.style.setProperty("display","none");
+  document.getElementById("folderSortBar")?.style.setProperty("display","none");
+  document.getElementById("storySortBar")?.style.setProperty("display","flex");
+}
+
+function renderCategories(){
+  const grid=document.getElementById("categoryGrid");
+  const results=document.getElementById("categoryResults");
+
+  if(!grid) return;
+
+  const stories=getStories();
+  const folderOrder=getSortValue("categorySort");
+  const folders=[...getFolders()].sort((a,b)=>{
+    const result=String(a).localeCompare(
+      String(b),
+      "ja",
+      {numeric:true,sensitivity:"base"}
+    );
+    return folderOrder==="za" ? -result : result;
+  });
+
+  grid.innerHTML=folders.map(folder=>{
+    const count=stories.filter(
+      story=>(story.level||"N2")===folder
+    ).length;
+
+    return `
+      <article class="category-card" onclick="openCategory('${escapeJs(folder)}')">
+        <span class="category-count">${count} cerita</span>
+        <div class="category-icon"></div>
+        <h3>${escapeHtml(folder)}</h3>
+        <p>Kumpulan bacaan ${escapeHtml(folder)}</p>
+      </article>`;
+  }).join("");
+
+  if(results) results.classList.remove("active");
+  grid.style.display="grid";
+
+  showFolderOverviewUi();
+}
+
+function openCategory(folder){
+  currentOpenFolder=folder;
+  saveNavigationState("stories",folder);
+  pushInternalHistory("stories",folder);
+
+  const stories=sortByTitle(
+    getStories().filter(
+      story=>(story.level||"N2")===folder
+    ),
+    getSortValue("folderStorySort","day")
+  );
+
+  const folders=getFolders();
+  const grid=document.getElementById("categoryGrid");
+  const results=document.getElementById("categoryResults");
+  const title=document.getElementById("categoryTitle");
+  const actions=document.getElementById("categoryActions");
+  const list=document.getElementById("storyList");
+
+  if(grid) grid.style.display="none";
+  if(results) results.classList.add("active");
+  if(title) title.textContent=`Folder ${folder}`;
+
+  showInsideFolderUi();
+
+  if(actions){
+    actions.innerHTML=`
+      <button class="btn light smallbtn"
+        onclick="renameFolder('${escapeJs(folder)}')">
+        ✎ Ganti Nama
+      </button>
+      <button class="btn secondary smallbtn"
+        onclick="deleteFolder('${escapeJs(folder)}')">
+        × Hapus Folder
+      </button>`;
+  }
+
+  if(list){
+    list.innerHTML=stories.length
+      ? stories.map(story=>{
+          const locked=isStoryLocked(story);
+
+          return `
+            <article class="story-card ${locked?"locked-card":""}">
+              <span class="tag">${story.theme||"読解"}</span>
+              ${completionBadge(story.id)}
+              ${locked?'<span class="lock-badge">🔒 Terkunci</span>':""}
+
+              <h3 data-story-id="${encodeURIComponent(String(story.id))}"
+                onclick="openStory(decodeURIComponent(this.dataset.storyId))"
+                style="cursor:pointer">
+                ${story.title}
+              </h3>
+
+              <p>${story.description||"Cerita bahasa Jepang dengan furigana interaktif."}</p>
+              ${storyProgressHtml(story.id)}
+
+              <label style="margin-top:14px">Pindahkan ke folder</label>
+              <div class="move-folder-row">
+                <select id="move-${encodeURIComponent(String(story.id))}"
+                  class="story-folder-select">
+                  ${folders.map(target=>`
+                    <option value="${escapeHtml(target)}"
+                      ${target===folder?"selected":""}>
+                      ${escapeHtml(target)}
+                    </option>`).join("")}
+                </select>
+
+                <button class="btn smallbtn"
+                  data-story-id="${encodeURIComponent(String(story.id))}"
+                  onclick="saveStoryFolderMove(decodeURIComponent(this.dataset.storyId))">
+                  Simpan
+                </button>
+              </div>
+
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                <button class="btn light smallbtn"
+                  data-story-id="${encodeURIComponent(String(story.id))}"
+                  onclick="openStory(decodeURIComponent(this.dataset.storyId))">
+                  ${locked?"Terkunci":"Baca"}
+                </button>
+
+                <button class="btn smallbtn"
+                  onclick="editStory('${escapeJs(story.id)}');go('manage')">
+                  Edit
+                </button>
+
+                <button class="btn srs-card-button smallbtn"
+                  data-story-id="${encodeURIComponent(String(story.id))}"
+                  onclick="startStorySrsFromCard(decodeURIComponent(this.dataset.storyId))">
+                  SRS
+                </button>
+              </div>
+            </article>`;
+        }).join("")
+      : `<div class="empty">
+           Belum ada cerita di folder ${escapeHtml(folder)}.
+         </div>`;
+  }
+}
+
+function closeCategory(){
+  currentOpenFolder=null;
+  saveNavigationState("stories");
+
+  const grid=document.getElementById("categoryGrid");
+  const results=document.getElementById("categoryResults");
+
+  if(grid) grid.style.display="grid";
+  if(results) results.classList.remove("active");
+
+  renderCategories();
+}
+
+const originalAskReadAgainForTopButton=askReadAgain;
+askReadAgain=function(){
+  originalAskReadAgainForTopButton();
+  updateTopStorySrsButton();
+};
+
+/* Achievement 2500 menggunakan satwa dan ikon yang sesuai. */
+if(typeof ACHIEVEMENT_MILESTONES!=="undefined"){
+  const milestone2500=ACHIEVEMENT_MILESTONES.find(
+    item=>item.count===2500
+  );
+
+  if(milestone2500){
+    milestone2500.icon="🦑";
+    milestone2500.title="Cumi-cumi Tangguh";
+  }
+}
+
+window.addEventListener("load",()=>{
+  updateTopStorySrsButton();
+  updateSrsOverallProgress();
+  renderAchievementPanel();
+});
+
+
+/* ===== Sinkron achievement & editor inline ===== */
+
+function syncAchievementNow(){
+  try{
+    updateDailyLogin();
+    updateDailyLearningRewards();
+    renderAchievementPanel();
+  }catch(error){
+    console.warn("Achievement sync gagal:",error);
+  }
+}
+
+const originalGoForAchievementSync=go;
+go=function(id){
+  originalGoForAchievementSync(id);
+  window.setTimeout(syncAchievementNow,0);
+};
+
+const originalRenderSrsPageForAchievement=renderSrsPage;
+renderSrsPage=function(){
+  originalRenderSrsPageForAchievement();
+  syncAchievementNow();
+};
+
+window.addEventListener("pageshow",syncAchievementNow);
+window.addEventListener("storage",event=>{
+  if([
+    "wiraSrsState",
+    "wiraCompletedStories",
+    "wiraDailyState",
+    "wiraStories"
+  ].includes(event.key)){
+    syncAchievementNow();
+  }
+});
+
+document.addEventListener("visibilitychange",()=>{
+  if(!document.hidden){
+    syncAchievementNow();
+  }
+});
+
+function placeEditorInsideCard(id){
+  const panel=document.getElementById("editorPanel");
+  const card=document.getElementById(
+    `manage-card-${encodeURIComponent(String(id))}`
+  );
+
+  if(!panel || !card) return;
+
+  document.querySelectorAll(".manage-card.editing")
+    .forEach(item=>item.classList.remove("editing"));
+
+  card.classList.add("editing");
+  card.appendChild(panel);
+  panel.style.display="block";
+}
+
+const originalEditStoryInline=editStory;
+editStory=function(id){
+  originalEditStoryInline(id);
+  placeEditorInsideCard(id);
+};
+
+const originalCancelEditInline=cancelEdit;
+cancelEdit=function(){
+  const panel=document.getElementById("editorPanel");
+  const manage=document.getElementById("manage");
+
+  document.querySelectorAll(".manage-card.editing")
+    .forEach(item=>item.classList.remove("editing"));
+
+  originalCancelEditInline();
+
+  if(panel && manage){
+    manage.appendChild(panel);
+  }
+};
+
+window.addEventListener("load",()=>{
+  syncAchievementNow();
+});
+
+
+document.addEventListener("keydown",event=>{
+  if(
+    event.key==="Escape" &&
+    document.getElementById("srsAfterReadingModal")?.classList.contains("active")
+  ){
+    declineSrsAfterReading();
+  }
+});
+
+
+/* ===== Beranda stabil & ikan progress ===== */
+
+function saveHomeFeaturedIds(ids){
+  localStorage.setItem(
+    "wiraHomeFeaturedStories",
+    JSON.stringify(ids.map(String))
+  );
+}
+
+function getHomeFeaturedIds(){
+  try{
+    const ids=JSON.parse(
+      localStorage.getItem("wiraHomeFeaturedStories")||"[]"
+    );
+    return Array.isArray(ids) ? ids.map(String) : [];
+  }catch(error){
+    return [];
+  }
+}
+
+function getStoryActivityScore(story){
+  const progress=getStorySrsProgress(story.id);
+  const lastOpened=localStorage.getItem("wiraLastOpenedStory");
+  const completed=isStoryCompleted(story.id);
+
+  let score=0;
+
+  if(progress.percent>0 && progress.percent<100){
+    score+=10000+progress.percent;
+  }else if(progress.percent===100){
+    score+=5000;
+  }
+
+  if(String(story.id)===String(lastOpened)){
+    score+=3000;
+  }
+
+  if(completed){
+    score+=1000;
+  }
+
+  const day=extractDayNumber(story);
+  if(Number.isFinite(day) && day!==Number.MAX_SAFE_INTEGER){
+    score+=Math.max(0,100-day);
+  }
+
+  return score;
+}
+
+function chooseStableHomeStories(stories){
+  const savedIds=getHomeFeaturedIds();
+  const existing=new Map(
+    stories.map(story=>[String(story.id),story])
+  );
+
+  const active=stories
+    .filter(story=>{
+      const progress=getStorySrsProgress(story.id);
+      return progress.percent>0 && progress.percent<100;
+    })
+    .sort((a,b)=>getStoryActivityScore(b)-getStoryActivityScore(a));
+
+  const selected=[];
+
+  function addStory(story){
+    if(
+      story &&
+      !selected.some(
+        item=>String(item.id)===String(story.id)
+      )
+    ){
+      selected.push(story);
+    }
+  }
+
+  active.forEach(addStory);
+  savedIds.map(id=>existing.get(id)).forEach(addStory);
+
+  [...stories]
+    .sort((a,b)=>getStoryActivityScore(b)-getStoryActivityScore(a))
+    .forEach(addStory);
+
+  const finalStories=selected.slice(0,3);
+  saveHomeFeaturedIds(finalStories.map(story=>story.id));
+
+  return finalStories;
+}
+
+function renderHome(){
+  const grid=document.getElementById("homeStoryGrid");
+  if(!grid) return;
+
+  const stories=getStories();
+  const featured=chooseStableHomeStories(stories);
+
+  grid.innerHTML=featured.map(story=>{
+    const locked=isStoryLocked(story);
+
+    return `
+      <article class="story-card ${locked?"locked-card":""}"
+        data-story-id="${encodeURIComponent(String(story.id))}"
+        onclick="openStory(decodeURIComponent(this.dataset.storyId))">
+        <span class="tag">${story.theme||"読解"}</span>
+        ${completionBadge(story.id)}
+        ${locked?'<span class="lock-badge">🔒 Terkunci</span>':""}
+        <h3>${story.title}</h3>
+        <p>${story.description||"Cerita bahasa Jepang dengan furigana interaktif."}</p>
+        ${storyProgressHtml(story.id)}
+      </article>`;
+  }).join("")+`
+    <article class="story-card" onclick="go('generator')">
+      <span class="tag">新しい物語</span>
+      <h3>Import Cerita Baru</h3>
+      <p>Upload file JSON yang sudah dibuat, lalu simpan ke koleksi cerita.</p>
+    </article>`;
+}
+
+function updateSrsOverallProgress(){
+  const items=buildSrsItems();
+  const state=getSrsState();
+
+  const learned=items.filter(
+    item=>(state[item.key]?.level||0)>0
+  ).length;
+
+  const total=items.length;
+  const percent=total
+    ? Math.round((learned/total)*100)
+    : 0;
+
+  const text=document.getElementById("srsLearnedText");
+  const bar=document.getElementById("srsLearnedBar");
+  const fish=document.getElementById("srsProgressFish");
+
+  if(text){
+    text.textContent=`${learned} / ${total} (${percent}%)`;
+  }
+
+  if(bar){
+    bar.style.width=`${percent}%`;
+  }
+
+  if(fish){
+    fish.style.display=total ? "inline-block" : "none";
+  }
+}
+
+window.addEventListener("load",()=>{
+  renderHome();
+  updateSrsOverallProgress();
+});
+
 </script>
+
+<div id="achievementBubble" class="achievement-bubble" onclick="toggleAchievementPanel()" title="Achievement">
+  🐟
+</div>
+
+<aside id="achievementPanel" class="achievement-panel">
+  <button class="achievement-close" onclick="toggleAchievementPanel()">×</button>
+  <h2>Achievement</h2>
+
+  <div class="daily-box">
+    <div><strong id="dailyStreak">1</strong><span>Hari belajar</span></div>
+    <div><strong id="dailyLives">2</strong><span>Nyawa</span></div>
+  </div>
+
+  <div class="achievement-target">
+    <div class="achievement-target-head">
+      <strong>Achievement berikutnya</strong>
+      <span id="achievementTotal">0 / 100</span>
+    </div>
+    <div class="achievement-progress"><div id="achievementProgressBar"></div></div>
+  </div>
+
+  <div id="achievementCurrent" class="achievement-current"></div>
+  <div id="achievementList" class="achievement-list"></div>
+</aside>
+
 </body>
 </html>
