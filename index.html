@@ -270,10 +270,220 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
   flex-wrap:wrap;
 }
 
+
+.loading-screen{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(180deg,#e8f5ff 0%,#f8fcff 100%);
+  transition:opacity .45s ease,visibility .45s ease;
+}
+.loading-screen.hidden{
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
+.loading-card{
+  width:min(360px,calc(100% - 40px));
+  text-align:center;
+  padding:34px 28px;
+  background:rgba(255,255,255,.78);
+  border:1px solid rgba(200,222,242,.9);
+  border-radius:30px;
+  box-shadow:0 20px 55px rgba(47,111,174,.16);
+  backdrop-filter:blur(10px);
+}
+.loading-ocean{
+  position:relative;
+  height:125px;
+  overflow:hidden;
+  border-radius:24px;
+  background:linear-gradient(180deg,#dff2ff,#c8e8ff);
+}
+.loading-fish{
+  position:absolute;
+  width:118px;
+  height:72px;
+  top:27px;
+  left:-125px;
+  animation:fishSwim 2.4s ease-in-out infinite;
+}
+.loading-fish svg{
+  width:100%;
+  height:100%;
+  display:block;
+}
+.loading-bubble{
+  position:absolute;
+  border:2px solid rgba(47,111,174,.32);
+  border-radius:50%;
+  animation:bubbleUp 2.2s ease-in infinite;
+}
+.loading-bubble.b1{width:12px;height:12px;left:63%;bottom:10px;animation-delay:.1s}
+.loading-bubble.b2{width:8px;height:8px;left:72%;bottom:5px;animation-delay:.8s}
+.loading-bubble.b3{width:15px;height:15px;left:80%;bottom:12px;animation-delay:1.3s}
+.loading-title{
+  margin:20px 0 5px;
+  color:var(--brown);
+  font-size:24px;
+  font-weight:900;
+}
+.loading-subtitle{
+  margin:0;
+  color:var(--muted);
+  font-size:14px;
+}
+.loading-dots span{
+  display:inline-block;
+  animation:dotBounce 1.2s infinite;
+}
+.loading-dots span:nth-child(2){animation-delay:.18s}
+.loading-dots span:nth-child(3){animation-delay:.36s}
+
+@keyframes fishSwim{
+  0%{left:-125px;transform:translateY(4px) rotate(-2deg)}
+  45%{transform:translateY(-5px) rotate(2deg)}
+  100%{left:calc(100% + 20px);transform:translateY(4px) rotate(-2deg)}
+}
+@keyframes bubbleUp{
+  0%{transform:translateY(0) scale(.75);opacity:0}
+  18%{opacity:.8}
+  100%{transform:translateY(-105px) scale(1.15);opacity:0}
+}
+@keyframes dotBounce{
+  0%,80%,100%{transform:translateY(0);opacity:.45}
+  40%{transform:translateY(-5px);opacity:1}
+}
+
+
+.goodjob-screen{
+  position:fixed;
+  inset:0;
+  z-index:10000;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(18,45,70,.38);
+  backdrop-filter:blur(6px);
+}
+.goodjob-screen.active{display:flex}
+.goodjob-card{
+  width:min(390px,calc(100% - 40px));
+  background:linear-gradient(180deg,#ffffff,#eef8ff);
+  border:1px solid var(--line);
+  border-radius:30px;
+  padding:30px 26px;
+  text-align:center;
+  box-shadow:0 24px 70px rgba(22,61,95,.24);
+  animation:goodJobPop .38s ease;
+}
+.goodjob-fish{
+  width:170px;
+  height:115px;
+  margin:0 auto 8px;
+}
+.goodjob-fish svg{
+  width:100%;
+  height:100%;
+  display:block;
+}
+.goodjob-card h2{
+  margin:4px 0 8px;
+  color:#28704a;
+  font-size:30px;
+}
+.goodjob-card p{
+  margin:0;
+  color:var(--muted);
+  line-height:1.7;
+}
+@keyframes goodJobPop{
+  from{transform:scale(.88);opacity:0}
+  to{transform:scale(1);opacity:1}
+}
+
+
+.story-bubble-loading{
+  position:fixed;
+  inset:0;
+  z-index:10001;
+  display:none;
+  overflow:hidden;
+  background:linear-gradient(180deg,rgba(219,242,255,.96),rgba(237,249,255,.98));
+}
+.story-bubble-loading.active{display:block}
+.story-bubble-loading .bubble{
+  position:absolute;
+  bottom:-90px;
+  border:3px solid rgba(47,111,174,.38);
+  background:rgba(255,255,255,.24);
+  border-radius:50%;
+  animation:storyBubbleRise 1s ease-in forwards;
+}
+.story-bubble-loading .bubble::after{
+  content:"";
+  position:absolute;
+  width:24%;
+  height:24%;
+  top:18%;
+  left:20%;
+  border-radius:50%;
+  background:rgba(255,255,255,.8);
+}
+.story-bubble-text{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--brown);
+  font-size:22px;
+  font-weight:900;
+  text-align:center;
+  padding:20px;
+  text-shadow:0 2px 0 rgba(255,255,255,.7);
+}
+@keyframes storyBubbleRise{
+  0%{transform:translateY(0) scale(.65);opacity:0}
+  12%{opacity:1}
+  100%{transform:translateY(-125vh) scale(1.18);opacity:.15}
+}
+
 @media(max-width:700px){.two{grid-template-columns:1fr}.nav{align-items:flex-start;gap:12px;flex-direction:column}.jp{font-size:19px}}
 </style>
 </head>
 <body>
+
+<div id="loadingScreen" class="loading-screen" aria-live="polite" aria-label="Loading">
+  <div class="loading-card">
+    <div class="loading-ocean">
+      <div class="loading-fish" aria-hidden="true">
+        <svg viewBox="0 0 180 110" fill="none">
+          <path d="M48 55C70 28 112 24 143 46C151 51 158 54 169 55C158 56 151 60 143 66C112 88 70 82 48 55Z"
+                fill="#ffffff" stroke="#2f6fae" stroke-width="4" stroke-linejoin="round"/>
+          <path d="M48 55L17 31V79L48 55Z"
+                fill="#d9efff" stroke="#2f6fae" stroke-width="4" stroke-linejoin="round"/>
+          <path d="M88 38C96 47 98 62 88 72"
+                stroke="#5c97cf" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="132" cy="48" r="4" fill="#2f6fae"/>
+        </svg>
+      </div>
+      <span class="loading-bubble b1"></span>
+      <span class="loading-bubble b2"></span>
+      <span class="loading-bubble b3"></span>
+    </div>
+
+    <div class="loading-title">
+      Loading<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span>
+    </div>
+    <p id="loadingMessage" class="loading-subtitle">Ikan kecil sedang menyiapkan ceritamu 🐟</p>
+  </div>
+</div>
+
 
 
 <div class="sea-decor fish-a" aria-hidden="true">
@@ -404,22 +614,21 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
   <div class="form-card">
     <div class="two">
       <div>
-        <label for="storyFile">Upload file cerita (.json)</label>
-        <input id="storyFile" type="file" accept=".json,.txt">
+        <label for="storyFile">Upload satu atau banyak file cerita (.json)</label>
+        <input id="storyFile" type="file" accept=".json,.txt" multiple>
+        <div id="selectedFileCount" class="help">Belum ada file dipilih.</div>
       </div>
 
       <div>
         <label>Format file</label>
         <div class="notice">
-          File harus berisi judul, tema, level, deskripsi, dan content.
-          Cerita yang di-import akan disimpan di browser perangkat ini.
+          Kamu bisa memilih banyak file JSON sekaligus. Setiap file harus berisi judul, tema, level, deskripsi, dan content. Cerita yang di-import akan disimpan di browser perangkat ini.
         </div>
       </div>
     </div>
 
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
-      <button class="btn" onclick="importStoryFile()">Proses &amp; Simpan</button>
-      <button class="btn secondary" onclick="exportStories()">Export Semua Cerita</button>
+      <button class="btn" onclick="importStoryFiles()">Proses &amp; Simpan Semua</button>
     </div>
 
     <div id="importResult" class="notice" style="display:none;margin-top:14px"></div>
@@ -473,6 +682,30 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
 
 </main>
 
+
+<div id="storyBubbleLoading" class="story-bubble-loading" aria-live="polite">
+  <div class="story-bubble-text">Loading</div>
+</div>
+
+<div id="goodJobScreen" class="goodjob-screen" aria-live="polite">
+  <div class="goodjob-card">
+    <div class="goodjob-fish" aria-hidden="true">
+      <svg viewBox="0 0 220 140" fill="none">
+        <path d="M50 70C74 40 120 34 156 55C168 62 178 68 194 70C178 72 168 78 156 85C120 106 74 100 50 70Z"
+              stroke="#2f6fae" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M50 70L18 44V96L50 70Z"
+              stroke="#2f6fae" stroke-width="5" stroke-linejoin="round"/>
+        <circle cx="148" cy="62" r="4.5" fill="#2f6fae"/>
+        <path d="M96 52C104 62 105 78 96 88"
+              stroke="#5c97cf" stroke-width="5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <h2>Good Job! 👍</h2>
+    <p>Kamu sudah menyelesaikan cerita dan menghafal semua kosakatanya.</p>
+  </div>
+</div>
+
+
 <div id="readConfirmModal" class="read-modal" role="dialog" aria-modal="true" aria-labelledby="readConfirmTitle">
   <div class="read-modal-card">
     <h2 id="readConfirmTitle">Kosakata sudah hafal?</h2>
@@ -488,6 +721,54 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
 <footer>ウィラN2合格読解</footer>
 
 <script>
+
+function showStoryBubbleLoading(){
+  const screen=document.getElementById("storyBubbleLoading");
+  if(!screen) return;
+
+  screen.innerHTML='<div class="story-bubble-text">Loading</div>';
+
+  const bubbleTotal=70;
+
+  for(let i=0;i<bubbleTotal;i++){
+    const bubble=document.createElement("span");
+    bubble.className="bubble";
+
+    const size=18+Math.random()*58;
+    bubble.style.width=`${size}px`;
+    bubble.style.height=`${size}px`;
+    bubble.style.left=`${Math.random()*100}%`;
+    bubble.style.animationDelay=`${Math.random()*.35}s`;
+    bubble.style.animationDuration=`${1.05+Math.random()*.45}s`;
+
+    screen.appendChild(bubble);
+  }
+
+  screen.classList.add("active");
+}
+
+function hideStoryBubbleLoading(){
+  const screen=document.getElementById("storyBubbleLoading");
+  if(screen) screen.classList.remove("active");
+}
+
+
+
+function showLoading(message="Ikan kecil sedang menyiapkan ceritamu 🐟"){
+  const screen=document.getElementById("loadingScreen");
+  const text=document.getElementById("loadingMessage");
+
+  if(text) text.textContent=message;
+  if(screen) screen.classList.remove("hidden");
+}
+
+function hideLoading(delay=0){
+  window.setTimeout(()=>{
+    const screen=document.getElementById("loadingScreen");
+    if(screen) screen.classList.add("hidden");
+  },delay);
+}
+
 const defaultStories = [];
 
 function getStories(){
@@ -528,6 +809,43 @@ function completionBadge(id){
 let currentStoryId=null;
 let currentStoryFolder=null;
 
+
+function removeStoryCompleted(id){
+  const completed=getCompletedStories().filter(
+    storyId=>String(storyId)!==String(id)
+  );
+
+  localStorage.setItem(
+    "wiraCompletedStories",
+    JSON.stringify(completed)
+  );
+}
+
+function askReadAgain(){
+  if(!currentStoryId) return;
+
+  removeStoryCompleted(currentStoryId);
+
+  renderFinishReadingButton();
+  renderHome();
+  renderCategories();
+  renderManageList();
+
+  const meta=document.getElementById("storyMeta");
+  const story=getStories().find(
+    item=>String(item.id)===String(currentStoryId)
+  );
+
+  if(meta && story){
+    meta.innerHTML=
+      `Level ${story.level || "N2"}・Tema ${story.theme || "読解"} ` +
+      completionBadge(story.id);
+  }
+
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+
 function renderFinishReadingButton(){
   const holder=document.getElementById("finishReadingArea");
   if(!holder || !currentStoryId) return;
@@ -539,7 +857,10 @@ function renderFinishReadingButton(){
     ? `
       <h2>✓ 読みました！</h2>
       <p>Cerita ini sudah ditandai selesai dibaca.</p>
-      <button class="btn light" onclick="goBackToCurrentFolder()">Kembali ke folder</button>
+      <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+        <button class="btn" onclick="askReadAgain()">もう一度読む</button>
+        <button class="btn light" onclick="goBackToCurrentFolder()">Kembali ke folder</button>
+      </div>
     `
     : `
       <h2>Sudah selesai membaca?</h2>
@@ -565,7 +886,14 @@ function confirmFinishedReading(){
   renderHome();
   renderCategories();
   renderManageList();
-  goBackToCurrentFolder();
+
+  const screen=document.getElementById("goodJobScreen");
+  if(screen) screen.classList.add("active");
+
+  window.setTimeout(()=>{
+    if(screen) screen.classList.remove("active");
+    goBackToCurrentFolder();
+  },2000);
 }
 
 function goBackToCurrentFolder(){
@@ -624,7 +952,17 @@ function hideAll(){
     .forEach(ruby=>ruby.classList.remove("show"));
 }
 
+
 function openStory(id){
+  showStoryBubbleLoading();
+
+  window.setTimeout(()=>{
+    openStoryNow(id);
+    hideStoryBubbleLoading();
+  },1500);
+}
+
+function openStoryNow(id){
   const story=getStories().find(item=>String(item.id)===String(id));
 
   if(!story){
@@ -917,6 +1255,8 @@ function deleteFolder(name){
 }
 
 function moveStoryToFolder(id,newFolder){
+  showLoading(`Sedang memproses ${files.length} file cerita...`);
+
   let saved=[];
   try{
     saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
@@ -943,32 +1283,43 @@ function moveStoryToFolder(id,newFolder){
   }
 }
 
-function importStoryFile(){
+async function importStoryFiles(){
   const input=document.getElementById("storyFile");
   const box=document.getElementById("importResult");
-  const file=input.files[0];
+  const files=[...input.files];
 
-  if(!file){
+  if(!files.length){
     box.style.display="block";
-    box.textContent="Pilih file JSON terlebih dahulu.";
+    box.textContent="Pilih satu atau beberapa file JSON terlebih dahulu.";
     return;
   }
 
-  const reader=new FileReader();
+  let saved=[];
+  try{
+    saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
+    if(!Array.isArray(saved)) saved=[];
+  }catch(error){
+    saved=[];
+  }
 
-  reader.onload=()=>{
+  let folders=getFolders();
+  let added=0;
+  let updated=0;
+  let failed=0;
+  const failedFiles=[];
+
+  for(const file of files){
     try{
-      const data=JSON.parse(reader.result);
+      const text=await file.text();
+      const data=JSON.parse(text);
 
       if(!Array.isArray(data.content) || data.content.length===0){
         throw new Error("Bagian content tidak ditemukan atau kosong.");
       }
 
-      const existingStories=getStories();
-      let proposedId=String(data.id||("story-"+Date.now())).trim();
-
+      let proposedId=String(data.id||("story-"+Date.now()+"-"+Math.random().toString(36).slice(2,8))).trim();
       if(!proposedId){
-        proposedId="story-"+Date.now();
+        proposedId="story-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
       }
 
       const story={
@@ -997,53 +1348,49 @@ function importStoryFile(){
         throw new Error("Isi cerita tidak valid.");
       }
 
-      let folders=getFolders();
       if(!folders.includes(story.level)){
         folders.push(story.level);
-        saveFolders(folders);
       }
 
-      let saved=[];
-      try{
-        saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
-      }catch(e){
-        saved=[];
+      const index=saved.findIndex(s=>String(s.id)===String(story.id));
+
+      if(index>=0){
+        saved[index]=story;
+        updated++;
+      }else{
+        saved.push(story);
+        added++;
       }
-
-      const index=saved.findIndex(s=>s.id===story.id);
-      if(index>=0) saved[index]=story;
-      else saved.push(story);
-
-      localStorage.setItem("wiraStories",JSON.stringify(saved));
-
-      renderHome();
-      renderCategories();
-      renderManageList();
-
-      box.style.display="block";
-      box.innerHTML=`Cerita <strong>${story.title}</strong> berhasil disimpan ke folder <strong>${story.level}</strong>.`;
-      input.value="";
     }catch(error){
-      box.style.display="block";
-      box.textContent="File gagal dibaca: "+error.message;
+      failed++;
+      failedFiles.push(`${file.name}: ${error.message}`);
     }
-  };
+  }
 
-  reader.readAsText(file,"utf-8");
+  saveFolders(folders);
+  localStorage.setItem("wiraStories",JSON.stringify(saved));
+
+  renderHome();
+  renderCategories();
+  renderManageList();
+
+  box.style.display="block";
+
+  let message=`<strong>${added}</strong> cerita berhasil ditambahkan`;
+  message+=`, <strong>${updated}</strong> cerita diperbarui`;
+
+  if(failed){
+    message+=`, dan <strong>${failed}</strong> file gagal diproses.`;
+    message+=`<br><small>${failedFiles.map(escapeHtml).join("<br>")}</small>`;
+  }else{
+    message+=".";
+  }
+
+  box.innerHTML=message;
+  input.value="";
+  hideLoading(450);
 }
 
-function exportStories(){
-  const stories=getStories();
-  const blob=new Blob([JSON.stringify({stories},null,2)],{type:"application/json"});
-  const url=URL.createObjectURL(blob);
-  const link=document.createElement("a");
-  link.href=url;
-  link.download="wiraN2_semua_cerita.json";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
 
 
 function renderManageList(){
@@ -1157,6 +1504,19 @@ function deleteStory(id){
 }
 
 
+
+document.getElementById("storyFile").addEventListener("change",event=>{
+  const total=event.target.files.length;
+  const holder=document.getElementById("selectedFileCount");
+
+  if(holder){
+    holder.textContent=total
+      ? `${total} file dipilih.`
+      : "Belum ada file dipilih.";
+  }
+});
+
+
 document.getElementById("readConfirmModal").addEventListener("click",event=>{
   if(event.target.id==="readConfirmModal"){
     cancelFinishedReading();
@@ -1165,6 +1525,15 @@ document.getElementById("readConfirmModal").addEventListener("click",event=>{
 
 renderHome();
 renderCategories();
+
+window.addEventListener("load",()=>{
+  hideLoading(250);
+});
+
+window.setTimeout(()=>{
+  hideLoading(0);
+},700);
+
 </script>
 </body>
 </html>
