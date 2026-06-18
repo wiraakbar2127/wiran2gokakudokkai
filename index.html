@@ -1217,56 +1217,6 @@ footer{
     #srsPracticeArea .srs-card{max-height:none!important;min-height:0!important}
   }
 </style>
-
-<script id="srs-early-first-tap-focus-guard">
-(function(){
-  'use strict';
-  const mobile=window.matchMedia('(max-width:700px)');
-
-  function isSrsInput(event){
-    const el=event.target;
-    return mobile.matches && el && el.id==='srsAnswerInput' &&
-      document.getElementById('srs')?.classList.contains('active');
-  }
-
-  function prepare(el){
-    el.disabled=false;
-    el.readOnly=false;
-    el.setAttribute('inputmode','text');
-    window.srsKeyboardSessionActive=true;
-    document.documentElement.classList.add('srs-mobile-session');
-    document.body.classList.add('srs-keyboard-active','srs-mobile-focus');
-  }
-
-  /* Listener ini didaftarkan sebelum seluruh patch SRS lain. Biarkan browser
-     melakukan fokus native satu kali, tetapi hentikan listener duplikat yang
-     sebelumnya memanggil focus() berkali-kali pada satu sentuhan. */
-  document.addEventListener('pointerdown',function(event){
-    if(!isSrsInput(event)) return;
-    prepare(event.target);
-    event.stopImmediatePropagation();
-  },true);
-
-  document.addEventListener('touchstart',function(event){
-    if(!isSrsInput(event)) return;
-    prepare(event.target);
-    event.stopImmediatePropagation();
-  },{capture:true,passive:true});
-
-  document.addEventListener('click',function(event){
-    if(!isSrsInput(event)) return;
-    prepare(event.target);
-    event.stopImmediatePropagation();
-    /* Pada browser yang belum membuka keyboard melalui fokus native,
-       panggil focus hanya sekali saat click yang masih merupakan user gesture. */
-    if(document.activeElement!==event.target){
-      try{ event.target.focus({preventScroll:true}); }catch(_){ event.target.focus(); }
-    }
-    try{ event.target.setSelectionRange(event.target.value.length,event.target.value.length); }catch(_){ }
-  },true);
-})();
-</script>
-
 </head>
 <body>
 
