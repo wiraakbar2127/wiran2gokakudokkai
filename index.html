@@ -9496,5 +9496,313 @@ async function toggleUnderwaterAmbient(){
   }
 })();
 </script>
+
+
+<!-- ===== SRS FINAL FIX: arti blur terkunci sampai jawaban dikirim ===== -->
+<style id="srs-translation-blur-locked-style">
+/* Saat masih mengerjakan soal: arti tetap blur dan seluruh kotaknya dikunci. */
+#srs.page.active #srsQuestionText:not(.correct-answer):not(.wrong-answer) .srs-translation,
+#srs.page.active #srsQuestionText:not(.correct-answer):not(.wrong-answer) .srs-translation-restored,
+#srs.page.active #srsQuestionText:not(.correct-answer):not(.wrong-answer) .srs-final-meaning{
+  position:relative!important;
+  overflow:hidden!important;
+  filter:blur(7px)!important;
+  opacity:.62!important;
+  user-select:none!important;
+  -webkit-user-select:none!important;
+  -webkit-touch-callout:none!important;
+  cursor:default!important;
+  pointer-events:auto!important;
+}
+
+/* Lapisan transparan menangkap sentuhan/klik agar tidak diteruskan ke elemen di belakang. */
+#srs.page.active #srsQuestionText:not(.correct-answer):not(.wrong-answer) .srs-translation::after,
+#srs.page.active #srsQuestionText:not(.correct-answer):not(.wrong-answer) .srs-translation-restored::after,
+#srs.page.active #srsQuestionText:not(.correct-answer):not(.wrong-answer) .srs-final-meaning::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:5;
+  display:block;
+  background:transparent;
+  pointer-events:auto;
+  cursor:default;
+  touch-action:manipulation;
+}
+
+/* Setelah jawaban dikirim: arti kembali jelas pada lembar jawaban. */
+#srs.page.active #srsQuestionText.correct-answer .srs-translation,
+#srs.page.active #srsQuestionText.wrong-answer .srs-translation,
+#srs.page.active #srsQuestionText.correct-answer .srs-translation-restored,
+#srs.page.active #srsQuestionText.wrong-answer .srs-translation-restored,
+#srs.page.active #srsQuestionText.correct-answer .srs-final-meaning,
+#srs.page.active #srsQuestionText.wrong-answer .srs-final-meaning{
+  filter:none!important;
+  opacity:1!important;
+  user-select:text!important;
+  -webkit-user-select:text!important;
+  pointer-events:auto!important;
+  cursor:text!important;
+}
+#srs.page.active #srsQuestionText.correct-answer .srs-translation::after,
+#srs.page.active #srsQuestionText.wrong-answer .srs-translation::after,
+#srs.page.active #srsQuestionText.correct-answer .srs-translation-restored::after,
+#srs.page.active #srsQuestionText.wrong-answer .srs-translation-restored::after,
+#srs.page.active #srsQuestionText.correct-answer .srs-final-meaning::after,
+#srs.page.active #srsQuestionText.wrong-answer .srs-final-meaning::after{
+  display:none!important;
+}
+</style>
+
+<script id="srs-translation-blur-locked-script">
+(function(){
+  const selector = '.srs-translation, .srs-translation-restored, .srs-final-meaning';
+
+  function isLockedMeaning(target){
+    const meaning = target && target.closest ? target.closest(selector) : null;
+    if(!meaning || !meaning.closest('#srs.page.active')) return false;
+    const question = meaning.closest('#srsQuestionText');
+    return !!question &&
+      !question.classList.contains('correct-answer') &&
+      !question.classList.contains('wrong-answer');
+  }
+
+  /* Blok semua interaksi pada arti sebelum jawaban masuk. */
+  ['click','dblclick','mousedown','mouseup','touchstart','touchend','contextmenu','selectstart','dragstart'].forEach(function(type){
+    document.addEventListener(type,function(event){
+      if(isLockedMeaning(event.target)){
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    },true);
+  });
+})();
+</script>
+
+
+<!-- ===== SRS FINAL: arti hanya pada soal + auto lanjut maksimal 8 detik ===== -->
+<style id="srs-meaning-question-only-auto8-style">
+/* Hapus arti duplikat yang berada di bawah jawaban/feedback. */
+#srs.page.active .srs-final-meaning-line,
+#srs.page.active .srs-feedback .srs-final-meaning,
+#srs.page.active #srsFeedback .srs-final-meaning,
+#srs.page.active .srs-inline-result .srs-final-meaning,
+#srs.page.active .srs-inline-result [data-role="meaning"],
+#srs.page.active .srs-feedback [data-role="meaning"]{
+  display:none!important;
+}
+
+/* Arti utama tetap berada pada kartu soal: blur sebelum jawab, jelas sesudah jawab. */
+#srs.page.active #srsQuestionText:not(.correct-answer):not(.wrong-answer) > .srs-final-meaning,
+#srs.page.active #srsQuestionText:not(.correct-answer):not(.wrong-answer) > .srs-translation,
+#srs.page.active #srsQuestionText:not(.correct-answer):not(.wrong-answer) > .srs-translation-restored{
+  display:block!important;
+  filter:blur(7px)!important;
+  opacity:.62!important;
+  pointer-events:none!important;
+  user-select:none!important;
+  -webkit-user-select:none!important;
+}
+#srs.page.active #srsQuestionText.correct-answer > .srs-final-meaning,
+#srs.page.active #srsQuestionText.wrong-answer > .srs-final-meaning,
+#srs.page.active #srsQuestionText.correct-answer > .srs-translation,
+#srs.page.active #srsQuestionText.wrong-answer > .srs-translation,
+#srs.page.active #srsQuestionText.correct-answer > .srs-translation-restored,
+#srs.page.active #srsQuestionText.wrong-answer > .srs-translation-restored{
+  display:block!important;
+  filter:none!important;
+  opacity:1!important;
+  pointer-events:none!important;
+  user-select:text!important;
+  -webkit-user-select:text!important;
+}
+</style>
+
+<script id="srs-meaning-question-only-auto8-script">
+(function(){
+  const MAX_RESULT_MS=8000;
+  let finalResultTimer=null;
+
+  function clearFinalTimer(){
+    if(finalResultTimer!==null){
+      clearTimeout(finalResultTimer);
+      finalResultTimer=null;
+    }
+  }
+
+  function removeDuplicateMeaning(){
+    document.querySelectorAll(
+      '#srs .srs-final-meaning-line,'+
+      '#srs .srs-feedback .srs-final-meaning,'+
+      '#srs #srsFeedback .srs-final-meaning,'+
+      '#srs .srs-inline-result .srs-final-meaning,'+
+      '#srs .srs-feedback [data-role="meaning"],'+
+      '#srs .srs-inline-result [data-role="meaning"]'
+    ).forEach(function(el){ el.remove(); });
+  }
+
+  function resultIsVisible(){
+    const q=document.getElementById('srsQuestionText');
+    return !!q && (q.classList.contains('correct-answer') || q.classList.contains('wrong-answer'));
+  }
+
+  function advanceNow(){
+    clearFinalTimer();
+    if(typeof window.advanceSrsResult==='function'){
+      window.advanceSrsResult();
+      return;
+    }
+    if(typeof window.goToNextQuestionAfterResult==='function'){
+      window.goToNextQuestionAfterResult();
+      return;
+    }
+    const next=document.querySelector('#srs .srs-next-question-btn, #srs [data-action="next"], #srs button.next');
+    if(next) next.click();
+  }
+
+  function armFinalTimer(){
+    removeDuplicateMeaning();
+    if(!resultIsVisible()) return;
+    clearFinalTimer();
+    finalResultTimer=setTimeout(advanceNow,MAX_RESULT_MS);
+  }
+
+  /* Pantau perubahan soal -> feedback agar timer selalu dimulai tepat setelah menjawab. */
+  const observer=new MutationObserver(function(){
+    removeDuplicateMeaning();
+    if(resultIsVisible()) armFinalTimer();
+    else clearFinalTimer();
+  });
+
+  function startObserver(){
+    const area=document.getElementById('srsPracticeArea') || document.getElementById('srs');
+    if(area) observer.observe(area,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
+  }
+
+  const oldAdvance=window.advanceSrsResult;
+  if(typeof oldAdvance==='function'){
+    window.advanceSrsResult=function(){
+      clearFinalTimer();
+      return oldAdvance.apply(this,arguments);
+    };
+  }
+
+  document.addEventListener('DOMContentLoaded',function(){
+    startObserver();
+    removeDuplicateMeaning();
+  });
+  if(document.readyState!=='loading'){
+    startObserver();
+    removeDuplicateMeaning();
+  }
+})();
+</script>
+
+
+<!-- ===== HOTFIX: arti hanya di feedback + auto-next 8 detik ===== -->
+<style id="srs-feedback-meaning-autonext-hotfix-style">
+/* Jangan tampilkan arti pada lembar soal. */
+#srs.page.active #srsQuestionText > .srs-final-meaning,
+#srs.page.active #srsQuestionText > .srs-translation,
+#srs.page.active #srsQuestionText > .srs-translation-restored{
+  display:none!important;
+}
+/* Tampilkan arti tepat di bawah Jawaban pada lembar feedback. */
+#srs.page.active #srsInlineFeedback .srs-final-meaning-line{
+  display:block!important;
+  margin-top:8px!important;
+  color:inherit!important;
+}
+</style>
+<script id="srs-feedback-meaning-autonext-hotfix-script">
+(function(){
+  const RESULT_DELAY=8000;
+  let timer=null;
+
+  function clearTimer(){
+    if(timer!==null){
+      window.clearTimeout(timer);
+      timer=null;
+    }
+  }
+
+  function goNext(){
+    clearTimer();
+    if(typeof window.nextSrsQuestion==='function'){
+      window.nextSrsQuestion();
+      return;
+    }
+    if(typeof window.advanceSrsResult==='function'){
+      window.advanceSrsResult();
+      return;
+    }
+    const button=document.getElementById('srsSubmitBtn');
+    if(button) button.click();
+  }
+
+  function armTimer(){
+    clearTimer();
+    timer=window.setTimeout(goNext,RESULT_DELAY);
+  }
+
+  function ensureMeaning(){
+    const item=window.srsQueue?.[window.srsCurrentIndex];
+    const feedback=document.getElementById('srsInlineFeedback');
+    if(!item || !feedback) return;
+    let line=feedback.querySelector('.srs-final-meaning-line');
+    if(!line){
+      line=document.createElement('div');
+      line.className='srs-final-meaning-line';
+      const answerLine=feedback.firstElementChild;
+      if(answerLine?.nextSibling) feedback.insertBefore(line,answerLine.nextSibling);
+      else feedback.appendChild(line);
+    }
+    line.innerHTML='Arti: <strong>'+String(item.meaning||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]})+'</strong>';
+    line.style.display='block';
+  }
+
+  const originalSubmit=window.submitSrsAnswer;
+  if(typeof originalSubmit==='function'){
+    window.submitSrsAnswer=function(){
+      const before=!!window.srsLocked;
+      const result=originalSubmit.apply(this,arguments);
+      if(!before && window.srsLocked){
+        ensureMeaning();
+        armTimer();
+      }
+      return result;
+    };
+  }
+
+  const originalNext=window.nextSrsQuestion;
+  if(typeof originalNext==='function'){
+    window.nextSrsQuestion=function(){
+      clearTimer();
+      return originalNext.apply(this,arguments);
+    };
+  }
+
+  /* Cadangan untuk perubahan yang datang dari script SRS lain. */
+  const observer=new MutationObserver(function(){
+    const input=document.getElementById('srsAnswerInput');
+    const feedback=document.getElementById('srsInlineFeedback');
+    const showing=!!(input && input.dataset.locked==='1' && feedback && feedback.textContent.trim());
+    if(showing){
+      ensureMeaning();
+      if(timer===null) armTimer();
+    }else{
+      clearTimer();
+    }
+  });
+
+  function start(){
+    const area=document.getElementById('srsPracticeArea')||document.getElementById('srs');
+    if(area) observer.observe(area,{subtree:true,childList:true,attributes:true,attributeFilter:['class','data-locked']});
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start,{once:true});
+  else start();
+})();
+</script>
+
 </body>
 </html>
