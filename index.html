@@ -1221,7 +1221,7 @@ footer{
 </head>
 <body>
 
-<div id="loadingScreen" class="loading-screen" aria-live="polite" aria-label="Loading">
+<div id="loadingScreen" class="loading-screen hidden" style="display:none!important" aria-live="polite" aria-label="Loading">
   <div class="loading-card">
     <div class="loading-ocean">
       <div class="loading-fish" aria-hidden="true">
@@ -8224,6 +8224,105 @@ async function toggleUnderwaterAmbient(){
 
   window.addEventListener('load',()=>setTimeout(refreshCountsFinal,0));
   window.addEventListener('pageshow',()=>setTimeout(refreshCountsFinal,0));
+})();
+</script>
+
+
+<script id="startup-performance-final-fix">
+(function(){
+  /* Jangan pernah biarkan layar loading mengunci halaman. */
+  const loading=document.getElementById('loadingScreen');
+  if(loading){
+    loading.classList.add('hidden');
+    loading.style.setProperty('display','none','important');
+  }
+
+  /* Cache hasil parsing SRS. Versi lama menghitung ulang seluruh cerita
+     berkali-kali untuk setiap kartu Beranda. */
+  if(typeof window.buildSrsItems==='function'){
+    const rawBuild=window.buildSrsItems;
+    let cacheKey='';
+    let cacheItems=[];
+    window.buildSrsItems=function(){
+      /* Jangan parse ribuan ruby/strong saat Beranda baru dibuka. */
+      const srsPage=document.getElementById('srs');
+      if(!srsPage || !srsPage.classList.contains('active')) return [];
+
+      let nextKey='';
+      try{
+        nextKey=(safeStorage.getItem('wiraStories')||'')+'|'+
+                (safeStorage.getItem('wiraCompletedStories')||'');
+      }catch(error){
+        nextKey=String(Date.now());
+      }
+      if(nextKey===cacheKey) return cacheItems;
+      cacheItems=rawBuild.apply(this,arguments);
+      cacheKey=nextKey;
+      return cacheItems;
+    };
+  }
+
+  /* Beranda ringan: tidak menghitung progres/lock seluruh DAY saat startup. */
+  window.renderHome=function(){
+    const grid=document.getElementById('homeStoryGrid');
+    if(!grid) return;
+    let stories=[];
+    try{ stories=getStories(); }catch(error){ stories=[]; }
+
+    const lastId=(()=>{try{return safeStorage.getItem('wiraLastOpenedStory')}catch(e){return null}})();
+    const featured=[];
+    const last=stories.find(s=>String(s.id)===String(lastId));
+    if(last) featured.push(last);
+    stories.forEach(story=>{
+      if(featured.length<3 && !featured.some(x=>String(x.id)===String(story.id))){
+        featured.push(story);
+      }
+    });
+
+    const cards=featured.map(story=>`
+      <article class="story-card"
+        data-story-id="${encodeURIComponent(String(story.id))}"
+        onclick="openStory(decodeURIComponent(this.dataset.storyId))">
+        <span class="tag">${escapeHtml(story.theme||'読解')}</span>
+        ${completionBadge(story.id)}
+        <h3>${escapeHtml(story.title||'Tanpa Judul')}</h3>
+        <p>${escapeHtml(story.description||'Cerita bahasa Jepang dengan furigana interaktif.')}</p>
+      </article>`).join('');
+
+    grid.innerHTML=cards+`
+      <article class="story-card" onclick="go('generator')">
+        <span class="tag">新しい物語</span>
+        <h3>Import Cerita Baru</h3>
+        <p>Upload file JSON yang sudah dibuat, lalu simpan ke koleksi cerita.</p>
+      </article>`;
+  };
+
+  /* Satukan banyak panggilan refresh yang sebelumnya terjadi bersamaan. */
+  if(typeof window.syncAchievementNow==='function'){
+    const rawSync=window.syncAchievementNow;
+    let scheduled=false;
+    window.syncAchievementNow=function(){
+      if(scheduled) return;
+      scheduled=true;
+      setTimeout(()=>{
+        scheduled=false;
+        try{ rawSync(); }catch(error){ console.warn('Achievement dilewati:',error); }
+      },250);
+    };
+  }
+
+  function safeStartup(){
+    if(loading){
+      loading.classList.add('hidden');
+      loading.style.setProperty('display','none','important');
+    }
+    try{ renderHome(); }catch(error){ console.error('Beranda gagal dirender:',error); }
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',safeStartup,{once:true});
+  }else{
+    safeStartup();
+  }
 })();
 </script>
 
