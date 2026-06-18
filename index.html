@@ -9178,5 +9178,270 @@ async function toggleUnderwaterAmbient(){
 })();
 </script>
 
+
+<!-- ===== SRS MOBILE FINAL: compact, fleksibel, keyboard tetap aktif ===== -->
+<style id="srs-mobile-flex-keyboard-style">
+@media (max-width:700px){
+  #srs.page.active{
+    padding:14px 10px 24px!important;
+    min-height:0!important;
+    overflow:visible!important;
+  }
+  #srs.page.active .srs-layout{
+    display:block!important;
+    min-height:0!important;
+  }
+  #srs.page.active .srs-main{
+    padding:12px!important;
+    border-radius:18px!important;
+    min-height:0!important;
+    overflow:visible!important;
+  }
+  #srsPracticeArea,
+  #srsPracticeArea .srs-card{
+    min-height:0!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  #srsPracticeArea .srs-card{
+    display:block!important;
+    padding:4px 0 2px!important;
+  }
+  #srs.page.active .srs-source{
+    margin-bottom:10px!important;
+    padding:4px 9px!important;
+    font-size:10px!important;
+  }
+  #srs.page.active .srs-final-question,
+  #srs.page.active #srsQuestionText{
+    min-height:0!important;
+    padding:11px!important;
+    border-radius:14px!important;
+  }
+  #srs.page.active .srs-final-label{
+    margin-bottom:4px!important;
+    font-size:10px!important;
+  }
+  #srs.page.active .srs-final-word{
+    margin:2px 0 7px!important;
+    font-size:clamp(24px,8vw,34px)!important;
+    line-height:1.25!important;
+    letter-spacing:.03em!important;
+    overflow-wrap:anywhere!important;
+  }
+  #srs.page.active .srs-final-word ruby rt{
+    font-size:.46em!important;
+  }
+  #srs.page.active .srs-final-meaning,
+  #srs.page.active .srs-translation,
+  #srs.page.active .srs-translation-restored{
+    margin:7px 0 0!important;
+    padding:8px 10px!important;
+    font-size:12px!important;
+    line-height:1.45!important;
+  }
+  #srs.page.active .srs-final-feedback{
+    margin-top:8px!important;
+    padding:9px 10px!important;
+    border-radius:12px!important;
+    font-size:12px!important;
+    line-height:1.45!important;
+  }
+  #srs.page.active .srs-final-answer-pill{
+    padding:2px 6px!important;
+    font-size:14px!important;
+  }
+  #srs.page.active .srs-next-time{
+    margin-top:6px!important;
+    padding-top:6px!important;
+    font-size:11px!important;
+  }
+  #srs.page.active .srs-final-answer-wrap,
+  #srs.page.active .srs-answer-wrap,
+  #srs.page.active .srs-answer-row{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    gap:8px!important;
+    align-items:center!important;
+    margin-top:10px!important;
+  }
+  #srs.page.active .srs-answer,
+  #srs.page.active .srs-answer-input{
+    width:100%!important;
+    min-width:0!important;
+    min-height:42px!important;
+    padding:9px 11px!important;
+    border-radius:11px!important;
+    font-size:16px!important;
+  }
+  #srs.page.active .srs-answer-wrap>.btn,
+  #srs.page.active .srs-answer-row>.btn{
+    width:auto!important;
+    min-width:68px!important;
+    min-height:42px!important;
+    padding:9px 12px!important;
+    border-radius:11px!important;
+    font-size:13px!important;
+  }
+  #srs.page.active .srs-stats{
+    gap:6px!important;
+    margin-bottom:10px!important;
+  }
+  #srs.page.active .srs-stat{
+    padding:8px 4px!important;
+    border-radius:12px!important;
+  }
+  #srs.page.active .srs-stat strong{font-size:17px!important}
+  #srs.page.active .srs-stat span{font-size:9px!important}
+  #srs.page.active .srs-progress{margin:7px 0 10px!important}
+  #srs.page.active .srs-side{margin-top:12px!important;padding:12px!important;border-radius:18px!important}
+
+  /* Saat keyboard terbuka, elemen dekoratif tidak mengambil ruang pandang. */
+  body.srs-keyboard-open #srs.page.active .srs-side,
+  body.srs-mobile-focus #srs.page.active .srs-side,
+  body.srs-keyboard-open #srs.page.active .srs-stats,
+  body.srs-mobile-focus #srs.page.active .srs-stats{
+    display:none!important;
+  }
+  body.srs-keyboard-open #ambientToggle,
+  body.srs-mobile-focus #ambientToggle,
+  body.srs-keyboard-open .achievement-bubble,
+  body.srs-mobile-focus .achievement-bubble{
+    display:none!important;
+  }
+}
+
+@media (max-width:700px) and (max-height:620px){
+  #srs.page.active{padding-top:7px!important}
+  #srs.page.active .srs-main{padding:8px!important}
+  #srs.page.active .srs-final-question,
+  #srs.page.active #srsQuestionText{padding:8px!important}
+  #srs.page.active .srs-final-word{font-size:clamp(21px,7vw,29px)!important;margin-bottom:4px!important}
+  #srs.page.active .srs-final-feedback{padding:7px 8px!important;margin-top:6px!important}
+  #srs.page.active .srs-final-answer-wrap,
+  #srs.page.active .srs-answer-wrap{margin-top:7px!important}
+}
+</style>
+
+<script id="srs-mobile-flex-keyboard-script">
+(function(){
+  function isMobileSrs(){
+    return window.matchMedia('(max-width:700px)').matches &&
+      document.getElementById('srs')?.classList.contains('active');
+  }
+
+  function focusSrsInput(){
+    if(!isMobileSrs()) return;
+    const input=document.getElementById('srsAnswerInput');
+    if(!input) return;
+    input.setAttribute('inputmode','text');
+    input.setAttribute('enterkeyhint','done');
+    try{ input.focus({preventScroll:true}); }catch(_){ input.focus(); }
+    document.body.classList.add('srs-keyboard-open','srs-mobile-focus');
+  }
+
+  function fitMobileCard(){
+    if(!isMobileSrs()) return;
+    const card=document.querySelector('#srsPracticeArea .srs-card');
+    if(!card) return;
+    card.style.height='auto';
+    card.style.minHeight='0';
+    const topbar=document.querySelector('.topbar');
+    const top=(topbar?.getBoundingClientRect().height||0)+6;
+    const rect=card.getBoundingClientRect();
+    if(rect.top<top-4){
+      window.scrollBy({top:rect.top-top,behavior:'auto'});
+    }
+  }
+
+  /* Ganti isi soal tanpa mengganti elemen input, supaya keyboard HP tidak tertutup. */
+  const originalNext=window.nextSrsQuestion;
+  window.nextSrsQuestion=function(){
+    if(!isMobileSrs() || !document.getElementById('srsAnswerInput')){
+      return originalNext?.apply(this,arguments);
+    }
+
+    window.srsCurrentIndex++;
+    window.srsLocked=false;
+
+    if(!window.srsQueue?.length || window.srsCurrentIndex>=window.srsQueue.length){
+      return originalNext?.apply(this,arguments);
+    }
+
+    const item=window.srsQueue[window.srsCurrentIndex];
+    const source=document.querySelector('#srsPracticeArea .srs-source');
+    const word=document.querySelector('#srsPracticeArea .srs-final-word');
+    const meaning=document.querySelector('#srsPracticeArea .srs-final-meaning');
+    const question=document.getElementById('srsQuestionText');
+    const feedback=document.getElementById('srsInlineFeedback');
+    const input=document.getElementById('srsAnswerInput');
+    const button=document.getElementById('srsSubmitBtn');
+    const bar=document.querySelector('#srsProgress>div');
+
+    if(source) source.textContent=`${item.storyTitle || ''}・${item.folder || ''}`;
+    if(word) word.innerHTML=item.displayWordHtml || (typeof safeEscape==='function' ? safeEscape(item.displayWord) : item.displayWord || '');
+    if(meaning) meaning.textContent=item.meaning || '';
+    if(question) question.className='srs-final-question';
+    if(feedback){ feedback.className='srs-final-feedback'; feedback.innerHTML=''; }
+    if(input){
+      input.value='';
+      input.readOnly=false;
+      delete input.dataset.locked;
+      input.disabled=false;
+    }
+    if(button){
+      button.textContent='Jawab';
+      button.classList.remove('secondary','next-mode');
+      button.disabled=false;
+      button.onclick=window.submitOrNextSrs;
+    }
+    if(bar) bar.style.width=`${(window.srsCurrentIndex/window.srsQueue.length)*100}%`;
+
+    if(typeof window.updateSrsCountersOnly==='function') window.updateSrsCountersOnly();
+    requestAnimationFrame(()=>{
+      focusSrsInput();
+      fitMobileCard();
+    });
+  };
+
+  /* Beberapa lapisan lama memakai fungsi ini untuk auto-next. */
+  const originalAdvance=window.advanceSrsResult;
+  window.advanceSrsResult=function(){
+    if(isMobileSrs() && typeof window.nextSrsQuestion==='function'){
+      return window.nextSrsQuestion();
+    }
+    return originalAdvance?.apply(this,arguments);
+  };
+
+  document.addEventListener('focusin',event=>{
+    if(event.target?.id==='srsAnswerInput' && isMobileSrs()){
+      document.body.classList.add('srs-keyboard-open','srs-mobile-focus');
+      setTimeout(fitMobileCard,40);
+    }
+  });
+
+  document.addEventListener('focusout',event=>{
+    if(event.target?.id==='srsAnswerInput'){
+      setTimeout(()=>{
+        if(document.activeElement?.id!=='srsAnswerInput'){
+          document.body.classList.remove('srs-keyboard-open','srs-mobile-focus');
+        }
+      },180);
+    }
+  });
+
+  window.visualViewport?.addEventListener('resize',()=>{
+    if(isMobileSrs()) setTimeout(fitMobileCard,30);
+  });
+
+  document.addEventListener('click',event=>{
+    if(event.target.closest('[data-page="srs"]')){
+      setTimeout(focusSrsInput,180);
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
