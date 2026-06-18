@@ -10173,5 +10173,230 @@ async function toggleUnderwaterAmbient(){
 }
 </style>
 
+
+
+<!-- ===== FIX FINAL: tombol "Kosakata siap di SRS" menampilkan data kosakata ready ===== -->
+<style id="srs-ready-vocab-data-fix-style">
+  #srsReadyStatCard{cursor:pointer}
+  .srs-ready-empty-note{line-height:1.7;color:var(--muted)}
+  .srs-ready-badge{
+    display:inline-block;
+    margin-top:7px;
+    padding:5px 9px;
+    border-radius:999px;
+    background:#eef7ff;
+    color:#2f6fae;
+    font-size:12px;
+    font-weight:900;
+  }
+  .srs-vocab-detail .srs-vocab-origin{
+    display:block;
+    margin-top:5px;
+    color:#6b8298;
+    font-size:12px;
+  }
+</style>
+<script id="srs-ready-vocab-data-fix-script">
+(function(){
+  'use strict';
+
+  function esc(value){
+    if(typeof window.escapeHtml === 'function') return window.escapeHtml(String(value ?? ''));
+    if(typeof window.safeEscape === 'function') return window.safeEscape(String(value ?? ''));
+    return String(value ?? '').replace(/[&<>"']/g,function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function maxLevel(){ return 10; }
+
+  function levelOf(record){
+    return Math.max(0, Math.min(maxLevel(), Number(record?.level ?? record?.correctStage ?? 0) || 0));
+  }
+
+  function getItems(){
+    try{
+      return typeof window.buildSrsItems === 'function' ? (window.buildSrsItems() || []) : [];
+    }catch(err){
+      console.warn('buildSrsItems gagal:', err);
+      return [];
+    }
+  }
+
+  function getState(items){
+    try{
+      if(typeof window.syncSrsState === 'function') return window.syncSrsState(items) || {};
+      if(typeof window.getSrsState === 'function') return window.getSrsState() || {};
+      return JSON.parse(localStorage.getItem('srsState') || '{}') || {};
+    }catch(err){
+      console.warn('SRS state gagal dibaca:', err);
+      return {};
+    }
+  }
+
+  function dueText(record){
+    const due = Number(record?.due || 0);
+    if(!due || due <= Date.now()) return 'Siap masuk SRS sekarang';
+    const diff = due - Date.now();
+    if(typeof window.formatSrsDuration === 'function') return window.formatSrsDuration(diff) + ' lagi';
+    const min = Math.max(1, Math.ceil(diff / 60000));
+    if(min < 60) return min + ' menit lagi';
+    const hour = Math.ceil(min / 60);
+    if(hour < 24) return hour + ' jam lagi';
+    return Math.ceil(hour / 24) + ' hari lagi';
+  }
+
+  function displayWord(item){
+    return String(item.displayWord || item.word || item.answer || item.readingAnswer || 'Kosakata').trim();
+  }
+
+  function displayReading(item){
+    return String(item.readingAnswer || item.answer || '').trim();
+  }
+
+  function displayMeaning(item){
+    return String(item.meaning || item.translation || 'Arti belum tersedia').trim();
+  }
+
+  function readyItems(){
+    const items = getItems();
+    const state = getState(items);
+    const now = Date.now();
+    const max = maxLevel();
+    return {
+      items,
+      state,
+      ready: items.filter(function(item){
+        const record = state[item.key] || {};
+        return Number(record.due || 0) <= now && levelOf(record) < max;
+      }).sort(function(a,b){
+        const sa = state[a.key] || {};
+        const sb = state[b.key] || {};
+        return (Number(sa.due || 0) - Number(sb.due || 0)) || displayWord(a).localeCompare(displayWord(b),'ja');
+      })
+    };
+  }
+
+  function ensureModal(){
+    let modal = document.getElementById('srsDetailModal');
+    if(!modal){
+      modal = document.createElement('div');
+      modal.id = 'srsDetailModal';
+      modal.className = 'srs-detail-modal';
+      modal.innerHTML =
+        '<div class="srs-detail-card" role="dialog" aria-modal="true">' +
+          '<div class="srs-detail-head">' +
+            '<h2 id="srsDetailTitle">Daftar Kosakata</h2>' +
+            '<button class="srs-detail-close" type="button" aria-label="Tutup">×</button>' +
+          '</div>' +
+          '<div id="srsDetailList"></div>' +
+        '</div>';
+      document.body.appendChild(modal);
+      modal.addEventListener('click',function(event){
+        if(event.target === modal) modal.classList.remove('active');
+      });
+    }
+    const close = modal.querySelector('.srs-detail-close');
+    if(close && !close.dataset.readyFixBound){
+      close.dataset.readyFixBound = '1';
+      close.addEventListener('click',function(){ modal.classList.remove('active'); });
+    }
+    return modal;
+  }
+
+  function renderReadyModal(){
+    const data = readyItems();
+    const modal = ensureModal();
+    const title = modal.querySelector('#srsDetailTitle');
+    const list = modal.querySelector('#srsDetailList');
+    if(title) title.textContent = 'Kosakata Siap di SRS (' + data.ready.length + ')';
+
+    if(list){
+      if(!data.ready.length){
+        list.innerHTML = '<div class="empty srs-ready-empty-note">Belum ada kosakata yang waktunya masuk SRS sekarang.<br>Kosakata yang belum waktunya akan muncul otomatis di sini nanti.</div>';
+      }else{
+        list.innerHTML = data.ready.map(function(item){
+          const record = data.state[item.key] || {};
+          const wordHtml = item.displayWordHtml ? String(item.displayWordHtml) : esc(displayWord(item));
+          const reading = displayReading(item);
+          const meaning = displayMeaning(item);
+          const story = String(item.storyTitle || item.title || 'Tanpa judul');
+          const folder = String(item.folder || item.level || '').replace(/\bDAY\s*\d+\b\s*[・|:\-]?\s*/ig,'').trim();
+          return '<div class="srs-vocab-detail">' +
+            '<div class="srs-vocab-word">' + wordHtml + '</div>' +
+            '<div class="srs-vocab-meta">' +
+              (reading ? 'Cara baca: <strong>' + esc(reading) + '</strong><br>' : '') +
+              'Arti: <strong>' + esc(meaning) + '</strong><br>' +
+              'Progres <strong>' + levelOf(record) + '/' + maxLevel() + '</strong>・Benar ' + Number(record.correct || 0) + ' kali・Salah ' + Number(record.wrong || 0) + ' kali' +
+              '<span class="srs-vocab-origin">' + esc(folder ? folder + '・' + story : story) + '</span>' +
+              '<span class="srs-ready-badge">' + esc(dueText(record)) + '</span>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+      }
+    }
+    modal.classList.add('active');
+  }
+
+  const previousOpen = window.openSrsStatusDetail;
+  window.openSrsStatusDetail = function(type){
+    if(type === 'ready'){
+      renderReadyModal();
+      return;
+    }
+    if(typeof previousOpen === 'function') return previousOpen.apply(this, arguments);
+  };
+
+  function updateReadyNumber(){
+    const number = document.getElementById('srsReadyNumber');
+    if(number){
+      number.textContent = readyItems().ready.length;
+    }
+  }
+
+  function wireReadyButton(){
+    const number = document.getElementById('srsReadyNumber');
+    const card = document.getElementById('srsReadyStatCard') || number?.closest('.srs-stat');
+    if(!card) return;
+    card.setAttribute('role','button');
+    card.setAttribute('tabindex','0');
+    const label = card.querySelector('span');
+    if(label) label.textContent = 'Kosakata siap di SRS';
+    card.onclick = function(event){
+      event.preventDefault();
+      event.stopPropagation();
+      renderReadyModal();
+    };
+    card.onkeydown = function(event){
+      if(event.key === 'Enter' || event.key === ' '){
+        event.preventDefault();
+        renderReadyModal();
+      }
+    };
+    updateReadyNumber();
+  }
+
+  document.addEventListener('DOMContentLoaded',function(){
+    setTimeout(wireReadyButton, 120);
+    setTimeout(wireReadyButton, 500);
+  });
+  window.addEventListener('load',function(){
+    setTimeout(wireReadyButton, 150);
+    setTimeout(wireReadyButton, 700);
+  });
+  document.addEventListener('click',function(){
+    setTimeout(wireReadyButton, 30);
+  }, true);
+
+  const observer = new MutationObserver(function(){
+    wireReadyButton();
+  });
+  document.addEventListener('DOMContentLoaded',function(){
+    const srs = document.getElementById('srs') || document.body;
+    observer.observe(srs,{childList:true,subtree:true});
+  });
+})();
+</script>
+
 </body>
 </html>
