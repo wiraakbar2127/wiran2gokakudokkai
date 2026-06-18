@@ -8376,19 +8376,33 @@ async function toggleUnderwaterAmbient(){
     const temp = document.createElement("div");
     temp.innerHTML = String(html || "");
 
-    const rubyNodes = [...temp.querySelectorAll("ruby")];
-    if(rubyNodes.length){
-      const joined = rubyNodes
-        .map(r => r.querySelector("rt")?.textContent?.trim() || "")
-        .filter(Boolean)
-        .join("");
-      if(joined) return kataToHira(joined);
+    // Ambil bacaan seluruh kosakata: rt untuk bagian kanji, serta kana
+    // yang berada di luar ruby (misalnya 取り上げる → とりあげる).
+    function readNode(node){
+      if(node.nodeType === Node.TEXT_NODE){
+        return String(node.nodeValue || "");
+      }
+      if(node.nodeType !== Node.ELEMENT_NODE) return "";
+
+      const tag = node.tagName.toLowerCase();
+      if(tag === "rt") return String(node.textContent || "");
+      if(tag === "rp") return "";
+      if(tag === "ruby"){
+        const rt = node.querySelector(":scope > rt");
+        if(rt && String(rt.textContent || "").trim()){
+          return String(rt.textContent || "").trim();
+        }
+        return [...node.childNodes]
+          .filter(child => !(child.nodeType === Node.ELEMENT_NODE && ["rt","rp"].includes(child.tagName.toLowerCase())))
+          .map(readNode).join("");
+      }
+      return [...node.childNodes].map(readNode).join("");
     }
 
-    const rts = [...temp.querySelectorAll("rt")]
-      .map(rt => String(rt.textContent || "").trim())
-      .filter(Boolean);
-    if(rts.length) return kataToHira(rts.join(""));
+    const fullReading = [...temp.childNodes].map(readNode).join("").replace(/\s+/g, "").trim();
+    if(fullReading && /^[ぁ-んァ-ンー]+$/.test(fullReading)){
+      return kataToHira(fullReading);
+    }
 
     const plain = vocabTextFromHtml(html, fallbackText);
     if(/^[ぁ-んァ-ンー]+$/.test(plain)) return kataToHira(plain);
@@ -8613,10 +8627,42 @@ async function toggleUnderwaterAmbient(){
     if(readyEl) readyEl.textContent = ready;
   }
 
-  window.updateSrsCountersOnly = updateCounters;
+  function updateOverallProgressV5(){
+    const items = buildSrsItems();
+    const state = syncStateWithItems(items);
+    const learned = items.filter(item => srsLevel(state[item.key]) > 0).length;
+    const total = items.length;
+    const percent = total ? Math.round((learned / total) * 100) : 0;
+
+    const text = document.getElementById("srsLearnedText");
+    const bar = document.getElementById("srsLearnedBar");
+    const fish = document.getElementById("srsProgressFish");
+    if(text) text.textContent = `${learned} / ${total} (${percent}%)`;
+    if(bar) bar.style.width = `${percent}%`;
+    if(fish) fish.style.display = total ? "inline-block" : "none";
+  }
+
+  function formatNextReview(due){
+    const diff = Math.max(0, Number(due || 0) - Date.now());
+    if(typeof formatSrsDuration === "function"){
+      return `Dipelajari lagi ${formatSrsDuration(diff)}.`;
+    }
+    const minutes = Math.max(1, Math.ceil(diff / 60000));
+    if(minutes < 60) return `Dipelajari lagi sekitar ${minutes} menit.`;
+    const hours = Math.ceil(minutes / 60);
+    if(hours < 24) return `Dipelajari lagi sekitar ${hours} jam.`;
+    const days = Math.ceil(hours / 24);
+    return `Dipelajari lagi sekitar ${days} hari.`;
+  }
+
+  window.updateSrsCountersOnly = function(){
+    updateCounters();
+    updateOverallProgressV5();
+  };
 
   window.renderSrsPage = function(){
     updateCounters();
+    updateOverallProgressV5();
 
     const items = buildSrsItems();
     const state = syncStateWithItems(items);
@@ -8683,7 +8729,6 @@ async function toggleUnderwaterAmbient(){
           <button id="srsSubmitBtn" class="btn" type="button" onclick="submitOrNextSrs()">Jawab</button>
         </div>
 
-        <div class="srs-romaji-note">Enter pertama memasukkan jawaban. Setelah feedback muncul, Enter berikutnya lanjut ke soal berikutnya.</div>
         <div id="srsFeedback"></div>
       </div>
     `;
@@ -8696,13 +8741,9 @@ async function toggleUnderwaterAmbient(){
         input.setSelectionRange(input.value.length, input.value.length);
       }
     });
-    input.addEventListener("keydown", event => {
-      if(event.key === "Enter"){
-        event.preventDefault();
-        submitOrNextSrs();
-      }
-    });
-
+    // Enter ditangani oleh satu listener global saja.
+    // Jangan menambahkan listener Enter kedua pada input karena satu tekanan
+    // dapat menjalankan submit lalu langsung berpindah ke soal berikutnya.
     setTimeout(() => input.focus(), 80);
   };
 
@@ -8749,10 +8790,9 @@ async function toggleUnderwaterAmbient(){
       question.classList.add("correct");
       feedback.classList.add("correct");
       feedback.innerHTML =
-        `<div class="srs-final-feedback-title">✅ Benar!</div>` +
-        `<div>Jawaban benar: <span class="srs-final-answer-pill">${safeEscape(correctReading)}</span></div>` +
+        `<div>Jawaban: <span class="srs-final-answer-pill">${safeEscape(correctReading)}</span></div>` +
         `<div class="srs-final-meaning-line">Arti: <strong>${safeEscape(item.meaning)}</strong></div>` +
-        `<div class="srs-final-next-note">Klik tombol Next atau tekan Enter untuk lanjut.</div>`;
+        `<div class="srs-next-time">${safeEscape(formatNextReview(record.due))}</div>`;
     }else{
       record.level = 0;
       record.wrong = (record.wrong || 0) + 1;
@@ -8762,10 +8802,9 @@ async function toggleUnderwaterAmbient(){
       question.classList.add("wrong");
       feedback.classList.add("wrong");
       feedback.innerHTML =
-        `<div class="srs-final-feedback-title">❌ Salah.</div>` +
-        `<div>Jawaban benar: <span class="srs-final-answer-pill">${safeEscape(correctReading)}</span></div>` +
+        `<div>Jawaban: <span class="srs-final-answer-pill">${safeEscape(correctReading)}</span></div>` +
         `<div class="srs-final-meaning-line">Arti: <strong>${safeEscape(item.meaning)}</strong></div>` +
-        `<div class="srs-final-next-note">Klik tombol Next atau tekan Enter untuk lanjut.</div>`;
+        `<div class="srs-next-time">${safeEscape(formatNextReview(record.due))}</div>`;
     }
 
     state[item.key] = record;
@@ -8783,6 +8822,7 @@ async function toggleUnderwaterAmbient(){
 
     input.focus();
     updateCounters();
+    updateOverallProgressV5();
   };
 
   window.nextSrsQuestion = function(){
@@ -8792,13 +8832,14 @@ async function toggleUnderwaterAmbient(){
   };
 
   document.addEventListener("keydown", event => {
-    if(event.key !== "Enter") return;
+    if(event.key !== "Enter" || event.repeat) return;
     if(!document.getElementById("srs")?.classList.contains("active")) return;
 
     const input = document.getElementById("srsAnswerInput");
     if(!input) return;
 
     event.preventDefault();
+    event.stopPropagation();
     submitOrNextSrs();
   }, true);
 
@@ -8912,5 +8953,17 @@ async function toggleUnderwaterAmbient(){
 })();
 </script>
 
+
+<style id="srs-v6-clean-feedback-style">
+  #srs .srs-final-feedback-title,
+  #srs .srs-final-next-note{display:none!important}
+  #srs .srs-next-time{
+    margin-top:10px;
+    padding-top:9px;
+    border-top:1px dashed currentColor;
+    font-weight:800;
+    opacity:.9;
+  }
+</style>
 </body>
 </html>
