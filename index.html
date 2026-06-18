@@ -10019,5 +10019,231 @@ async function toggleUnderwaterAmbient(){
 })();
 </script>
 
+
+
+<!-- ===== PATCH BUG SRS HP: HUD progres, achievement, musik, dan daftar siap dites ===== -->
+<style id="srs-mobile-hud-ready-final-style">
+/* Kartu jumlah kosakata yang siap dites */
+#srsReadyStatCard{
+  cursor:pointer!important;
+  background:linear-gradient(135deg,#173f68,#28689d)!important;
+  border-color:#173f68!important;
+  color:#fff!important;
+  box-shadow:0 10px 25px rgba(23,63,104,.22)!important;
+}
+#srsReadyStatCard strong,
+#srsReadyStatCard span{
+  color:#fff!important;
+}
+#srsReadyStatCard:hover,
+#srsReadyStatCard:focus-visible{
+  transform:translateY(-2px)!important;
+  box-shadow:0 14px 30px rgba(23,63,104,.28)!important;
+  outline:none!important;
+}
+
+/* Modal daftar kosakata selalu berada di atas mode fokus SRS */
+#srsDetailModal{
+  z-index:20050!important;
+}
+
+/* Badge level achievement ringkas khusus saat mengerjakan SRS di HP */
+#srsAchievementMini{
+  display:none;
+}
+
+@media(max-width:700px){
+  /* Kembalikan panel Kosakata dipelajari dan persentasenya saat mode mengerjakan soal */
+  body.srs-keyboard-active #srs.page.active .srs-overall-box,
+  body.srs-keyboard-open #srs.page.active .srs-overall-box,
+  body.srs-mobile-focus #srs.page.active .srs-overall-box,
+  html.srs-ios-keyboard-open #srs.page.active .srs-overall-box{
+    display:block!important;
+    position:relative!important;
+    z-index:103!important;
+    margin:0 0 8px!important;
+    padding:8px 10px!important;
+    border-radius:14px!important;
+    background:rgba(255,255,255,.90)!important;
+    border:1px solid rgba(200,222,242,.95)!important;
+    box-shadow:0 8px 24px rgba(33,76,117,.12)!important;
+    backdrop-filter:blur(10px)!important;
+  }
+  body.srs-keyboard-active #srs.page.active .srs-overall-head,
+  body.srs-keyboard-open #srs.page.active .srs-overall-head,
+  body.srs-mobile-focus #srs.page.active .srs-overall-head,
+  html.srs-ios-keyboard-open #srs.page.active .srs-overall-head{
+    margin-bottom:5px!important;
+    font-size:11px!important;
+  }
+  body.srs-keyboard-active #srs.page.active .srs-overall-box small,
+  body.srs-keyboard-open #srs.page.active .srs-overall-box small,
+  body.srs-mobile-focus #srs.page.active .srs-overall-box small,
+  html.srs-ios-keyboard-open #srs.page.active .srs-overall-box small{
+    display:none!important;
+  }
+  body.srs-keyboard-active #srs.page.active .srs-progress.learned,
+  body.srs-keyboard-open #srs.page.active .srs-progress.learned,
+  body.srs-mobile-focus #srs.page.active .srs-progress.learned,
+  html.srs-ios-keyboard-open #srs.page.active .srs-progress.learned{
+    display:block!important;
+    height:8px!important;
+    margin:0!important;
+  }
+
+  /* Sisakan ruang untuk progress di atas kartu */
+  body.srs-keyboard-active #srs.page.active .srs-main,
+  body.srs-keyboard-open #srs.page.active .srs-main,
+  body.srs-mobile-focus #srs.page.active .srs-main,
+  html.srs-ios-keyboard-open #srs.page.active .srs-main{
+    display:grid!important;
+    grid-template-rows:auto minmax(0,1fr)!important;
+    align-items:stretch!important;
+    justify-content:stretch!important;
+  }
+
+  /* Achievement dan musik tetap terlihat saat mode fokus/keyboard */
+  body.srs-keyboard-active #achievementBubble,
+  body.srs-keyboard-open #achievementBubble,
+  body.srs-mobile-focus #achievementBubble,
+  html.srs-ios-keyboard-open #achievementBubble{
+    display:flex!important;
+    visibility:visible!important;
+    opacity:1!important;
+    pointer-events:auto!important;
+    position:fixed!important;
+    right:14px!important;
+    bottom:14px!important;
+    width:48px!important;
+    height:48px!important;
+    z-index:20110!important;
+    font-size:23px!important;
+  }
+  body.srs-keyboard-active #ambientToggle,
+  body.srs-keyboard-open #ambientToggle,
+  body.srs-mobile-focus #ambientToggle,
+  html.srs-ios-keyboard-open #ambientToggle{
+    display:flex!important;
+    visibility:visible!important;
+    opacity:1!important;
+    pointer-events:auto!important;
+    position:fixed!important;
+    right:70px!important;
+    bottom:14px!important;
+    width:48px!important;
+    height:48px!important;
+    z-index:20110!important;
+    font-size:21px!important;
+  }
+  body.srs-keyboard-active #srsAchievementMini,
+  body.srs-keyboard-open #srsAchievementMini,
+  body.srs-mobile-focus #srsAchievementMini,
+  html.srs-ios-keyboard-open #srsAchievementMini{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    position:fixed!important;
+    left:14px!important;
+    bottom:14px!important;
+    max-width:calc(100vw - 150px)!important;
+    min-height:42px!important;
+    padding:7px 11px!important;
+    border:1px solid rgba(200,222,242,.95)!important;
+    border-radius:999px!important;
+    background:rgba(255,255,255,.92)!important;
+    color:#244f73!important;
+    box-shadow:0 8px 24px rgba(33,76,117,.16)!important;
+    backdrop-filter:blur(10px)!important;
+    font-size:11px!important;
+    font-weight:900!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    cursor:pointer!important;
+    z-index:20110!important;
+  }
+
+  /* Panel achievement dan modal detail harus dapat dibuka di atas page fokus */
+  #achievementPanel{
+    z-index:20120!important;
+  }
+  #srsDetailModal.active{
+    display:flex!important;
+  }
+}
+</style>
+<script id="srs-mobile-hud-ready-final-script">
+(function(){
+  'use strict';
+
+  function ensureMiniAchievement(){
+    let mini=document.getElementById('srsAchievementMini');
+    if(!mini){
+      mini=document.createElement('button');
+      mini.id='srsAchievementMini';
+      mini.type='button';
+      mini.setAttribute('aria-label','Buka level achievement');
+      mini.addEventListener('click',function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        if(typeof window.toggleAchievementPanel==='function') window.toggleAchievementPanel();
+      });
+      document.body.appendChild(mini);
+    }
+    return mini;
+  }
+
+  function syncMiniAchievement(){
+    const mini=ensureMiniAchievement();
+    const bubble=document.getElementById('achievementBubble');
+    const learnedText=document.getElementById('srsLearnedText')?.textContent?.trim() || '';
+    const title=(bubble?.title || 'Achievement').replace(/・/g,' • ');
+    mini.textContent=`${bubble?.textContent?.trim() || '🐟'} ${title}${learnedText ? ` • ${learnedText}` : ''}`;
+  }
+
+  function makeReadyCardClickable(){
+    const card=document.getElementById('srsReadyStatCard');
+    if(!card) return;
+    card.setAttribute('role','button');
+    card.setAttribute('tabindex','0');
+    card.setAttribute('aria-label','Lihat kosakata yang siap dites sekarang');
+  }
+
+  function openReadyList(event){
+    const card=event.target?.closest?.('#srsReadyStatCard');
+    if(!card) return;
+    if(event.type==='keydown' && event.key!=='Enter' && event.key!==' ') return;
+    event.preventDefault();
+    event.stopPropagation();
+    if(typeof window.openSrsStatusDetail==='function'){
+      window.openSrsStatusDetail('ready');
+    }
+  }
+
+  /* Delegasi paling akhir agar tetap bekerja meski kartu dibuat ulang. */
+  document.addEventListener('click',openReadyList,true);
+  document.addEventListener('keydown',openReadyList,true);
+
+  const observer=new MutationObserver(function(){
+    makeReadyCardClickable();
+    syncMiniAchievement();
+  });
+
+  function install(){
+    ensureMiniAchievement();
+    makeReadyCardClickable();
+    syncMiniAchievement();
+    observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['title','class','style']});
+    setInterval(function(){
+      makeReadyCardClickable();
+      syncMiniAchievement();
+    },1000);
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install,{once:true});
+  else install();
+})();
+</script>
+
 </body>
 </html>
