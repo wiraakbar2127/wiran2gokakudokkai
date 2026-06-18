@@ -6830,5 +6830,97 @@ async function toggleUnderwaterAmbient(){
 })();
 </script>
 
+
+
+<style>
+/* ===== Hasil SRS ringkas khusus HP ===== */
+@media(max-width:700px){
+  #srs.page.active .srs-question.correct-answer,
+  #srs.page.active .srs-question.wrong-answer{
+    padding:10px 11px!important;
+    border-radius:13px!important;
+  }
+
+  #srs.page.active .srs-question.correct-answer #srsSentenceText,
+  #srs.page.active .srs-question.wrong-answer #srsSentenceText{
+    font-size:17px!important;
+    line-height:1.55!important;
+    margin:0 0 6px!important;
+  }
+
+  #srs.page.active .srs-question.correct-answer .srs-translation-restored,
+  #srs.page.active .srs-question.wrong-answer .srs-translation-restored{
+    margin:7px 0 0!important;
+    padding:8px 10px!important;
+    font-size:13px!important;
+    line-height:1.5!important;
+    border-left-width:3px!important;
+    background:rgba(255,255,255,.72)!important;
+  }
+
+  #srs.page.active .srs-inline-result{
+    margin:7px 0 0!important;
+    padding:7px 0 0!important;
+    border-top:1px dashed currentColor!important;
+    font-size:13px!important;
+    line-height:1.35!important;
+  }
+
+  #srs.page.active .srs-inline-result .srs-result-title{
+    margin:0!important;
+    font-size:15px!important;
+    line-height:1.25!important;
+    font-weight:900!important;
+  }
+
+  #srs.page.active .srs-inline-result .srs-result-actions{
+    margin-top:7px!important;
+    display:block!important;
+  }
+
+  #srs.page.active .srs-next-question-btn{
+    min-height:38px!important;
+    height:38px!important;
+    padding:7px 12px!important;
+    font-size:13px!important;
+    border-radius:999px!important;
+  }
+
+  #srs.page.active .srs-result-actions .srs-skip-note{
+    display:none!important;
+  }
+}
+</style>
+<script>
+/* Pada HP, hasil hanya menampilkan status, arti kalimat, dan tombol lanjut. */
+(function(){
+  function simplifyMobileResult(){
+    if(!window.matchMedia('(max-width:700px)').matches) return;
+
+    const result=document.getElementById('srsInlineResult');
+    if(!result || !window.srsResultWaiting) return;
+
+    [...result.children].forEach(child=>{
+      if(
+        !child.classList.contains('srs-result-title') &&
+        !child.classList.contains('srs-result-actions')
+      ){
+        child.remove();
+      }
+    });
+
+    const nextButton=result.querySelector('.srs-next-question-btn');
+    if(nextButton) nextButton.textContent='Selanjutnya →';
+  }
+
+  const previousSubmit=window.submitSrsAnswer;
+  if(typeof previousSubmit==='function'){
+    window.submitSrsAnswer=function(){
+      previousSubmit();
+      simplifyMobileResult();
+    };
+  }
+})();
+</script>
 </body>
 </html>
