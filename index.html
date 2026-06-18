@@ -237,7 +237,7 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
   position:fixed;
   inset:0;
   z-index:100;
-  display:none;
+  display:flex;
   align-items:center;
   justify-content:center;
   padding:20px;
@@ -722,7 +722,6 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
   justify-content:center;
   transition:.2s;
 }
-#srs.active ~ .ambient-toggle{display:flex}
 .ambient-toggle.visible{display:flex}
 .ambient-toggle.playing{
   background:linear-gradient(145deg,#dff7ff,#bde7ff);
@@ -860,6 +859,68 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
 @keyframes srsFishSwim{
   0%,100%{transform:translateY(-50%) rotate(-1deg)}
   50%{transform:translateY(-62%) rotate(2deg)}
+}
+
+
+.srs-inline-result{
+  display:none;
+  margin-top:14px;
+  padding-top:14px;
+  border-top:1px dashed var(--line);
+  font-size:15px;
+  line-height:1.7;
+}
+.srs-question.correct-answer .srs-inline-result{
+  display:block;
+  color:#28704a;
+}
+.srs-question.wrong-answer .srs-inline-result{
+  display:block;
+  color:#8a3b3b;
+}
+#srsFeedback{
+  display:none!important;
+}
+button:disabled,
+select:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+
+
+/* Pastikan modal konfirmasi tidak muncul saat halaman pertama dibuka */
+#readConfirmModal{
+  display:none;
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
+#readConfirmModal.active{
+  display:flex;
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+}
+
+
+/* Tombol musik selalu tampil di semua halaman */
+#ambientToggle{
+  display:flex!important;
+  visibility:visible!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+}
+
+
+#ambientToggle{
+  position:fixed!important;
+  right:18px!important;
+  bottom:92px!important;
+  z-index:130!important;
+  display:flex!important;
+  visibility:visible!important;
+  opacity:1!important;
+  pointer-events:auto!important;
 }
 
 </style>
@@ -1156,15 +1217,13 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
       <div id="srsPracticeArea"></div>
     </div>
     <aside class="srs-side"><h3 style="margin-top:0;color:var(--brown)">Cerita Aktif</h3><div id="srsStoryList" class="srs-list"></div></aside>
-  </div>
-
-  <button id="ambientToggle" class="ambient-toggle" onclick="toggleUnderwaterAmbient()" title="Suara ambient bawah air" aria-label="Suara ambient bawah air">
-    ♪
-  </button>
-
-</section>
+  </div></section>
 
 </main>
+
+<button id="ambientToggle" class="ambient-toggle" onclick="toggleUnderwaterAmbient()" title="Suara ambient bawah air" aria-label="Suara ambient bawah air">
+    ♪
+  </button>
 
 
 <div id="storyBubbleLoading" class="story-bubble-loading" aria-live="polite">
@@ -2051,6 +2110,50 @@ function deleteFolder(name){
 }
 
 
+
+function saveStoryFolderMoveFromManage(id){
+  const story=getStories().find(
+    item=>String(item.id)===String(id)
+  );
+
+  if(!story){
+    alert("Cerita tidak ditemukan.");
+    return;
+  }
+
+  if(isStoryLocked(story)){
+    alert(
+      "Cerita ini masih terkunci.\n" +
+      "Selesaikan SRS DAY sebelumnya sebelum memindahkannya."
+    );
+    return;
+  }
+
+  const select=document.getElementById(
+    `manage-move-${encodeURIComponent(String(id))}`
+  );
+
+  if(!select){
+    alert("Pilihan folder tidak ditemukan.");
+    return;
+  }
+
+  const newFolder=select.value;
+  const oldFolder=story.level||"N2";
+
+  if(newFolder===oldFolder){
+    alert("Cerita masih berada di folder yang sama.");
+    return;
+  }
+
+  const moved=moveStoryToFolder(id,newFolder);
+
+  if(moved){
+    alert(`Cerita berhasil dipindahkan ke folder "${newFolder}".`);
+    renderManageList();
+  }
+}
+
 function saveStoryFolderMove(id){
   const selectId=`move-${encodeURIComponent(String(id))}`;
   const select=document.getElementById(selectId);
@@ -2085,6 +2188,17 @@ function saveStoryFolderMove(id){
 }
 
 function moveStoryToFolder(id,newFolder){
+  const lockCheckStory=getStories().find(
+    item=>String(item.id)===String(id)
+  );
+
+  if(lockCheckStory && isStoryLocked(lockCheckStory)){
+    alert(
+      "Cerita ini masih terkunci dan belum bisa dipindahkan."
+    );
+    return false;
+  }
+
   let saved=[];
 
   try{
@@ -2409,7 +2523,10 @@ function syncSrsState(items){const s=getSrsState(),now=Date.now();items.forEach(
 function getDueSrsItems(){const items=buildSrsItems(),s=syncSrsState(items),now=Date.now();return items.filter(i=>(s[i.key]?.due||0)<=now).sort((a,b)=>(s[a.key]?.due||0)-(s[b.key]?.due||0))}
 function renderSrsPage(){const items=buildSrsItems(),s=syncSrsState(items),now=Date.now();document.getElementById("srsDueCount").textContent=items.filter(i=>(s[i.key]?.due||0)<=now).length;document.getElementById("srsLearningCount").textContent=items.filter(i=>{const l=s[i.key]?.level||0;return l>0&&l<SRS_INTERVALS.length-1}).length;document.getElementById("srsMasteredCount").textContent=items.filter(i=>(s[i.key]?.level||0)>=SRS_INTERVALS.length-1).length;const map=new Map();items.forEach(i=>{if(!map.has(i.storyId))map.set(i.storyId,{title:i.storyTitle,total:0,due:0});const info=map.get(i.storyId);info.total++;if((s[i.key]?.due||0)<=now)info.due++});document.getElementById("srsStoryList").innerHTML=map.size?[...map.values()].map(x=>`<div class="srs-story-row"><div><strong>${escapeHtml(x.title)}</strong></div><span>${x.due}/${x.total} due</span></div>`).join(""):'<div class="empty">Belum ada cerita yang selesai dibaca.</div>';startSrsSession()}
 function startSrsSession(){srsQueue=getDueSrsItems();srsCurrentIndex=0;srsLocked=false;renderCurrentSrsCard()}
-function renderCurrentSrsCard(){const area=document.getElementById("srsPracticeArea"),bar=document.querySelector("#srsProgress>div");if(!area)return;if(!srsQueue.length||srsCurrentIndex>=srsQueue.length){if(bar)bar.style.width="100%";area.innerHTML='<div class="srs-empty"><h2>復習完了！</h2><p>Tidak ada latihan yang jatuh tempo sekarang.</p><button class="btn" onclick="renderSrsPage()">Periksa Lagi</button></div>';return}const item=srsQueue[srsCurrentIndex];if(bar)bar.style.width=`${(srsCurrentIndex/srsQueue.length)*100}%`;area.innerHTML=`<div class="srs-card"><div class="srs-source">${escapeHtml(item.storyTitle)}・${escapeHtml(item.folder)}</div><div id="srsQuestionText" class="srs-question">${item.questionHtml}</div><div class="srs-translation">${item.translationHtml}</div><div class="srs-answer-wrap"><input id="srsAnswerInput" class="srs-answer" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Ketik romaji atau hiragana"><button class="btn" onclick="submitSrsAnswer()">Jawab</button></div><div class="srs-romaji-note">Contoh: atsumaru otomatis menjadi あつまる.</div><div id="srsFeedback" class="srs-feedback"></div></div>`;const input=document.getElementById("srsAnswerInput");input.addEventListener("input",()=>{input.value=romajiToHiragana(input.value);input.setSelectionRange(input.value.length,input.value.length)});input.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submitSrsAnswer()}});setTimeout(()=>input.focus(),80)}
+function renderCurrentSrsCard(){const area=document.getElementById("srsPracticeArea"),bar=document.querySelector("#srsProgress>div");if(!area)return;if(!srsQueue.length||srsCurrentIndex>=srsQueue.length){if(bar)bar.style.width="100%";area.innerHTML='<div class="srs-empty"><h2>復習完了！</h2><p>Tidak ada latihan yang jatuh tempo sekarang.</p><button class="btn" onclick="renderSrsPage()">Periksa Lagi</button></div>';return}const item=srsQueue[srsCurrentIndex];if(bar)bar.style.width=`${(srsCurrentIndex/srsQueue.length)*100}%`;area.innerHTML=`<div class="srs-card"><div class="srs-source">${escapeHtml(item.storyTitle)}・${escapeHtml(item.folder)}</div><div id="srsQuestionText" class="srs-question">
+        <div id="srsSentenceText">${item.questionHtml}</div>
+        <div id="srsInlineResult" class="srs-inline-result"></div>
+      </div><div class="srs-translation">${item.translationHtml}</div><div class="srs-answer-wrap"><input id="srsAnswerInput" class="srs-answer" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Ketik romaji atau hiragana"><button class="btn" onclick="submitSrsAnswer()">Jawab</button></div><div class="srs-romaji-note">Contoh: atsumaru otomatis menjadi あつまる.</div><div id="srsFeedback" class="srs-feedback"></div></div>`;const input=document.getElementById("srsAnswerInput");input.addEventListener("input",()=>{input.value=romajiToHiragana(input.value);input.setSelectionRange(input.value.length,input.value.length)});input.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submitSrsAnswer()}});setTimeout(()=>input.focus(),80)}
 function submitSrsAnswer(){if(srsLocked)return;const item=srsQueue[srsCurrentIndex],input=document.getElementById("srsAnswerInput"),fb=document.getElementById("srsFeedback");if(!item||!input||!fb)return;const ans=normalizeKana(input.value);if(!ans)return;srsLocked=true;const correct=ans===normalizeKana(item.answer),s=getSrsState(),r=s[item.key]||{level:0,due:Date.now(),correct:0,wrong:0},now=Date.now();if(correct){r.level=Math.min((r.level||0)+1,SRS_INTERVALS.length-1);r.correct=(r.correct||0)+1;r.lastResult="correct";r.due=now+SRS_INTERVALS[r.level];fb.className="srs-feedback correct";fb.innerHTML=`<strong>Benar！</strong><br>Jawaban: <strong>${escapeHtml(item.answer)}</strong><div class="srs-next-time">Muncul lagi ${formatSrsDuration(SRS_INTERVALS[r.level])}.</div>`}else{r.level=0;r.wrong=(r.wrong||0)+1;r.lastResult="wrong";r.due=now+SRS_INTERVALS[0];fb.className="srs-feedback wrong";fb.innerHTML=`<strong>Belum tepat.</strong><br>Jawaban benar: <strong>${escapeHtml(item.answer)}</strong><div class="srs-next-time">Diulang sekitar ${formatSrsDuration(SRS_INTERVALS[0])}.</div>`}s[item.key]=r;saveSrsState(s);input.disabled=true;setTimeout(()=>{srsCurrentIndex++;srsLocked=false;renderCurrentSrsCard();updateSrsCountersOnly()},correct?700:1500)}
 function updateSrsCountersOnly(){const items=buildSrsItems(),s=syncSrsState(items),now=Date.now();document.getElementById("srsDueCount").textContent=items.filter(i=>(s[i.key]?.due||0)<=now).length;document.getElementById("srsLearningCount").textContent=items.filter(i=>{const l=s[i.key]?.level||0;return l>0&&l<SRS_INTERVALS.length-1}).length;document.getElementById("srsMasteredCount").textContent=items.filter(i=>(s[i.key]?.level||0)>=SRS_INTERVALS.length-1).length}
 function formatSrsDuration(ms){const m=Math.round(ms/60000);if(m<60)return `${m} menit`;const h=Math.round(m/60);if(h<24)return `${h} jam`;return `${Math.round(h/24)} hari`}
@@ -2858,10 +2975,11 @@ function submitSrsAnswer(){
 
   const item=srsQueue[srsCurrentIndex];
   const input=document.getElementById("srsAnswerInput");
-  const feedback=document.getElementById("srsFeedback");
   const question=document.getElementById("srsQuestionText");
+  const sentence=document.getElementById("srsSentenceText");
+  const inlineResult=document.getElementById("srsInlineResult");
 
-  if(!item || !input || !feedback || !question) return;
+  if(!item || !input || !question || !sentence || !inlineResult) return;
 
   const userAnswer=normalizeKana(input.value);
   if(!userAnswer) return;
@@ -2878,7 +2996,7 @@ function submitSrsAnswer(){
   };
   const now=Date.now();
 
-  question.innerHTML=item.correctSentenceHtml;
+  sentence.innerHTML=item.correctSentenceHtml;
   question.classList.remove("correct-answer","wrong-answer");
   question.classList.add(correct ? "correct-answer" : "wrong-answer");
 
@@ -2891,26 +3009,23 @@ function submitSrsAnswer(){
     record.lastResult="correct";
     record.due=now+SRS_INTERVALS[record.level];
 
-    feedback.className="srs-feedback correct";
-    feedback.innerHTML=`
-      <strong>Benar！</strong>
-      <div class="srs-next-time">
-        Muncul lagi ${formatSrsDuration(SRS_INTERVALS[record.level])}.
-      </div>`;
+    inlineResult.innerHTML=`
+      <strong>Benar！</strong><br>
+      Jawaban: <strong>${escapeHtml(item.answer)}</strong><br>
+      Muncul lagi ${formatSrsDuration(SRS_INTERVALS[record.level])}.
+    `;
   }else{
     record.level=0;
     record.wrong=(record.wrong||0)+1;
     record.lastResult="wrong";
     record.due=now+SRS_INTERVALS[0];
 
-    feedback.className="srs-feedback wrong";
-    feedback.innerHTML=`
+    inlineResult.innerHTML=`
       <strong>Belum tepat.</strong><br>
-      Jawaban benar: <strong>${escapeHtml(item.answer)}</strong>
-      <div class="srs-next-time">
-        Perhatikan kalimat yang sudah diperbaiki di atas.
-        Soal ini akan diulang sekitar ${formatSrsDuration(SRS_INTERVALS[0])}.
-      </div>`;
+      Jawaban benar: <strong>${escapeHtml(item.answer)}</strong><br>
+      Perhatikan kalimat yang sudah diperbaiki di atas.<br>
+      Soal ini akan diulang sekitar ${formatSrsDuration(SRS_INTERVALS[0])}.
+    `;
   }
 
   state[item.key]=record;
@@ -2920,6 +3035,7 @@ function submitSrsAnswer(){
   updateDailyLearningRewards();
   renderAchievementPanel();
   renderHome();
+  updateSrsOverallProgress();
 
   const delay=correct ? 1800 : 5000;
 
@@ -3089,35 +3205,84 @@ function renderManageList(){
     getStories(),
     getSortValue("manageSort","day")
   );
+  const folders=getFolders();
 
-  wrap.innerHTML=stories.map(story=>`
-    <div class="manage-card" id="manage-card-${encodeURIComponent(String(story.id))}">
-      <div class="manage-head">
-        <div>
-          <span class="tag">${story.theme||"読解"}</span>
-          ${completionBadge(story.id)}
-          <h3 style="margin:10px 0 5px">${story.title}</h3>
-          <p style="margin:0;color:var(--muted)">${story.description||""}</p>
-          ${storyProgressHtml(story.id)}
-        </div>
+  wrap.innerHTML=stories.map(story=>{
+    const locked=isStoryLocked(story);
 
-        <div class="manage-actions">
-          <button class="btn light smallbtn"
-            data-story-id="${encodeURIComponent(String(story.id))}"
-            onclick="openStory(decodeURIComponent(this.dataset.storyId))">
-            Lihat
-          </button>
-          <button class="btn smallbtn" onclick="editStory('${escapeJs(story.id)}')">
-            Edit
-          </button>
-          <button class="btn danger smallbtn"
-            data-story-id="${encodeURIComponent(String(story.id))}"
-            onclick="deleteStory(decodeURIComponent(this.dataset.storyId))">
-            Hapus
-          </button>
+    return `
+      <div class="manage-card" id="manage-card-${encodeURIComponent(String(story.id))}">
+        <div class="manage-head">
+          <div>
+            <span class="tag">${story.theme||"読解"}</span>
+            ${completionBadge(story.id)}
+            ${locked?'<span class="lock-badge">🔒 Terkunci</span>':""}
+
+            <h3 style="margin:10px 0 5px">${story.title}</h3>
+            <p style="margin:0;color:var(--muted)">${story.description||""}</p>
+            ${storyProgressHtml(story.id)}
+
+            <label style="margin-top:14px">Pindahkan ke folder</label>
+            <div class="move-folder-row">
+              <select
+                id="manage-move-${encodeURIComponent(String(story.id))}"
+                class="story-folder-select"
+                ${locked?"disabled":""}
+              >
+                ${folders.map(folder=>`
+                  <option
+                    value="${escapeHtml(folder)}"
+                    ${folder===(story.level||"N2")?"selected":""}
+                  >
+                    ${escapeHtml(folder)}
+                  </option>
+                `).join("")}
+              </select>
+
+              <button
+                class="btn smallbtn"
+                data-story-id="${encodeURIComponent(String(story.id))}"
+                onclick="saveStoryFolderMoveFromManage(decodeURIComponent(this.dataset.storyId))"
+                ${locked?"disabled":""}
+              >
+                Simpan Folder
+              </button>
+            </div>
+
+            ${
+              locked
+                ? '<div class="help">Cerita masih terkunci. Selesaikan SRS DAY sebelumnya untuk memindahkannya.</div>'
+                : ''
+            }
+          </div>
+
+          <div class="manage-actions">
+            <button
+              class="btn light smallbtn"
+              data-story-id="${encodeURIComponent(String(story.id))}"
+              onclick="openStory(decodeURIComponent(this.dataset.storyId))"
+            >
+              Lihat
+            </button>
+
+            <button
+              class="btn smallbtn"
+              onclick="editStory('${escapeJs(story.id)}')"
+            >
+              Edit
+            </button>
+
+            <button
+              class="btn danger smallbtn"
+              data-story-id="${encodeURIComponent(String(story.id))}"
+              onclick="deleteStory(decodeURIComponent(this.dataset.storyId))"
+            >
+              Hapus
+            </button>
+          </div>
         </div>
-      </div>
-    </div>`).join("");
+      </div>`;
+  }).join("");
 }
 
 window.addEventListener("load",()=>{
@@ -3376,8 +3541,11 @@ function updateAmbientButtonVisibility(){
   const button=document.getElementById("ambientToggle");
   if(!button) return;
 
-  const isSrs=document.getElementById("srs")?.classList.contains("active");
-  button.classList.toggle("visible",Boolean(isSrs));
+  button.classList.add("visible");
+  button.style.display="flex";
+  button.style.visibility="visible";
+  button.style.opacity="1";
+  button.style.pointerEvents="auto";
 }
 
 
@@ -3987,6 +4155,122 @@ function updateSrsOverallProgress(){
 window.addEventListener("load",()=>{
   renderHome();
   updateSrsOverallProgress();
+});
+
+
+window.addEventListener("load",()=>{
+  const readModal=document.getElementById("readConfirmModal");
+  if(readModal){
+    readModal.classList.remove("active");
+  }
+});
+
+
+/* ===== Tombol musik global & kartu cerita folder yang lebih bersih ===== */
+
+function updateAmbientButtonVisibility(){
+  const button=document.getElementById("ambientToggle");
+  if(!button) return;
+
+  button.classList.add("visible");
+  button.style.display="flex";
+  button.style.visibility="visible";
+  button.style.opacity="1";
+}
+
+function openCategory(folder){
+  currentOpenFolder=folder;
+  saveNavigationState("stories",folder);
+  pushInternalHistory("stories",folder);
+
+  const stories=sortByTitle(
+    getStories().filter(
+      story=>(story.level||"N2")===folder
+    ),
+    getSortValue("folderStorySort","day")
+  );
+
+  const grid=document.getElementById("categoryGrid");
+  const results=document.getElementById("categoryResults");
+  const title=document.getElementById("categoryTitle");
+  const actions=document.getElementById("categoryActions");
+  const list=document.getElementById("storyList");
+
+  if(grid) grid.style.display="none";
+  if(results) results.classList.add("active");
+  if(title) title.textContent=`Folder ${folder}`;
+
+  showInsideFolderUi();
+
+  if(actions){
+    actions.innerHTML=`
+      <button class="btn light smallbtn"
+        onclick="renameFolder('${escapeJs(folder)}')">
+        ✎ Ganti Nama
+      </button>
+      <button class="btn secondary smallbtn"
+        onclick="deleteFolder('${escapeJs(folder)}')">
+        × Hapus Folder
+      </button>`;
+  }
+
+  if(list){
+    list.innerHTML=stories.length
+      ? stories.map(story=>{
+          const locked=isStoryLocked(story);
+          const completed=isStoryCompleted(story.id);
+
+          return `
+            <article class="story-card ${locked?"locked-card":""}">
+              <span class="tag">${story.theme||"読解"}</span>
+              ${completionBadge(story.id)}
+              ${locked?'<span class="lock-badge">🔒 Terkunci</span>':""}
+
+              <h3
+                data-story-id="${encodeURIComponent(String(story.id))}"
+                onclick="openStory(decodeURIComponent(this.dataset.storyId))"
+                style="cursor:${locked?"not-allowed":"pointer"}"
+              >
+                ${story.title}
+              </h3>
+
+              <p>${story.description||"Cerita bahasa Jepang dengan furigana interaktif."}</p>
+              ${storyProgressHtml(story.id)}
+
+              ${
+                !locked && completed
+                  ? `
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+                      <button
+                        class="btn srs-card-button smallbtn"
+                        data-story-id="${encodeURIComponent(String(story.id))}"
+                        onclick="startStorySrsFromCard(decodeURIComponent(this.dataset.storyId))"
+                      >
+                        SRS
+                      </button>
+                    </div>
+                  `
+                  : ""
+              }
+            </article>`;
+        }).join("")
+      : `<div class="empty">
+           Belum ada cerita di folder ${escapeHtml(folder)}.
+         </div>`;
+  }
+
+  updateAmbientButtonVisibility();
+}
+
+window.addEventListener("load",()=>{
+  updateAmbientButtonVisibility();
+});
+
+
+window.addEventListener("load",updateAmbientButtonVisibility);
+window.addEventListener("pageshow",updateAmbientButtonVisibility);
+document.addEventListener("visibilitychange",()=>{
+  if(!document.hidden) updateAmbientButtonVisibility();
 });
 
 </script>
