@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ウィラN2合格読解</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23eef6ff'/%3E%3Cpath d='M17 34c8-11 22-13 31-5 3 2 5 4 9 5-4 1-6 3-9 5-9 8-23 6-31-5Z' fill='%23ffffff' stroke='%232f6fae' stroke-width='3.2' stroke-linejoin='round'/%3E%3Cpath d='M17 34 7 25v18l10-9Z' fill='%23dceeff' stroke='%232f6fae' stroke-width='3.2' stroke-linejoin='round'/%3E%3Ccircle cx='43' cy='30' r='2.2' fill='%232f6fae'/%3E%3Ccircle cx='48' cy='14' r='4' fill='none' stroke='%235c97cf' stroke-width='2.5'/%3E%3Ccircle cx='56' cy='21' r='2.7' fill='none' stroke='%235c97cf' stroke-width='2.2'/%3E%3Ccircle cx='40' cy='9' r='2.3' fill='none' stroke='%235c97cf' stroke-width='2'/%3E%3C/svg%3E">
 <style>
 :root{
   --bg:#eef6ff;
@@ -2725,6 +2726,42 @@ window.setTimeout(()=>{
 },2300);
 
 
+/* ===== Kontrol lanjutan soal SRS ===== */
+let srsAdvanceTimer=null;
+let srsCanAdvanceManually=false;
+
+function revealAllSrsFurigana(){
+  document.querySelectorAll('#srsQuestionText ruby').forEach(ruby=>{
+    if(!ruby.closest('.srs-question-target')){
+      ruby.classList.add('show');
+    }
+  });
+}
+
+function advanceToNextSrsNow(){
+  if(!srsCanAdvanceManually) return;
+
+  srsCanAdvanceManually=false;
+
+  if(srsAdvanceTimer){
+    clearTimeout(srsAdvanceTimer);
+    srsAdvanceTimer=null;
+  }
+
+  srsCurrentIndex++;
+  srsLocked=false;
+  renderCurrentSrsCard();
+  updateSrsCountersOnly();
+}
+
+document.addEventListener('keydown',event=>{
+  if(!srsCanAdvanceManually) return;
+  if(event.key!=='Enter' && event.code!=='Space') return;
+
+  event.preventDefault();
+  advanceToNextSrsNow();
+});
+
 /* ===== Sistem progres, lock DAY, achievement, dan SRS lanjutan ===== */
 
 const N2_VOCAB_TARGET=6000;
@@ -3192,13 +3229,25 @@ function submitSrsAnswer(){
   renderHome();
   updateSrsOverallProgress();
 
-  const delay=correct ? 1800 : 5000;
+  revealAllSrsFurigana();
+  srsCanAdvanceManually=true;
 
-  window.setTimeout(()=>{
-    srsCurrentIndex++;
-    srsLocked=false;
-    renderCurrentSrsCard();
-    updateSrsCountersOnly();
+  const inlineNote=document.createElement("div");
+  inlineNote.className="srs-skip-note";
+  inlineNote.textContent="Tekan Enter atau Spasi untuk lanjut.";
+  inlineNote.style.marginTop="8px";
+  inlineNote.style.fontWeight="800";
+  inlineNote.style.opacity=".78";
+  inlineResult.appendChild(inlineNote);
+
+  const delay=8000;
+
+  if(srsAdvanceTimer){
+    clearTimeout(srsAdvanceTimer);
+  }
+
+  srsAdvanceTimer=window.setTimeout(()=>{
+    advanceToNextSrsNow();
   },delay);
 }
 
@@ -4926,6 +4975,247 @@ renderCurrentSrsCard=function(){
     highlightSrsTranslationTarget(item);
 };
 
+
+
+/* ===== FINAL FIX SRS: hasil wajib tampil 8 detik + Enter/Spasi kedua ===== */
+(function(){
+  let finalAdvanceTimer=null;
+  let waitingForNextQuestion=false;
+
+  function showAllResultFurigana(){
+    document.querySelectorAll('#srsQuestionText ruby').forEach(ruby=>{
+      ruby.classList.add('show');
+      const rt=ruby.querySelector('rt');
+      if(rt){
+        rt.style.setProperty('display','ruby-text','important');
+        rt.style.setProperty('color','#0f4f86','important');
+        rt.style.setProperty('text-shadow','none','important');
+        rt.style.setProperty('user-select','text','important');
+      }
+    });
+  }
+
+  function goToNextQuestionAfterResult(){
+    if(!waitingForNextQuestion) return;
+    waitingForNextQuestion=false;
+    srsCanAdvanceManually=false;
+
+    if(finalAdvanceTimer){
+      clearTimeout(finalAdvanceTimer);
+      finalAdvanceTimer=null;
+    }
+    if(typeof srsAdvanceTimer!=='undefined' && srsAdvanceTimer){
+      clearTimeout(srsAdvanceTimer);
+      srsAdvanceTimer=null;
+    }
+
+    srsCurrentIndex++;
+    srsLocked=false;
+    renderCurrentSrsCard();
+    updateSrsCountersOnly();
+  }
+
+  window.submitSrsAnswer=function(){
+    /* Enter pertama: periksa jawaban. Saat hasil tampil, handler global yang lanjut. */
+    if(waitingForNextQuestion || srsLocked) return;
+
+    const item=srsQueue[srsCurrentIndex];
+    const input=document.getElementById('srsAnswerInput');
+    const question=document.getElementById('srsQuestionText');
+    const sentence=document.getElementById('srsSentenceText');
+    const inlineResult=document.getElementById('srsInlineResult');
+
+    if(!item || !input || !question || !sentence || !inlineResult) return;
+
+    let typed=String(input.value||'').trim();
+    if(!typed) return;
+
+    /* Pastikan n terakhir menjadi ん hanya saat jawaban dikirim. */
+    typed=romajiToHiragana(typed);
+    if(/n$/i.test(typed)) typed=typed.replace(/n$/i,'ん');
+    input.value=typed;
+
+    const userAnswer=normalizeKana(typed);
+    const correct=userAnswer===normalizeKana(item.answer);
+    const state=getSrsState();
+    const record=state[item.key]||{level:0,due:Date.now(),correct:0,wrong:0};
+    const now=Date.now();
+
+    srsLocked=true;
+    waitingForNextQuestion=true;
+    /* Matikan handler lama agar Enter pertama tidak ikut dianggap sebagai Enter kedua. */
+    srsCanAdvanceManually=false;
+
+    sentence.innerHTML=item.correctSentenceHtml || item.questionHtml || '';
+    question.classList.remove('correct-answer','wrong-answer');
+    question.classList.add(correct?'correct-answer':'wrong-answer');
+
+    if(correct){
+      record.level=Math.min((record.level||0)+1,SRS_INTERVALS.length-1);
+      record.correct=(record.correct||0)+1;
+      record.lastResult='correct';
+      record.due=now+SRS_INTERVALS[record.level];
+
+      inlineResult.innerHTML=`
+        <div class="srs-result-title">✓ Benar！</div>
+        <div>Jawaban: <strong>${escapeHtml(item.answer)}</strong></div>
+        <div>Muncul lagi ${formatSrsDuration(SRS_INTERVALS[record.level])}.</div>
+        <div class="srs-skip-note">Tekan Enter atau Spasi untuk langsung lanjut.</div>
+      `;
+    }else{
+      record.level=0;
+      record.wrong=(record.wrong||0)+1;
+      record.lastResult='wrong';
+      record.due=now+SRS_INTERVALS[0];
+
+      inlineResult.innerHTML=`
+        <div class="srs-result-title">✕ Belum tepat.</div>
+        <div>Jawaban benar: <strong>${escapeHtml(item.answer)}</strong></div>
+        <div>Perhatikan kalimat lengkap dan furigana di atas.</div>
+        <div>Soal ini akan diulang sekitar ${formatSrsDuration(SRS_INTERVALS[0])}.</div>
+        <div class="srs-skip-note">Tekan Enter atau Spasi untuk langsung lanjut.</div>
+      `;
+    }
+
+    inlineResult.style.setProperty('display','block','important');
+    inlineResult.style.setProperty('visibility','visible','important');
+    inlineResult.style.setProperty('opacity','1','important');
+
+    state[item.key]=record;
+    saveSrsState(state);
+    input.disabled=true;
+
+    showAllResultFurigana();
+    updateDailyLearningRewards();
+    renderAchievementPanel();
+    renderHome();
+    updateSrsOverallProgress();
+
+    finalAdvanceTimer=window.setTimeout(goToNextQuestionAfterResult,8000);
+  };
+
+  document.addEventListener('keydown',event=>{
+    if(!waitingForNextQuestion) return;
+    if(event.key!=='Enter' && event.code!=='Space') return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    goToNextQuestionAfterResult();
+  },true);
+
+  const originalFinalRender=renderCurrentSrsCard;
+  renderCurrentSrsCard=function(){
+    waitingForNextQuestion=false;
+    srsCanAdvanceManually=false;
+    if(finalAdvanceTimer){
+      clearTimeout(finalAdvanceTimer);
+      finalAdvanceTimer=null;
+    }
+    originalFinalRender();
+  };
+})();
+
+
+
+/* ===== FINAL FIX KEYBOARD ROMAJI: n menunggu huruf berikutnya ===== */
+romajiToHiragana=function(input){
+  const text=String(input||"").toLowerCase();
+  const map={
+    kya:"きゃ",kyu:"きゅ",kyo:"きょ",sha:"しゃ",shu:"しゅ",sho:"しょ",
+    cha:"ちゃ",chu:"ちゅ",cho:"ちょ",nya:"にゃ",nyu:"にゅ",nyo:"にょ",
+    hya:"ひゃ",hyu:"ひゅ",hyo:"ひょ",mya:"みゃ",myu:"みゅ",myo:"みょ",
+    rya:"りゃ",ryu:"りゅ",ryo:"りょ",gya:"ぎゃ",gyu:"ぎゅ",gyo:"ぎょ",
+    ja:"じゃ",ju:"じゅ",jo:"じょ",bya:"びゃ",byu:"びゅ",byo:"びょ",
+    pya:"ぴゃ",pyu:"ぴゅ",pyo:"ぴょ",
+    shi:"し",chi:"ち",tsu:"つ",fu:"ふ",
+    ka:"か",ki:"き",ku:"く",ke:"け",ko:"こ",
+    sa:"さ",si:"し",su:"す",se:"せ",so:"そ",
+    ta:"た",ti:"ち",tu:"つ",te:"て",to:"と",
+    na:"な",ni:"に",nu:"ぬ",ne:"ね",no:"の",
+    ha:"は",hi:"ひ",hu:"ふ",he:"へ",ho:"ほ",
+    ma:"ま",mi:"み",mu:"む",me:"め",mo:"も",
+    ya:"や",yu:"ゆ",yo:"よ",
+    ra:"ら",ri:"り",ru:"る",re:"れ",ro:"ろ",
+    wa:"わ",wo:"を",
+    ga:"が",gi:"ぎ",gu:"ぐ",ge:"げ",go:"ご",
+    za:"ざ",ji:"じ",zu:"ず",ze:"ぜ",zo:"ぞ",
+    da:"だ",di:"ぢ",du:"づ",de:"で",do:"ど",
+    ba:"ば",bi:"び",bu:"ぶ",be:"べ",bo:"ぼ",
+    pa:"ぱ",pi:"ぴ",pu:"ぷ",pe:"ぺ",po:"ぽ",
+    a:"あ",i:"い",u:"う",e:"え",o:"お"
+  };
+
+  let out="";
+  let i=0;
+
+  while(i<text.length){
+    const ch=text[i];
+
+    if(/[ぁ-んァ-ヶー]/.test(ch)){
+      out+=ch;
+      i++;
+      continue;
+    }
+
+    /* n tidak langsung menjadi ん. Tunggu karakter setelahnya. */
+    if(ch==="n"){
+      const next=text[i+1]||"";
+
+      if(next==="'"){
+        out+="ん";
+        i+=2;
+        continue;
+      }
+
+      if(next==="n"){
+        out+="ん";
+        i+=1;
+        continue;
+      }
+
+      if(next && !/[aiueoy]/.test(next)){
+        out+="ん";
+        i+=1;
+        continue;
+      }
+
+      if(!next){
+        out+="n";
+        i+=1;
+        continue;
+      }
+      /* Bila diikuti vokal/y, biarkan pencocokan na/ni/nu/ne/no/nya dst. */
+    }
+
+    if(
+      i+1<text.length &&
+      text[i]===text[i+1] &&
+      /[bcdfghjklmpqrstvwxyz]/.test(text[i]) &&
+      text[i]!=="n"
+    ){
+      out+="っ";
+      i++;
+      continue;
+    }
+
+    let matched=false;
+    for(const len of [3,2,1]){
+      const part=text.slice(i,i+len);
+      if(map[part]){
+        out+=map[part];
+        i+=len;
+        matched=true;
+        break;
+      }
+    }
+
+    if(!matched){
+      out+=ch;
+      i++;
+    }
+  }
+
+  return out;
+};
 </script>
 
 <div id="achievementBubble" class="achievement-bubble" onclick="toggleAchievementPanel()" title="Achievement">
@@ -4953,5 +5243,789 @@ renderCurrentSrsCard=function(){
   <div id="achievementList" class="achievement-list"></div>
 </aside>
 
+
+<style>
+/* Hasil SRS selalu terlihat selama jeda */
+#srsQuestionText.correct-answer #srsInlineResult,
+#srsQuestionText.wrong-answer #srsInlineResult{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  margin-top:16px!important;
+  padding:15px 16px!important;
+  border-top:1px dashed currentColor!important;
+  line-height:1.75!important;
+}
+.srs-result-title{
+  font-size:20px;
+  font-weight:900;
+  margin-bottom:5px;
+}
+.srs-skip-note{
+  margin-top:10px;
+  font-weight:900;
+  opacity:.8;
+}
+
+
+/* ===== FINAL UI SRS: input dan tombol Jawab sejajar serta tidak terlalu rapat ===== */
+.srs-answer-row{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin-top:22px;
+  flex-wrap:wrap;
+}
+.srs-answer-input{
+  flex:1 1 260px;
+  min-width:220px;
+  height:48px;
+  margin:0!important;
+  padding:11px 14px;
+  border:2px solid var(--line);
+  border-radius:13px;
+  font-size:20px;
+}
+.srs-answer-row .btn{
+  flex:0 0 auto;
+  align-self:center;
+  min-height:46px;
+  margin:0!important;
+  padding:11px 22px;
+}
+@media(max-width:560px){
+  .srs-answer-row{align-items:stretch}
+  .srs-answer-row .btn{width:100%}
+}
+</style>
+
+
+
+<script>
+/* ===== Ambient laut looping: volume normal, ombak, gelembung, ikan, dan paus ===== */
+var underwaterOceanTimers=[];
+var underwaterExtraNodes=[];
+
+function clearUnderwaterOceanTimers(){
+  underwaterOceanTimers.forEach(timer=>window.clearTimeout(timer));
+  underwaterOceanTimers=[];
+}
+
+function rememberUnderwaterTimer(timer){
+  underwaterOceanTimers.push(timer);
+  return timer;
+}
+
+function createLoopingNoise(context,seconds=4){
+  const length=Math.floor(context.sampleRate*seconds);
+  const buffer=context.createBuffer(1,length,context.sampleRate);
+  const data=buffer.getChannelData(0);
+
+  let smooth=0;
+  for(let i=0;i<length;i++){
+    const white=Math.random()*2-1;
+    smooth=smooth*.985+white*.015;
+    data[i]=white*.22+smooth*.78;
+  }
+
+  const source=context.createBufferSource();
+  source.buffer=buffer;
+  source.loop=true;
+  return source;
+}
+
+function scheduleOceanBubble(){
+  if(!underwaterPlaying || !underwaterAudioContext || !underwaterMaster) return;
+
+  const context=underwaterAudioContext;
+  const now=context.currentTime;
+  const oscillator=context.createOscillator();
+  const gain=context.createGain();
+  const filter=context.createBiquadFilter();
+
+  oscillator.type="sine";
+  oscillator.frequency.setValueAtTime(210+Math.random()*190,now);
+  oscillator.frequency.exponentialRampToValueAtTime(520+Math.random()*330,now+.22);
+
+  filter.type="bandpass";
+  filter.frequency.value=650+Math.random()*500;
+  filter.Q.value=4;
+
+  gain.gain.setValueAtTime(.0001,now);
+  gain.gain.linearRampToValueAtTime(.055+Math.random()*.025,now+.025);
+  gain.gain.exponentialRampToValueAtTime(.0001,now+.28);
+
+  oscillator.connect(filter);
+  filter.connect(gain);
+  gain.connect(underwaterMaster);
+  oscillator.start(now);
+  oscillator.stop(now+.3);
+
+  rememberUnderwaterTimer(window.setTimeout(
+    scheduleOceanBubble,
+    420+Math.random()*1250
+  ));
+}
+
+function scheduleFishClicks(){
+  if(!underwaterPlaying || !underwaterAudioContext || !underwaterMaster) return;
+
+  const context=underwaterAudioContext;
+  const now=context.currentTime;
+  const clicks=2+Math.floor(Math.random()*4);
+
+  for(let index=0;index<clicks;index++){
+    const oscillator=context.createOscillator();
+    const gain=context.createGain();
+    const filter=context.createBiquadFilter();
+    const start=now+index*(.055+Math.random()*.035);
+
+    oscillator.type="triangle";
+    oscillator.frequency.setValueAtTime(850+Math.random()*1050,start);
+    oscillator.frequency.exponentialRampToValueAtTime(430+Math.random()*420,start+.045);
+
+    filter.type="bandpass";
+    filter.frequency.value=1000+Math.random()*900;
+    filter.Q.value=5;
+
+    gain.gain.setValueAtTime(.0001,start);
+    gain.gain.linearRampToValueAtTime(.018+Math.random()*.016,start+.008);
+    gain.gain.exponentialRampToValueAtTime(.0001,start+.075);
+
+    oscillator.connect(filter);
+    filter.connect(gain);
+    gain.connect(underwaterMaster);
+    oscillator.start(start);
+    oscillator.stop(start+.085);
+  }
+
+  rememberUnderwaterTimer(window.setTimeout(
+    scheduleFishClicks,
+    4500+Math.random()*8500
+  ));
+}
+
+function scheduleWhaleCall(){
+  if(!underwaterPlaying || !underwaterAudioContext || !underwaterMaster) return;
+
+  const context=underwaterAudioContext;
+  const now=context.currentTime;
+  const oscillator=context.createOscillator();
+  const second=context.createOscillator();
+  const gain=context.createGain();
+  const filter=context.createBiquadFilter();
+  const duration=3.8+Math.random()*2.3;
+  const base=72+Math.random()*35;
+
+  oscillator.type="sine";
+  second.type="sine";
+  oscillator.frequency.setValueAtTime(base,now);
+  oscillator.frequency.exponentialRampToValueAtTime(base*1.65,now+duration*.45);
+  oscillator.frequency.exponentialRampToValueAtTime(base*.82,now+duration);
+
+  second.frequency.setValueAtTime(base*2.02,now);
+  second.frequency.exponentialRampToValueAtTime(base*2.7,now+duration*.45);
+  second.frequency.exponentialRampToValueAtTime(base*1.55,now+duration);
+
+  filter.type="lowpass";
+  filter.frequency.value=520;
+  filter.Q.value=1.2;
+
+  gain.gain.setValueAtTime(.0001,now);
+  gain.gain.linearRampToValueAtTime(.055,now+.7);
+  gain.gain.setValueAtTime(.055,now+Math.max(.8,duration-1.1));
+  gain.gain.exponentialRampToValueAtTime(.0001,now+duration);
+
+  oscillator.connect(filter);
+  second.connect(filter);
+  filter.connect(gain);
+  gain.connect(underwaterMaster);
+  oscillator.start(now);
+  second.start(now);
+  oscillator.stop(now+duration+.05);
+  second.stop(now+duration+.05);
+
+  rememberUnderwaterTimer(window.setTimeout(
+    scheduleWhaleCall,
+    18000+Math.random()*24000
+  ));
+}
+
+function createUnderwaterAmbient(){
+  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+  if(!AudioContextClass) return false;
+
+  underwaterAudioContext=new AudioContextClass();
+  underwaterMaster=underwaterAudioContext.createGain();
+
+  /* Volume normal: lebih jelas dari versi sebelumnya, tetapi tidak berlebihan. */
+  underwaterMaster.gain.value=.34;
+  underwaterMaster.connect(underwaterAudioContext.destination);
+
+  const oceanNoise=createLoopingNoise(underwaterAudioContext,5);
+  const oceanFilter=underwaterAudioContext.createBiquadFilter();
+  const oceanGain=underwaterAudioContext.createGain();
+  const waveLfo=underwaterAudioContext.createOscillator();
+  const waveDepth=underwaterAudioContext.createGain();
+
+  oceanFilter.type="lowpass";
+  oceanFilter.frequency.value=520;
+  oceanFilter.Q.value=.7;
+  oceanGain.gain.value=.34;
+
+  waveLfo.type="sine";
+  waveLfo.frequency.value=.085;
+  waveDepth.gain.value=.11;
+  waveLfo.connect(waveDepth);
+  waveDepth.connect(oceanGain.gain);
+
+  oceanNoise.connect(oceanFilter);
+  oceanFilter.connect(oceanGain);
+  oceanGain.connect(underwaterMaster);
+  oceanNoise.start();
+  waveLfo.start();
+
+  const deepHum=underwaterAudioContext.createOscillator();
+  const deepGain=underwaterAudioContext.createGain();
+  const humLfo=underwaterAudioContext.createOscillator();
+  const humDepth=underwaterAudioContext.createGain();
+
+  deepHum.type="sine";
+  deepHum.frequency.value=54;
+  deepGain.gain.value=.045;
+  humLfo.type="sine";
+  humLfo.frequency.value=.04;
+  humDepth.gain.value=4;
+  humLfo.connect(humDepth);
+  humDepth.connect(deepHum.frequency);
+  deepHum.connect(deepGain);
+  deepGain.connect(underwaterMaster);
+  deepHum.start();
+  humLfo.start();
+
+  const shoreNoise=createLoopingNoise(underwaterAudioContext,6);
+  const shoreFilter=underwaterAudioContext.createBiquadFilter();
+  const shoreGain=underwaterAudioContext.createGain();
+  const shoreLfo=underwaterAudioContext.createOscillator();
+  const shoreDepth=underwaterAudioContext.createGain();
+
+  shoreFilter.type="bandpass";
+  shoreFilter.frequency.value=760;
+  shoreFilter.Q.value=.45;
+  shoreGain.gain.value=.06;
+  shoreLfo.type="sine";
+  shoreLfo.frequency.value=.055;
+  shoreDepth.gain.value=.045;
+  shoreLfo.connect(shoreDepth);
+  shoreDepth.connect(shoreGain.gain);
+  shoreNoise.connect(shoreFilter);
+  shoreFilter.connect(shoreGain);
+  shoreGain.connect(underwaterMaster);
+  shoreNoise.start();
+  shoreLfo.start();
+
+  underwaterNodes=[oceanNoise,deepHum,oceanFilter,oceanGain,deepGain];
+  underwaterExtraNodes=[waveLfo,humLfo,shoreNoise,shoreFilter,shoreGain,shoreLfo,shoreDepth,waveDepth,humDepth];
+
+  scheduleOceanBubble();
+  scheduleFishClicks();
+  rememberUnderwaterTimer(window.setTimeout(scheduleWhaleCall,5000+Math.random()*6500));
+  return true;
+}
+
+/* Fungsi lama diarahkan ke sistem gelembung looping yang baru. */
+function scheduleBubbleSounds(){
+  scheduleOceanBubble();
+}
+
+async function toggleUnderwaterAmbient(){
+  const button=document.getElementById("ambientToggle");
+  underwaterPlaying=!underwaterPlaying;
+
+  if(underwaterPlaying){
+    if(!underwaterAudioContext){
+      createUnderwaterAmbient();
+    }
+
+    if(underwaterAudioContext?.state==="suspended"){
+      await underwaterAudioContext.resume();
+    }
+
+    if(underwaterMaster && underwaterAudioContext){
+      underwaterMaster.gain.cancelScheduledValues(underwaterAudioContext.currentTime);
+      underwaterMaster.gain.setTargetAtTime(
+        .34,
+        underwaterAudioContext.currentTime,
+        .12
+      );
+    }
+
+    clearUnderwaterOceanTimers();
+    scheduleOceanBubble();
+    scheduleFishClicks();
+    rememberUnderwaterTimer(window.setTimeout(scheduleWhaleCall,4500+Math.random()*5500));
+
+    button?.classList.add("playing");
+    if(button){
+      button.textContent="♫";
+      button.title="Matikan ambient laut";
+      button.setAttribute("aria-label","Matikan ambient laut");
+    }
+  }else{
+    clearUnderwaterOceanTimers();
+
+    if(underwaterTimer){
+      clearTimeout(underwaterTimer);
+      underwaterTimer=null;
+    }
+
+    if(underwaterMaster && underwaterAudioContext){
+      underwaterMaster.gain.cancelScheduledValues(underwaterAudioContext.currentTime);
+      underwaterMaster.gain.setTargetAtTime(
+        0,
+        underwaterAudioContext.currentTime,
+        .1
+      );
+    }
+
+    button?.classList.remove("playing");
+    if(button){
+      button.textContent="♪";
+      button.title="Nyalakan ambient laut";
+      button.setAttribute("aria-label","Nyalakan ambient laut");
+    }
+  }
+}
+</script>
+
+
+<script>
+/* ===== Final ambient laut alami: tanpa dengung mesin ===== */
+(function(){
+  let seaTimers=[];
+  let seaSources=[];
+
+  function rememberSeaTimer(id){ seaTimers.push(id); return id; }
+  function clearSeaTimers(){ seaTimers.forEach(clearTimeout); seaTimers=[]; }
+
+  function stopSeaSources(){
+    seaSources.forEach(node=>{
+      try{ if(typeof node.stop==="function") node.stop(); }catch(e){}
+      try{ node.disconnect(); }catch(e){}
+    });
+    seaSources=[];
+  }
+
+  function makeNoiseBuffer(context,seconds=6){
+    const length=Math.floor(context.sampleRate*seconds);
+    const buffer=context.createBuffer(1,length,context.sampleRate);
+    const data=buffer.getChannelData(0);
+    let last=0;
+    for(let i=0;i<length;i++){
+      const white=Math.random()*2-1;
+      last=last*.94+white*.06;
+      data[i]=white*.32+last*.68;
+    }
+    return buffer;
+  }
+
+  function createLoopedNoise(context,buffer){
+    const source=context.createBufferSource();
+    source.buffer=buffer;
+    source.loop=true;
+    seaSources.push(source);
+    return source;
+  }
+
+  function scheduleNaturalBubble(){
+    if(!underwaterPlaying || !underwaterAudioContext || !underwaterMaster) return;
+    const c=underwaterAudioContext;
+    const now=c.currentTime;
+    const count=1+Math.floor(Math.random()*3);
+
+    for(let i=0;i<count;i++){
+      const osc=c.createOscillator();
+      const gain=c.createGain();
+      const filter=c.createBiquadFilter();
+      const start=now+i*(.07+Math.random()*.08);
+      const duration=.16+Math.random()*.16;
+
+      osc.type="sine";
+      osc.frequency.setValueAtTime(330+Math.random()*260,start);
+      osc.frequency.exponentialRampToValueAtTime(720+Math.random()*620,start+duration);
+      filter.type="bandpass";
+      filter.frequency.value=900+Math.random()*700;
+      filter.Q.value=2.2;
+      gain.gain.setValueAtTime(.0001,start);
+      gain.gain.linearRampToValueAtTime(.025+Math.random()*.025,start+.018);
+      gain.gain.exponentialRampToValueAtTime(.0001,start+duration);
+
+      osc.connect(filter); filter.connect(gain); gain.connect(underwaterMaster);
+      osc.start(start); osc.stop(start+duration+.03);
+    }
+
+    rememberSeaTimer(setTimeout(scheduleNaturalBubble,650+Math.random()*1900));
+  }
+
+  function scheduleFishSounds(){
+    if(!underwaterPlaying || !underwaterAudioContext || !underwaterMaster) return;
+    const c=underwaterAudioContext;
+    const now=c.currentTime;
+    const notes=2+Math.floor(Math.random()*4);
+
+    for(let i=0;i<notes;i++){
+      const osc=c.createOscillator();
+      const gain=c.createGain();
+      const filter=c.createBiquadFilter();
+      const start=now+i*(.09+Math.random()*.08);
+      const duration=.07+Math.random()*.07;
+
+      osc.type=Math.random()>.5?"sine":"triangle";
+      osc.frequency.setValueAtTime(1100+Math.random()*900,start);
+      osc.frequency.exponentialRampToValueAtTime(650+Math.random()*550,start+duration);
+      filter.type="highpass"; filter.frequency.value=520;
+      gain.gain.setValueAtTime(.0001,start);
+      gain.gain.linearRampToValueAtTime(.010+Math.random()*.012,start+.008);
+      gain.gain.exponentialRampToValueAtTime(.0001,start+duration);
+
+      osc.connect(filter); filter.connect(gain); gain.connect(underwaterMaster);
+      osc.start(start); osc.stop(start+duration+.02);
+    }
+
+    rememberSeaTimer(setTimeout(scheduleFishSounds,5000+Math.random()*10000));
+  }
+
+  function scheduleSoftWhale(){
+    if(!underwaterPlaying || !underwaterAudioContext || !underwaterMaster) return;
+    const c=underwaterAudioContext;
+    const now=c.currentTime;
+    const osc=c.createOscillator();
+    const gain=c.createGain();
+    const filter=c.createBiquadFilter();
+    const duration=2.8+Math.random()*1.8;
+    const base=145+Math.random()*35;
+
+    osc.type="sine";
+    osc.frequency.setValueAtTime(base,now);
+    osc.frequency.exponentialRampToValueAtTime(base*1.45,now+duration*.45);
+    osc.frequency.exponentialRampToValueAtTime(base*.92,now+duration);
+    filter.type="bandpass"; filter.frequency.value=230; filter.Q.value=.8;
+    gain.gain.setValueAtTime(.0001,now);
+    gain.gain.linearRampToValueAtTime(.022,now+.55);
+    gain.gain.exponentialRampToValueAtTime(.0001,now+duration);
+
+    osc.connect(filter); filter.connect(gain); gain.connect(underwaterMaster);
+    osc.start(now); osc.stop(now+duration+.05);
+    rememberSeaTimer(setTimeout(scheduleSoftWhale,26000+Math.random()*32000));
+  }
+
+  window.createUnderwaterAmbient=function(){
+    const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+    if(!AudioContextClass) return false;
+
+    underwaterAudioContext=new AudioContextClass();
+    underwaterMaster=underwaterAudioContext.createGain();
+    underwaterMaster.gain.value=.27;
+    underwaterMaster.connect(underwaterAudioContext.destination);
+
+    const buffer=makeNoiseBuffer(underwaterAudioContext,7);
+
+    /* Ombak lembut: sapuan noise lebar yang naik-turun perlahan. */
+    const waveNoise=createLoopedNoise(underwaterAudioContext,buffer);
+    const waveFilter=underwaterAudioContext.createBiquadFilter();
+    const waveGain=underwaterAudioContext.createGain();
+    const waveLfo=underwaterAudioContext.createOscillator();
+    const waveDepth=underwaterAudioContext.createGain();
+    waveFilter.type="bandpass"; waveFilter.frequency.value=520; waveFilter.Q.value=.28;
+    waveGain.gain.value=.14;
+    waveLfo.type="sine"; waveLfo.frequency.value=.075; waveDepth.gain.value=.075;
+    waveLfo.connect(waveDepth); waveDepth.connect(waveGain.gain);
+    waveNoise.connect(waveFilter); waveFilter.connect(waveGain); waveGain.connect(underwaterMaster);
+    waveNoise.start(); waveLfo.start(); seaSources.push(waveLfo);
+
+    /* Angin pantai: frekuensi lebih tinggi, sangat lembut. */
+    const windNoise=createLoopedNoise(underwaterAudioContext,buffer);
+    const windFilter=underwaterAudioContext.createBiquadFilter();
+    const windGain=underwaterAudioContext.createGain();
+    const windLfo=underwaterAudioContext.createOscillator();
+    const windDepth=underwaterAudioContext.createGain();
+    windFilter.type="lowpass"; windFilter.frequency.value=850; windFilter.Q.value=.18;
+    windGain.gain.value=.008;
+    windLfo.type="sine"; windLfo.frequency.value=.035; windDepth.gain.value=.003;
+    windLfo.connect(windDepth); windDepth.connect(windGain.gain);
+    windNoise.connect(windFilter); windFilter.connect(windGain); windGain.connect(underwaterMaster);
+    windNoise.start(); windLfo.start(); seaSources.push(windLfo);
+
+    /* Air bawah laut: tekstur lembut tanpa nada bass tetap. */
+    const waterNoise=createLoopedNoise(underwaterAudioContext,buffer);
+    const waterFilter=underwaterAudioContext.createBiquadFilter();
+    const waterGain=underwaterAudioContext.createGain();
+    waterFilter.type="lowpass"; waterFilter.frequency.value=780; waterFilter.Q.value=.4;
+    waterGain.gain.value=.075;
+    waterNoise.connect(waterFilter); waterFilter.connect(waterGain); waterGain.connect(underwaterMaster);
+    waterNoise.start();
+
+    clearSeaTimers();
+    scheduleNaturalBubble();
+    scheduleFishSounds();
+    rememberSeaTimer(setTimeout(scheduleSoftWhale,12000+Math.random()*12000));
+    return true;
+  };
+
+  window.scheduleBubbleSounds=scheduleNaturalBubble;
+
+  window.toggleUnderwaterAmbient=async function(){
+    const button=document.getElementById("ambientToggle");
+    underwaterPlaying=!underwaterPlaying;
+
+    if(underwaterPlaying){
+      if(!underwaterAudioContext){
+        createUnderwaterAmbient();
+      }
+      if(underwaterAudioContext?.state==="suspended") await underwaterAudioContext.resume();
+      if(underwaterMaster){
+        underwaterMaster.gain.cancelScheduledValues(underwaterAudioContext.currentTime);
+        underwaterMaster.gain.setTargetAtTime(.27,underwaterAudioContext.currentTime,.12);
+      }
+      clearSeaTimers();
+      scheduleNaturalBubble();
+      scheduleFishSounds();
+      rememberSeaTimer(setTimeout(scheduleSoftWhale,12000+Math.random()*12000));
+      button?.classList.add("playing");
+      if(button){ button.textContent="♫"; button.title="Matikan ambient laut"; }
+    }else{
+      clearSeaTimers();
+      if(underwaterMaster&&underwaterAudioContext){
+        underwaterMaster.gain.cancelScheduledValues(underwaterAudioContext.currentTime);
+        underwaterMaster.gain.setTargetAtTime(0,underwaterAudioContext.currentTime,.1);
+      }
+      button?.classList.remove("playing");
+      if(button){ button.textContent="♪"; button.title="Nyalakan ambient laut"; }
+    }
+  };
+})();
+</script>
+
+
+<script>
+/* ===== Ambient bawah laut murni: tanpa ombak permukaan dan tanpa angin ===== */
+(function(){
+  function stopExistingUnderwater(){
+    try{
+      if(underwaterTimer){ clearTimeout(underwaterTimer); underwaterTimer=null; }
+      if(window.underwaterExtraTimers){
+        window.underwaterExtraTimers.forEach(id=>clearTimeout(id));
+        window.underwaterExtraTimers=[];
+      }
+      if(Array.isArray(underwaterNodes)){
+        underwaterNodes.forEach(node=>{
+          try{ if(node.stop) node.stop(); }catch(e){}
+          try{ if(node.disconnect) node.disconnect(); }catch(e){}
+        });
+      }
+    }catch(e){}
+  }
+
+  function makeNoiseBuffer(ctx,seconds=3){
+    const length=Math.floor(ctx.sampleRate*seconds);
+    const buffer=ctx.createBuffer(1,length,ctx.sampleRate);
+    const data=buffer.getChannelData(0);
+    let last=0;
+    for(let i=0;i<length;i++){
+      const white=Math.random()*2-1;
+      last=last*.985+white*.015;
+      data[i]=last*.8;
+    }
+    return buffer;
+  }
+
+  window.createUnderwaterAmbient=function(){
+    const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+    if(!AudioContextClass) return false;
+
+    stopExistingUnderwater();
+    underwaterAudioContext=new AudioContextClass();
+    underwaterMaster=underwaterAudioContext.createGain();
+    underwaterMaster.gain.value=.38;
+    underwaterMaster.connect(underwaterAudioContext.destination);
+    underwaterNodes=[];
+    window.underwaterExtraTimers=[];
+
+    const ctx=underwaterAudioContext;
+
+    // Arus air teredam, tanpa karakter angin/ombak permukaan.
+    const current=ctx.createBufferSource();
+    current.buffer=makeNoiseBuffer(ctx,4);
+    current.loop=true;
+    const currentFilter=ctx.createBiquadFilter();
+    currentFilter.type='lowpass';
+    currentFilter.frequency.value=260;
+    currentFilter.Q.value=.45;
+    const currentGain=ctx.createGain();
+    currentGain.gain.value=.30;
+    current.connect(currentFilter);
+    currentFilter.connect(currentGain);
+    currentGain.connect(underwaterMaster);
+    current.start();
+
+    // Resonansi air yang sangat lembut, bukan dengung mesin.
+    const body=ctx.createOscillator();
+    body.type='sine';
+    body.frequency.value=92;
+    const bodyGain=ctx.createGain();
+    bodyGain.gain.value=.012;
+    body.connect(bodyGain);
+    bodyGain.connect(underwaterMaster);
+    body.start();
+
+    // Gerakan volume lambat untuk rasa arus dalam air.
+    const lfo=ctx.createOscillator();
+    const lfoGain=ctx.createGain();
+    lfo.frequency.value=.07;
+    lfoGain.gain.value=.05;
+    lfo.connect(lfoGain);
+    lfoGain.connect(currentGain.gain);
+    lfo.start();
+
+    underwaterNodes.push(current,currentFilter,currentGain,body,bodyGain,lfo,lfoGain);
+    scheduleBubbleSounds();
+    scheduleSmallFishSounds();
+    scheduleFishPassSounds();
+    scheduleWhaleSounds();
+    return true;
+  };
+
+  window.scheduleBubbleSounds=function(){
+    if(!underwaterPlaying || !underwaterAudioContext) return;
+    const ctx=underwaterAudioContext;
+    const now=ctx.currentTime;
+    const bubble=ctx.createOscillator();
+    const gain=ctx.createGain();
+    const filter=ctx.createBiquadFilter();
+    bubble.type='sine';
+    bubble.frequency.setValueAtTime(210+Math.random()*180,now);
+    bubble.frequency.exponentialRampToValueAtTime(520+Math.random()*260,now+.16);
+    filter.type='bandpass';
+    filter.frequency.value=520+Math.random()*420;
+    filter.Q.value=4;
+    gain.gain.setValueAtTime(.0001,now);
+    gain.gain.exponentialRampToValueAtTime(.085,now+.02);
+    gain.gain.exponentialRampToValueAtTime(.0001,now+.22);
+    bubble.connect(filter); filter.connect(gain); gain.connect(underwaterMaster);
+    bubble.start(now); bubble.stop(now+.24);
+    underwaterTimer=setTimeout(scheduleBubbleSounds,450+Math.random()*1200);
+  };
+
+  window.scheduleSmallFishSounds=function(){
+    if(!underwaterPlaying || !underwaterAudioContext) return;
+    const ctx=underwaterAudioContext;
+    const now=ctx.currentTime;
+    const clicks=2+Math.floor(Math.random()*3);
+    for(let i=0;i<clicks;i++){
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      osc.type='triangle';
+      osc.frequency.setValueAtTime(900+Math.random()*700,now+i*.08);
+      osc.frequency.exponentialRampToValueAtTime(500+Math.random()*300,now+i*.08+.05);
+      gain.gain.setValueAtTime(.0001,now+i*.08);
+      gain.gain.exponentialRampToValueAtTime(.032,now+i*.08+.01);
+      gain.gain.exponentialRampToValueAtTime(.0001,now+i*.08+.07);
+      osc.connect(gain); gain.connect(underwaterMaster);
+      osc.start(now+i*.08); osc.stop(now+i*.08+.08);
+    }
+    const id=setTimeout(scheduleSmallFishSounds,3000+Math.random()*5500);
+    window.underwaterExtraTimers.push(id);
+  };
+
+  window.scheduleFishPassSounds=function(){
+    if(!underwaterPlaying || !underwaterAudioContext || !underwaterMaster) return;
+    const ctx=underwaterAudioContext;
+    const now=ctx.currentTime;
+    const osc=ctx.createOscillator();
+    const gain=ctx.createGain();
+    const filter=ctx.createBiquadFilter();
+    const panner=typeof ctx.createStereoPanner==='function' ? ctx.createStereoPanner() : null;
+
+    osc.type='triangle';
+    const startFreq=620+Math.random()*260;
+    osc.frequency.setValueAtTime(startFreq,now);
+    osc.frequency.exponentialRampToValueAtTime(300+Math.random()*170,now+.9);
+
+    filter.type='bandpass';
+    filter.frequency.value=700;
+    filter.Q.value=2.2;
+
+    gain.gain.setValueAtTime(.0001,now);
+    gain.gain.exponentialRampToValueAtTime(.045,now+.16);
+    gain.gain.exponentialRampToValueAtTime(.0001,now+1.05);
+
+    osc.connect(filter);
+    if(panner){
+      filter.connect(panner);
+      panner.connect(gain);
+      const fromLeft=Math.random()>.5;
+      panner.pan.setValueAtTime(fromLeft?-1:1,now);
+      panner.pan.linearRampToValueAtTime(fromLeft?1:-1,now+1.0);
+    }else{
+      filter.connect(gain);
+    }
+    gain.connect(underwaterMaster);
+    osc.start(now);
+    osc.stop(now+1.1);
+
+    const id=setTimeout(scheduleFishPassSounds,3500+Math.random()*6500);
+    window.underwaterExtraTimers.push(id);
+  };
+
+  window.scheduleWhaleSounds=function(){
+    if(!underwaterPlaying || !underwaterAudioContext) return;
+    const ctx=underwaterAudioContext;
+    const now=ctx.currentTime;
+    const osc=ctx.createOscillator();
+    const gain=ctx.createGain();
+    const filter=ctx.createBiquadFilter();
+    osc.type='sine';
+    osc.frequency.setValueAtTime(150+Math.random()*35,now);
+    osc.frequency.exponentialRampToValueAtTime(95+Math.random()*18,now+2.8);
+    filter.type='lowpass'; filter.frequency.value=240;
+    gain.gain.setValueAtTime(.0001,now);
+    gain.gain.exponentialRampToValueAtTime(.038,now+.5);
+    gain.gain.exponentialRampToValueAtTime(.0001,now+3.2);
+    osc.connect(filter); filter.connect(gain); gain.connect(underwaterMaster);
+    osc.start(now); osc.stop(now+3.3);
+    const id=setTimeout(scheduleWhaleSounds,18000+Math.random()*22000);
+    window.underwaterExtraTimers.push(id);
+  };
+
+  const oldToggle=window.toggleUnderwaterAmbient;
+  window.toggleUnderwaterAmbient=async function(){
+    const button=document.getElementById('ambientToggle');
+    underwaterPlaying=!underwaterPlaying;
+    if(underwaterPlaying){
+      if(!underwaterAudioContext){ createUnderwaterAmbient(); }
+      if(underwaterAudioContext?.state==='suspended') await underwaterAudioContext.resume();
+      if(underwaterMaster){
+        underwaterMaster.gain.cancelScheduledValues(underwaterAudioContext.currentTime);
+        underwaterMaster.gain.setTargetAtTime(.38,underwaterAudioContext.currentTime,.12);
+      }
+      scheduleBubbleSounds();
+      scheduleSmallFishSounds();
+      scheduleFishPassSounds();
+      scheduleWhaleSounds();
+      button?.classList.add('playing');
+      if(button) button.textContent='♫';
+    }else{
+      stopExistingUnderwater();
+      if(underwaterMaster && underwaterAudioContext){
+        underwaterMaster.gain.setTargetAtTime(0,underwaterAudioContext.currentTime,.1);
+      }
+      try{ underwaterAudioContext?.close(); }catch(e){}
+      underwaterAudioContext=null; underwaterMaster=null; underwaterNodes=[];
+      button?.classList.remove('playing');
+      if(button) button.textContent='♪';
+    }
+  };
+})();
+</script>
 </body>
 </html>
