@@ -9008,5 +9008,141 @@ async function toggleUnderwaterAmbient(){
 }
 #srs.page.active .srs-main{overflow:visible!important}
 </style>
+
+
+<!-- ===== SRS MOBILE KEYBOARD SESSION: keep open until user dismisses ===== -->
+<style id="srs-mobile-keyboard-session-style">
+@media (max-width:700px){
+  #srs.page.active #srsAnswerInput[data-locked="1"]{
+    caret-color:transparent;
+  }
+}
+</style>
+<script id="srs-mobile-keyboard-session-script">
+(function(){
+  'use strict';
+
+  const mobileQuery = window.matchMedia('(max-width:700px)');
+  let keyboardWasVisible = false;
+  let programmaticFocus = false;
+
+  function inSrs(){
+    return !!document.getElementById('srs')?.classList.contains('active');
+  }
+  function isMobile(){
+    return mobileQuery.matches;
+  }
+  function keyboardVisible(){
+    if(!window.visualViewport) return document.activeElement?.id === 'srsAnswerInput';
+    return (window.innerHeight - window.visualViewport.height) > 120;
+  }
+  function markSessionFromUser(){
+    if(!isMobile() || !inSrs()) return;
+    window.srsKeyboardSessionActive = true;
+  }
+  function keepInputFocused(){
+    if(!isMobile() || !inSrs() || !window.srsKeyboardSessionActive) return;
+    const input = document.getElementById('srsAnswerInput');
+    if(!input) return;
+    programmaticFocus = true;
+    input.readOnly = false;
+    try{ input.focus({preventScroll:true}); }catch(_){ input.focus(); }
+    try{ input.setSelectionRange(input.value.length,input.value.length); }catch(_){ }
+    setTimeout(()=>{ programmaticFocus=false; },80);
+  }
+
+  // User pertama kali mengetuk kotak: mulai sesi keyboard.
+  document.addEventListener('pointerdown', function(e){
+    if(e.target?.id === 'srsAnswerInput') markSessionFromUser();
+  }, true);
+  document.addEventListener('focusin', function(e){
+    if(e.target?.id === 'srsAnswerInput' && !programmaticFocus) markSessionFromUser();
+  }, true);
+
+  // Jangan izinkan isi berubah ketika feedback tampil, tetapi jangan pakai readonly
+  // karena readonly menutup keyboard pada banyak browser HP.
+  document.addEventListener('beforeinput', function(e){
+    const input=e.target;
+    if(input?.id==='srsAnswerInput' && input.dataset.locked==='1') e.preventDefault();
+  }, true);
+  document.addEventListener('paste', function(e){
+    const input=e.target;
+    if(input?.id==='srsAnswerInput' && input.dataset.locked==='1') e.preventDefault();
+  }, true);
+
+  function installWrappers(){
+    if(typeof window.submitSrsAnswer==='function' && !window.submitSrsAnswer.__mobileKeyboardStable){
+      const original=window.submitSrsAnswer;
+      const wrapped=function(){
+        const result=original.apply(this,arguments);
+        if(isMobile() && window.srsKeyboardSessionActive){
+          const input=document.getElementById('srsAnswerInput');
+          if(input){ input.readOnly=false; }
+          requestAnimationFrame(keepInputFocused);
+          setTimeout(keepInputFocused,40);
+          setTimeout(keepInputFocused,120);
+        }
+        return result;
+      };
+      wrapped.__mobileKeyboardStable=true;
+      window.submitSrsAnswer=wrapped;
+    }
+
+    if(typeof window.renderCurrentSrsCard==='function' && !window.renderCurrentSrsCard.__mobileKeyboardStable){
+      const original=window.renderCurrentSrsCard;
+      const wrapped=function(){
+        const result=original.apply(this,arguments);
+        if(isMobile() && window.srsKeyboardSessionActive){
+          requestAnimationFrame(keepInputFocused);
+          setTimeout(keepInputFocused,50);
+          setTimeout(keepInputFocused,140);
+        }
+        return result;
+      };
+      wrapped.__mobileKeyboardStable=true;
+      window.renderCurrentSrsCard=wrapped;
+    }
+
+    if(typeof window.nextSrsQuestion==='function' && !window.nextSrsQuestion.__mobileKeyboardStable){
+      const original=window.nextSrsQuestion;
+      const wrapped=function(){
+        const result=original.apply(this,arguments);
+        if(isMobile() && window.srsKeyboardSessionActive){
+          requestAnimationFrame(keepInputFocused);
+          setTimeout(keepInputFocused,80);
+          setTimeout(keepInputFocused,180);
+        }
+        return result;
+      };
+      wrapped.__mobileKeyboardStable=true;
+      window.nextSrsQuestion=wrapped;
+    }
+  }
+
+  // Saat user menekan tombol turun keyboard, visual viewport kembali tinggi.
+  // Matikan sesi supaya aplikasi tidak memunculkannya lagi secara paksa.
+  function syncKeyboardState(){
+    if(!isMobile() || !inSrs()) return;
+    const visible=keyboardVisible();
+    if(visible) keyboardWasVisible=true;
+    else if(keyboardWasVisible){
+      keyboardWasVisible=false;
+      window.srsKeyboardSessionActive=false;
+      const input=document.getElementById('srsAnswerInput');
+      if(input && document.activeElement===input) input.blur();
+    }
+  }
+
+  window.visualViewport?.addEventListener('resize', ()=>setTimeout(syncKeyboardState,60));
+  window.visualViewport?.addEventListener('scroll', ()=>setTimeout(syncKeyboardState,60));
+  window.addEventListener('resize', ()=>setTimeout(syncKeyboardState,80));
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', installWrappers, {once:true});
+  }else installWrappers();
+  window.addEventListener('load', installWrappers, {once:true});
+  setTimeout(installWrappers,300);
+})();
+</script>
 </body>
 </html>
