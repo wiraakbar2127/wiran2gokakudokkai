@@ -923,6 +923,163 @@ select:disabled{
   pointer-events:auto!important;
 }
 
+
+.srs-target-word{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:82px;
+  margin-bottom:18px;
+  padding:14px 18px;
+  border:1px solid #cfe2f3;
+  border-radius:18px;
+  background:#f7fbff;
+  font-size:38px;
+  font-weight:800;
+  letter-spacing:.06em;
+  color:#244f73;
+  line-height:1.25;
+}
+.srs-target-label{
+  display:block;
+  margin-bottom:7px;
+  text-align:center;
+  color:var(--muted);
+  font-size:13px;
+  font-weight:700;
+}
+.srs-target-word ruby rt,
+.srs-target-word ruby rp{
+  display:none!important;
+}
+
+
+/* SRS target tetap berada di dalam kalimat */
+.srs-target-label,
+.srs-target-word{
+  display:none!important;
+}
+.srs-question strong rt,
+.srs-question strong rp{
+  display:none!important;
+}
+.srs-question strong{
+  display:inline;
+  padding:2px 5px;
+  border-radius:7px;
+  background:#e8f3fc;
+  color:#244f73;
+  font-weight:800;
+}
+
+
+/* Target SRS: tetap di dalam kalimat, tebal + garis bawah, tanpa furigana */
+.srs-question .srs-question-target{
+  display:inline;
+  font-weight:800;
+  text-decoration:underline;
+  text-decoration-thickness:2px;
+  text-underline-offset:4px;
+  background:#eaf4fc;
+  color:#244f73;
+  padding:1px 4px;
+  border-radius:5px;
+}
+.srs-question .srs-question-target rt,
+.srs-question .srs-question-target rp{
+  display:none!important;
+}
+
+
+/* Perbaikan tampilan SRS: hanya target yang ditebalkan */
+.srs-question strong:not(.srs-question-target){
+  display:inline!important;
+  padding:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:inherit!important;
+  font-weight:inherit!important;
+  text-decoration:none!important;
+}
+
+/* Furigana kanji lain tetap tampil blur seperti kalimat biasa */
+.srs-question strong:not(.srs-question-target) rt,
+.srs-question ruby:not(.srs-question-target) rt{
+  display:ruby-text!important;
+  color:transparent!important;
+  text-shadow:0 0 4px rgba(15,63,110,.95)!important;
+  user-select:none!important;
+  font-weight:normal!important;
+}
+
+/* Hanya furigana target yang disembunyikan */
+.srs-question .srs-question-target rt,
+.srs-question .srs-question-target rp{
+  display:none!important;
+}
+
+.srs-question .srs-question-target{
+  font-weight:800!important;
+  text-decoration:underline!important;
+  text-decoration-thickness:2px!important;
+  text-underline-offset:4px!important;
+}
+
+
+/* Furigana SRS bisa dibuka saat diklik */
+.srs-question ruby{
+  cursor:pointer;
+}
+.srs-question ruby.show rt{
+  display:ruby-text!important;
+  color:#0f4f86!important;
+  text-shadow:none!important;
+  user-select:text!important;
+  filter:none!important;
+}
+.srs-question .srs-question-target ruby,
+.srs-question .srs-question-target{
+  cursor:default;
+}
+.srs-question .srs-question-target rt,
+.srs-question .srs-question-target rp{
+  display:none!important;
+}
+
+
+/* Arti kalimat pada halaman SRS */
+.srs-translation-restored{
+  margin:14px 0 18px;
+  padding:13px 15px;
+  border-left:4px solid #7aaed8;
+  border-radius:10px;
+  background:#f4f9fd;
+  color:#355b7d;
+  line-height:1.7;
+  font-size:15px;
+}
+
+
+/* Tebalkan arti kosakata target pada terjemahan SRS */
+.srs-translation-restored strong{
+  font-weight:800!important;
+  color:#244f73;
+  background:#eaf4fc;
+  padding:1px 4px;
+  border-radius:5px;
+}
+
+
+/* Target arti kosakata pada terjemahan SRS */
+.srs-translation-restored .srs-translation-target{
+  display:inline!important;
+  font-weight:900!important;
+  color:#163f63!important;
+  background:#dceefa!important;
+  padding:2px 5px!important;
+  border-radius:5px!important;
+}
+
 </style>
 </head>
 <body>
@@ -4272,6 +4429,501 @@ window.addEventListener("pageshow",updateAmbientButtonVisibility);
 document.addEventListener("visibilitychange",()=>{
   if(!document.hidden) updateAmbientButtonVisibility();
 });
+
+
+/* ===== SRS: tampilkan kosakata kanji tanpa furigana ===== */
+
+function getVisibleSrsTarget(item){
+  const source=
+    item.targetHtml ||
+    item.target ||
+    item.wordHtml ||
+    item.questionTargetHtml ||
+    "";
+
+  const temp=document.createElement("div");
+
+  if(source){
+    temp.innerHTML=source;
+  }else{
+    temp.innerHTML=item.correctSentenceHtml || item.questionHtml || "";
+    const strong=temp.querySelector("strong");
+
+    if(strong){
+      const holder=document.createElement("div");
+      holder.appendChild(strong.cloneNode(true));
+      temp.innerHTML=holder.innerHTML;
+    }
+  }
+
+  temp.querySelectorAll("rt,rp").forEach(node=>node.remove());
+  return temp.textContent.trim();
+}
+
+const originalBuildSrsItemsForVisibleTarget=buildSrsItems;
+buildSrsItems=function(){
+  return originalBuildSrsItemsForVisibleTarget().map(item=>{
+    if(!item.targetHtml){
+      const temp=document.createElement("div");
+      temp.innerHTML=item.correctSentenceHtml || item.questionHtml || "";
+      const strong=temp.querySelector("strong");
+
+      if(strong){
+        item.targetHtml=strong.outerHTML;
+      }
+    }
+
+    return item;
+  });
+};
+
+renderCurrentSrsCard=function(){
+  const area=document.getElementById("srsPracticeArea");
+  if(!area) return;
+
+  if(!srsQueue.length || srsCurrentIndex>=srsQueue.length){
+    area.innerHTML=`
+      <div class="srs-empty-card">
+        <h3>Latihan selesai 🎉</h3>
+        <p>Tidak ada soal lain yang perlu dikerjakan sekarang.</p>
+      </div>`;
+
+    updateSrsCountersOnly();
+    updateSrsOverallProgress();
+    return;
+  }
+
+  const item=srsQueue[srsCurrentIndex];
+  const visibleTarget=getVisibleSrsTarget(item);
+
+  area.innerHTML=`
+    <div class="srs-card">
+      <span class="srs-target-label">
+        Ketik cara baca kosakata berikut
+      </span>
+
+      <div class="srs-target-word">
+        ${escapeHtml(visibleTarget)}
+      </div>
+
+      <div id="srsQuestionText" class="srs-question">
+        <div id="srsSentenceText">${item.questionHtml}</div>
+        <div id="srsInlineResult" class="srs-inline-result"></div>
+      </div>
+
+      <div class="srs-answer-row">
+        <input
+          id="srsAnswerInput"
+          class="srs-answer-input"
+          type="text"
+          inputmode="text"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          placeholder="Ketik hiragana atau romaji"
+          onkeydown="if(event.key==='Enter') submitSrsAnswer()"
+        >
+
+        <button class="btn" onclick="submitSrsAnswer()">
+          Jawab
+        </button>
+      </div>
+    </div>`;
+
+  const input=document.getElementById("srsAnswerInput");
+  if(input) input.focus();
+
+  updateSrsCountersOnly();
+  updateSrsOverallProgress();
+};
+
+
+/* ===== SRS: target kanji tetap di dalam kalimat tanpa furigana ===== */
+
+function stripTargetFuriganaFromSentence(htmlText){
+  const temp=document.createElement("div");
+  temp.innerHTML=htmlText || "";
+
+  const target=temp.querySelector("strong");
+
+  if(target){
+    target.querySelectorAll("rt,rp").forEach(node=>node.remove());
+  }
+
+  return temp.innerHTML;
+}
+
+renderCurrentSrsCard=function(){
+  const area=document.getElementById("srsPracticeArea");
+  if(!area) return;
+
+  if(!srsQueue.length || srsCurrentIndex>=srsQueue.length){
+    area.innerHTML=`
+      <div class="srs-empty-card">
+        <h3>Latihan selesai 🎉</h3>
+        <p>Tidak ada soal lain yang perlu dikerjakan sekarang.</p>
+      </div>`;
+
+    updateSrsCountersOnly();
+    updateSrsOverallProgress();
+    return;
+  }
+
+  const item=srsQueue[srsCurrentIndex];
+  const sentenceWithoutTargetFurigana=
+    stripTargetFuriganaFromSentence(item.questionHtml);
+
+  area.innerHTML=`
+    <div class="srs-card">
+      <div id="srsQuestionText" class="srs-question">
+        <div id="srsSentenceText">
+          ${sentenceWithoutTargetFurigana}
+        </div>
+
+        <div id="srsInlineResult" class="srs-inline-result"></div>
+      </div>
+
+      <div class="srs-answer-row">
+        <input
+          id="srsAnswerInput"
+          class="srs-answer-input"
+          type="text"
+          inputmode="text"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          placeholder="Ketik cara baca kanji yang ditebalkan"
+          onkeydown="if(event.key==='Enter') submitSrsAnswer()"
+        >
+
+        <button class="btn" onclick="submitSrsAnswer()">
+          Jawab
+        </button>
+      </div>
+    </div>`;
+
+  const input=document.getElementById("srsAnswerInput");
+  if(input) input.focus();
+
+  updateSrsCountersOnly();
+  updateSrsOverallProgress();
+};
+
+
+/* ===== SRS: seluruh kalimat tampil, target disorot tanpa furigana ===== */
+
+function buildFullSrsQuestionSentence(item){
+  const temp=document.createElement("div");
+  temp.innerHTML=item.correctSentenceHtml || item.questionHtml || "";
+
+  const target=
+    temp.querySelector(".srs-correct-word") ||
+    temp.querySelector("mark") ||
+    temp.querySelector("strong");
+
+  if(target){
+    const highlighted=document.createElement("strong");
+    highlighted.className="srs-question-target";
+    highlighted.innerHTML=target.innerHTML;
+
+    highlighted.querySelectorAll("rt,rp").forEach(node=>node.remove());
+    target.replaceWith(highlighted);
+  }
+
+  return temp.innerHTML;
+}
+
+renderCurrentSrsCard=function(){
+  const area=document.getElementById("srsPracticeArea");
+  if(!area) return;
+
+  if(!srsQueue.length || srsCurrentIndex>=srsQueue.length){
+    area.innerHTML=`
+      <div class="srs-empty-card">
+        <h3>Latihan selesai 🎉</h3>
+        <p>Tidak ada soal lain yang perlu dikerjakan sekarang.</p>
+      </div>`;
+
+    updateSrsCountersOnly();
+    updateSrsOverallProgress();
+    return;
+  }
+
+  const item=srsQueue[srsCurrentIndex];
+  const fullSentence=buildFullSrsQuestionSentence(item);
+
+  area.innerHTML=`
+    <div class="srs-card">
+      <div id="srsQuestionText" class="srs-question">
+        <div id="srsSentenceText">${fullSentence}</div>
+        <div id="srsInlineResult" class="srs-inline-result"></div>
+      </div>
+
+      <div class="srs-answer-row">
+        <input
+          id="srsAnswerInput"
+          class="srs-answer-input"
+          type="text"
+          inputmode="text"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          placeholder="Ketik cara baca kosakata yang digarisbawahi"
+          onkeydown="if(event.key==='Enter') submitSrsAnswer()"
+        >
+
+        <button class="btn" onclick="submitSrsAnswer()">Jawab</button>
+      </div>
+    </div>`;
+
+  const input=document.getElementById("srsAnswerInput");
+  if(input) input.focus();
+
+  updateSrsCountersOnly();
+  updateSrsOverallProgress();
+};
+
+
+/* ===== Kembalikan keyboard romaji ke hiragana ===== */
+function attachSrsRomajiKeyboard(){
+  const input=document.getElementById("srsAnswerInput");
+  if(!input) return;
+
+  input.addEventListener("input",()=>{
+    const start=input.selectionStart;
+    input.value=romajiToHiragana(input.value);
+    const end=input.value.length;
+    input.setSelectionRange(end,end);
+  });
+
+  input.addEventListener("keydown",event=>{
+    if(event.key==="Enter"){
+      event.preventDefault();
+      submitSrsAnswer();
+    }
+  });
+}
+
+const previousRenderCurrentSrsCardForKeyboard=renderCurrentSrsCard;
+renderCurrentSrsCard=function(){
+  previousRenderCurrentSrsCardForKeyboard();
+  attachSrsRomajiKeyboard();
+};
+
+
+/* ===== Perbaikan furigana klik di SRS dan Beranda tersimpan ===== */
+
+function bindSrsRuby(){
+  const area=document.getElementById("srsPracticeArea");
+  if(!area || area.dataset.rubyBound==="1") return;
+
+  area.dataset.rubyBound="1";
+
+  area.addEventListener("click",event=>{
+    const ruby=event.target.closest("ruby");
+    if(!ruby || !area.contains(ruby)) return;
+
+    if(ruby.closest(".srs-question-target")) return;
+
+    ruby.classList.toggle("show");
+  });
+}
+
+const previousRenderCurrentSrsCardForRuby=renderCurrentSrsCard;
+renderCurrentSrsCard=function(){
+  previousRenderCurrentSrsCardForRuby();
+  bindSrsRuby();
+};
+
+function getLatestHomeStories(){
+  const stories=getStories();
+  if(!stories.length) return [];
+
+  const savedIds=getHomeFeaturedIds();
+  const lastOpened=localStorage.getItem("wiraLastOpenedStory");
+  const srsState=getSrsState();
+
+  function score(story){
+    const progress=getStorySrsProgress(story.id);
+    const completed=isStoryCompleted(story.id);
+    const storyItems=buildSrsItems().filter(
+      item=>String(item.storyId)===String(story.id)
+    );
+
+    const latestDue=storyItems.reduce((latest,item)=>{
+      const record=srsState[item.key];
+      return Math.max(latest,record?.lastReviewed||record?.due||0);
+    },0);
+
+    let total=latestDue;
+
+    if(progress.percent>0 && progress.percent<100){
+      total+=10000000000000+progress.percent;
+    }else if(progress.percent===100){
+      total+=5000000000000;
+    }
+
+    if(String(story.id)===String(lastOpened)){
+      total+=8000000000000;
+    }
+
+    if(completed){
+      total+=2000000000000;
+    }
+
+    const savedIndex=savedIds.indexOf(String(story.id));
+    if(savedIndex>=0){
+      total+=1000000000000-savedIndex;
+    }
+
+    return total;
+  }
+
+  return [...stories]
+    .sort((a,b)=>score(b)-score(a))
+    .slice(0,3);
+}
+
+renderHome=function(){
+  const grid=document.getElementById("homeStoryGrid");
+  if(!grid) return;
+
+  const featured=getLatestHomeStories();
+
+  if(!featured.length){
+    grid.innerHTML=`
+      <article class="story-card" onclick="go('generator')">
+        <span class="tag">新しい物語</span>
+        <h3>Import Cerita Baru</h3>
+        <p>Upload file JSON agar cerita muncul di Beranda.</p>
+      </article>`;
+    return;
+  }
+
+  saveHomeFeaturedIds(featured.map(story=>story.id));
+
+  grid.innerHTML=featured.map(story=>{
+    const locked=isStoryLocked(story);
+    const progress=getStorySrsProgress(story.id);
+
+    return `
+      <article
+        class="story-card ${locked?"locked-card":""}"
+        data-story-id="${encodeURIComponent(String(story.id))}"
+        onclick="${locked?"return false":"openStory(decodeURIComponent(this.dataset.storyId))"}"
+      >
+        <span class="tag">${story.theme||"読解"}</span>
+        ${completionBadge(story.id)}
+        ${locked?'<span class="lock-badge">🔒 Terkunci</span>':""}
+
+        <h3>${story.title}</h3>
+        <p>${story.description||"Cerita bahasa Jepang dengan furigana interaktif."}</p>
+
+        ${storyProgressHtml(story.id)}
+
+        ${
+          progress.percent>0 && progress.percent<100
+            ? '<div class="help" style="margin-top:10px">Sedang dipelajari di SRS</div>'
+            : ""
+        }
+      </article>`;
+  }).join("")+`
+    <article class="story-card" onclick="go('generator')">
+      <span class="tag">新しい物語</span>
+      <h3>Import Cerita Baru</h3>
+      <p>Upload file JSON yang sudah dibuat, lalu simpan ke koleksi cerita.</p>
+    </article>`;
+};
+
+function refreshHomeFromStorage(){
+  window.setTimeout(renderHome,0);
+  window.setTimeout(renderHome,120);
+  window.setTimeout(renderHome,600);
+}
+
+window.addEventListener("load",refreshHomeFromStorage);
+window.addEventListener("pageshow",refreshHomeFromStorage);
+
+window.addEventListener("storage",event=>{
+  if([
+    "wiraStories",
+    "wiraCompletedStories",
+    "wiraSrsState",
+    "wiraLastOpenedStory",
+    "wiraHomeFeaturedStories"
+  ].includes(event.key)){
+    refreshHomeFromStorage();
+  }
+});
+
+document.addEventListener("visibilitychange",()=>{
+  if(!document.hidden){
+    refreshHomeFromStorage();
+  }
+});
+
+
+/* ===== Kembalikan arti kalimat pada setiap soal SRS ===== */
+const previousRenderCurrentSrsCardForTranslation=renderCurrentSrsCard;
+
+renderCurrentSrsCard=function(){
+  previousRenderCurrentSrsCardForTranslation();
+
+  const item=srsQueue[srsCurrentIndex];
+  const sentence=document.getElementById("srsQuestionText");
+
+  if(!item || !sentence) return;
+  if(sentence.querySelector(".srs-translation-restored")) return;
+
+  const translation=String(item.translationHtml || "").trim();
+  if(!translation) return;
+
+  const translationBox=document.createElement("div");
+  translationBox.className="srs-translation-restored";
+  translationBox.innerHTML=translation;
+
+  sentence.appendChild(translationBox);
+};
+
+
+/* ===== Tebalkan arti target yang sesuai di terjemahan SRS ===== */
+
+function highlightSrsTranslationTarget(item){
+  const temp=document.createElement("div");
+  temp.innerHTML=String(item.translationHtml || "");
+
+  const targetIndex=Number(
+    String(item.key || "").split("::").pop()
+  ) || 0;
+
+  const strongTargets=[...temp.querySelectorAll("strong")];
+
+  if(strongTargets.length){
+    const selected=
+      strongTargets[targetIndex] ||
+      strongTargets[0];
+
+    selected.classList.add("srs-translation-target");
+  }
+
+  return temp.innerHTML;
+}
+
+const previousRenderCurrentSrsCardForBoldTranslation=renderCurrentSrsCard;
+
+renderCurrentSrsCard=function(){
+  previousRenderCurrentSrsCardForBoldTranslation();
+
+  const item=srsQueue[srsCurrentIndex];
+  const translationBox=document.querySelector(
+    "#srsQuestionText .srs-translation-restored"
+  );
+
+  if(!item || !translationBox) return;
+
+  translationBox.innerHTML=
+    highlightSrsTranslationTarget(item);
+};
 
 </script>
 
