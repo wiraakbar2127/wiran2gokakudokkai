@@ -9458,5 +9458,43 @@ async function toggleUnderwaterAmbient(){
 })();
 </script>
 
+
+<script id="srs-pc-auto-focus-next-script">
+(function(){
+  function isDesktopSrs(){
+    return window.matchMedia('(min-width:701px)').matches &&
+      document.getElementById('srs')?.classList.contains('active');
+  }
+
+  function focusDesktopAnswer(){
+    if(!isDesktopSrs()) return;
+    const input=document.getElementById('srsAnswerInput');
+    if(!input || input.disabled || input.readOnly || input.dataset.locked==='1') return;
+    try{ input.focus({preventScroll:true}); }catch(_){ input.focus(); }
+    try{ input.setSelectionRange(input.value.length,input.value.length); }catch(_){}
+  }
+
+  const previousNext=window.nextSrsQuestion;
+  window.nextSrsQuestion=function(){
+    const result=previousNext?.apply(this,arguments);
+    if(isDesktopSrs()){
+      requestAnimationFrame(()=>requestAnimationFrame(focusDesktopAnswer));
+    }
+    return result;
+  };
+
+  /* Jika perpindahan otomatis memakai fungsi advance, tetap arahkan kursor ke input baru. */
+  const previousAdvance=window.advanceSrsResult;
+  if(typeof previousAdvance==='function'){
+    window.advanceSrsResult=function(){
+      const result=previousAdvance.apply(this,arguments);
+      if(isDesktopSrs()){
+        requestAnimationFrame(()=>requestAnimationFrame(focusDesktopAnswer));
+      }
+      return result;
+    };
+  }
+})();
+</script>
 </body>
 </html>
