@@ -1569,6 +1569,73 @@ footer{
 
 <footer>ウィラN2合格読解</footer>
 
+
+<script id="safe-storage-and-loading-fix">
+/* Pengaman startup: website tetap dapat dibuka saat storage browser bermasalah. */
+const safeStorage = (() => {
+  let nativeStorage = null;
+  const memory = new Map();
+
+  try {
+    nativeStorage = window["local" + "Storage"];
+    const testKey = "__wira_storage_test__";
+    nativeStorage.setItem(testKey, "1");
+    nativeStorage.removeItem(testKey);
+  } catch (error) {
+    console.warn("Penyimpanan browser tidak tersedia. Memakai penyimpanan sementara.", error);
+    nativeStorage = null;
+  }
+
+  return {
+    getItem(key) {
+      try {
+        if (nativeStorage) return nativeStorage.getItem(String(key));
+      } catch (error) {
+        console.warn("Gagal membaca storage:", key, error);
+      }
+      return memory.has(String(key)) ? memory.get(String(key)) : null;
+    },
+    setItem(key, value) {
+      const normalizedKey = String(key);
+      const normalizedValue = String(value);
+      memory.set(normalizedKey, normalizedValue);
+      try {
+        if (nativeStorage) nativeStorage.setItem(normalizedKey, normalizedValue);
+      } catch (error) {
+        console.warn("Gagal menyimpan storage:", normalizedKey, error);
+      }
+    },
+    removeItem(key) {
+      memory.delete(String(key));
+      try {
+        if (nativeStorage) nativeStorage.removeItem(String(key));
+      } catch (error) {
+        console.warn("Gagal menghapus storage:", key, error);
+      }
+    },
+    clear() {
+      memory.clear();
+      try {
+        if (nativeStorage) nativeStorage.clear();
+      } catch (error) {
+        console.warn("Gagal membersihkan storage:", error);
+      }
+    }
+  };
+})();
+
+/* Loading tidak boleh menutupi website selamanya, walaupun modul lain error. */
+function forceOpenWebsite() {
+  const loading = document.getElementById("loadingScreen");
+  if (loading) loading.classList.add("hidden");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  window.setTimeout(forceOpenWebsite, 250);
+});
+window.addEventListener("load", () => window.setTimeout(forceOpenWebsite, 150));
+window.setTimeout(forceOpenWebsite, 4000);
+</script>
 <script>
 
 function showStoryBubbleLoading(){
@@ -1622,7 +1689,7 @@ const defaultStories = [];
 
 function getStories(){
   try{
-    const saved=JSON.parse(localStorage.getItem("wiraStories") || "[]");
+    const saved=JSON.parse(safeStorage.getItem("wiraStories") || "[]");
     return Array.isArray(saved) ? saved : [];
   }catch(error){
     console.error("Data cerita rusak:",error);
@@ -1632,7 +1699,7 @@ function getStories(){
 
 function getCompletedStories(){
   try{
-    const saved=JSON.parse(localStorage.getItem("wiraCompletedStories")||"[]");
+    const saved=JSON.parse(safeStorage.getItem("wiraCompletedStories")||"[]");
     return Array.isArray(saved) ? saved.map(String) : [];
   }catch(error){
     return [];
@@ -1646,7 +1713,7 @@ function isStoryCompleted(id){
 function setStoryCompleted(id){
   const completed=new Set(getCompletedStories());
   completed.add(String(id));
-  localStorage.setItem("wiraCompletedStories",JSON.stringify([...completed]));
+  safeStorage.setItem("wiraCompletedStories",JSON.stringify([...completed]));
 }
 
 function completionBadge(id){
@@ -1664,7 +1731,7 @@ function removeStoryCompleted(id){
     storyId=>String(storyId)!==String(id)
   );
 
-  localStorage.setItem(
+  safeStorage.setItem(
     "wiraCompletedStories",
     JSON.stringify(completed)
   );
@@ -1918,13 +1985,13 @@ function saveNavigationState(page,folder=null,storyId=null){
     storyId:storyId ? String(storyId) : null
   };
 
-  localStorage.setItem("wiraNavigationState",JSON.stringify(state));
+  safeStorage.setItem("wiraNavigationState",JSON.stringify(state));
 }
 
 function getNavigationState(){
   try{
     const state=JSON.parse(
-      localStorage.getItem("wiraNavigationState")||"null"
+      safeStorage.getItem("wiraNavigationState")||"null"
     );
 
     if(state && typeof state==="object"){
@@ -2156,7 +2223,7 @@ function sortFolders(folders){
 function getFolders(){
   let folders;
   try{
-    folders=JSON.parse(localStorage.getItem("wiraFolders")||"null");
+    folders=JSON.parse(safeStorage.getItem("wiraFolders")||"null");
   }catch(e){
     folders=null;
   }
@@ -2166,13 +2233,13 @@ function getFolders(){
   }
 
   folders=sortFolders(folders);
-  localStorage.setItem("wiraFolders",JSON.stringify(folders));
+  safeStorage.setItem("wiraFolders",JSON.stringify(folders));
   return folders;
 }
 
 function saveFolders(folders){
   const sorted=sortFolders(folders);
-  localStorage.setItem("wiraFolders",JSON.stringify(sorted));
+  safeStorage.setItem("wiraFolders",JSON.stringify(sorted));
   return sorted;
 }
 
@@ -2339,7 +2406,7 @@ function renameFolder(oldName){
 
   let stories=[];
   try{
-    stories=JSON.parse(localStorage.getItem("wiraStories")||"[]");
+    stories=JSON.parse(safeStorage.getItem("wiraStories")||"[]");
   }catch(e){
     stories=[];
   }
@@ -2350,7 +2417,7 @@ function renameFolder(oldName){
     }
   });
 
-  localStorage.setItem("wiraStories",JSON.stringify(stories));
+  safeStorage.setItem("wiraStories",JSON.stringify(stories));
 
   if(currentOpenFolder===oldName){
     currentOpenFolder=newName;
@@ -2496,7 +2563,7 @@ function moveStoryToFolder(id,newFolder){
   let saved=[];
 
   try{
-    saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
+    saved=JSON.parse(safeStorage.getItem("wiraStories")||"[]");
     if(!Array.isArray(saved)) saved=[];
   }catch(error){
     saved=[];
@@ -2512,7 +2579,7 @@ function moveStoryToFolder(id,newFolder){
   }
 
   story.level=newFolder;
-  localStorage.setItem("wiraStories",JSON.stringify(saved));
+  safeStorage.setItem("wiraStories",JSON.stringify(saved));
 
   const folderBeingViewed=currentOpenFolder;
 
@@ -2541,7 +2608,7 @@ async function importStoryFiles(){
 
   let saved=[];
   try{
-    saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
+    saved=JSON.parse(safeStorage.getItem("wiraStories")||"[]");
     if(!Array.isArray(saved)) saved=[];
   }catch(error){
     saved=[];
@@ -2613,7 +2680,7 @@ async function importStoryFiles(){
   }
 
   saveFolders(folders);
-  localStorage.setItem("wiraStories",JSON.stringify(saved));
+  safeStorage.setItem("wiraStories",JSON.stringify(saved));
 
   renderHome();
   renderCategories();
@@ -2645,7 +2712,7 @@ function renderManageList(){
 
 
   wrap.innerHTML=stories.map(s=>`
-    <div class="manage-card" id="manage-card-${encodeURIComponent(String(story.id))}">
+    <div class="manage-card" id="manage-card-${encodeURIComponent(String(s.id))}">
       <div class="manage-head">
         <div>
           <span class="tag">${s.theme||"読解"}</span>${completionBadge(s.id)}
@@ -2712,11 +2779,11 @@ function saveEditedStory(){
   };
 
   
-    let saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
+    let saved=JSON.parse(safeStorage.getItem("wiraStories")||"[]");
     const index=saved.findIndex(x=>x.id===id);
     if(index>=0)saved[index]=updated;
     else saved.push(updated);
-    localStorage.setItem("wiraStories",JSON.stringify(saved));
+    safeStorage.setItem("wiraStories",JSON.stringify(saved));
   alert("Perubahan cerita berhasil disimpan.");
   cancelEdit();
   renderManageList();
@@ -2735,12 +2802,12 @@ function deleteStory(id){
 
   if(!confirm(`Yakin ingin menghapus cerita "${story.title}"?`)) return;
 
-  let saved = JSON.parse(localStorage.getItem("wiraStories") || "[]");
+  let saved = JSON.parse(safeStorage.getItem("wiraStories") || "[]");
   saved = saved.filter(x => x.id !== id);
-  localStorage.setItem("wiraStories", JSON.stringify(saved));
+  safeStorage.setItem("wiraStories", JSON.stringify(saved));
 
   const completed=getCompletedStories().filter(storyId=>storyId!==String(id));
-  localStorage.setItem("wiraCompletedStories",JSON.stringify(completed));
+  safeStorage.setItem("wiraCompletedStories",JSON.stringify(completed));
 
   const navState=getNavigationState();
   if(String(navState.storyId||"")===String(id)){
@@ -2757,8 +2824,8 @@ function deleteStory(id){
 
 const SRS_INTERVALS=[10*60*1000,4*60*60*1000,24*60*60*1000,3*24*60*60*1000,7*24*60*60*1000,14*24*60*60*1000,30*24*60*60*1000];
 let srsQueue=[],srsCurrentIndex=0,srsLocked=false;
-function getSrsState(){try{const d=JSON.parse(localStorage.getItem("wiraSrsState")||"{}");return d&&typeof d==="object"?d:{}}catch(e){return {}}}
-function saveSrsState(s){localStorage.setItem("wiraSrsState",JSON.stringify(s))}
+function getSrsState(){try{const d=JSON.parse(safeStorage.getItem("wiraSrsState")||"{}");return d&&typeof d==="object"?d:{}}catch(e){return {}}}
+function saveSrsState(s){safeStorage.setItem("wiraSrsState",JSON.stringify(s))}
 function normalizeKana(t){return String(t||"").trim().replace(/\s+/g,"").replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60))}
 function getStrongTargets(jp){
   const temp=document.createElement("div");
@@ -2825,7 +2892,7 @@ function submitSrsAnswer(){if(srsLocked)return;const item=srsQueue[srsCurrentInd
 function updateSrsCountersOnly(){const items=buildSrsItems(),s=syncSrsState(items),now=Date.now();document.getElementById("srsDueCount").textContent=items.filter(i=>(s[i.key]?.due||0)<=now).length;document.getElementById("srsLearningCount").textContent=items.filter(i=>{const l=s[i.key]?.level||0;return l>0&&l<SRS_INTERVALS.length-1}).length;document.getElementById("srsMasteredCount").textContent=items.filter(i=>(s[i.key]?.level||0)>=SRS_INTERVALS.length-1).length}
 function formatSrsDuration(ms){const m=Math.round(ms/60000);if(m<60)return `${m} menit`;const h=Math.round(m/60);if(h<24)return `${h} jam`;return `${Math.round(h/24)} hari`}
 function romajiToHiragana(input){let text=String(input||"").toLowerCase();if(/[ぁ-ん]/.test(text)&&!/[a-z]/.test(text))return text;const map={kya:"きゃ",kyu:"きゅ",kyo:"きょ",sha:"しゃ",shu:"しゅ",sho:"しょ",cha:"ちゃ",chu:"ちゅ",cho:"ちょ",nya:"にゃ",nyu:"にゅ",nyo:"にょ",hya:"ひゃ",hyu:"ひゅ",hyo:"ひょ",mya:"みゃ",myu:"みゅ",myo:"みょ",rya:"りゃ",ryu:"りゅ",ryo:"りょ",gya:"ぎゃ",gyu:"ぎゅ",gyo:"ぎょ",ja:"じゃ",ju:"じゅ",jo:"じょ",bya:"びゃ",byu:"びゅ",byo:"びょ",pya:"ぴゃ",pyu:"ぴゅ",pyo:"ぴょ",shi:"し",chi:"ち",tsu:"つ",fu:"ふ",ka:"か",ki:"き",ku:"く",ke:"け",ko:"こ",sa:"さ",si:"し",su:"す",se:"せ",so:"そ",ta:"た",ti:"ち",tu:"つ",te:"て",to:"と",na:"な",ni:"に",nu:"ぬ",ne:"ね",no:"の",ha:"は",hi:"ひ",hu:"ふ",he:"へ",ho:"ほ",ma:"ま",mi:"み",mu:"む",me:"め",mo:"も",ya:"や",yu:"ゆ",yo:"よ",ra:"ら",ri:"り",ru:"る",re:"れ",ro:"ろ",wa:"わ",wo:"を",ga:"が",gi:"ぎ",gu:"ぐ",ge:"げ",go:"ご",za:"ざ",ji:"じ",zu:"ず",ze:"ぜ",zo:"ぞ",da:"だ",di:"ぢ",du:"づ",de:"で",do:"ど",ba:"ば",bi:"び",bu:"ぶ",be:"べ",bo:"ぼ",pa:"ぱ",pi:"ぴ",pu:"ぷ",pe:"ぺ",po:"ぽ",a:"あ",i:"い",u:"う",e:"え",o:"お",n:"ん"};let out="",i=0;while(i<text.length){const ch=text[i];if(/[ぁ-ん]/.test(ch)){out+=ch;i++;continue}if(i+1<text.length&&text[i]===text[i+1]&&/[bcdfghjklmpqrstvwxyz]/.test(text[i])&&text[i]!=="n"){out+="っ";i++;continue}let matched=false;for(const len of [3,2,1]){const part=text.slice(i,i+len);if(map[part]){if(part==="n"&&i+1<text.length&&/[aiueoy]/.test(text[i+1]))continue;out+=map[part];i+=len;matched=true;break}}if(!matched){out+=ch;i++}}return out}
-function resetSrsProgress(){if(!confirm("Yakin ingin menghapus seluruh progres SRS?"))return;localStorage.removeItem("wiraSrsState");renderSrsPage()}
+function resetSrsProgress(){if(!confirm("Yakin ingin menghapus seluruh progres SRS?"))return;safeStorage.removeItem("wiraSrsState");renderSrsPage()}
 
 
 document.getElementById("storyFile").addEventListener("change",event=>{
@@ -2847,6 +2914,7 @@ document.getElementById("readConfirmModal").addEventListener("click",event=>{
 });
 
 window.addEventListener("load",()=>{
+  hideLoading(0);
   restoreNavigationState();
 
   const state=getNavigationState();
@@ -3103,7 +3171,7 @@ function lockedStoryMessage(story){
 }
 
 function rememberLastOpenedStory(id){
-  localStorage.setItem("wiraLastOpenedStory",String(id));
+  safeStorage.setItem("wiraLastOpenedStory",String(id));
 }
 
 function openStory(id){
@@ -3133,7 +3201,7 @@ function renderHome(){
   if(!grid) return;
 
   const stories=getStories();
-  const lastId=localStorage.getItem("wiraLastOpenedStory");
+  const lastId=safeStorage.getItem("wiraLastOpenedStory");
   const completedIds=getCompletedStories();
 
   let priority=stories.find(story=>String(story.id)===String(lastId));
@@ -3405,7 +3473,7 @@ function daysBetweenKeys(fromKey,toKey){
 
 function getDailyState(){
   try{
-    const state=JSON.parse(localStorage.getItem("wiraDailyState")||"null");
+    const state=JSON.parse(safeStorage.getItem("wiraDailyState")||"null");
     if(state && typeof state==="object") return state;
   }catch(error){}
 
@@ -3418,7 +3486,7 @@ function getDailyState(){
 }
 
 function saveDailyState(state){
-  localStorage.setItem("wiraDailyState",JSON.stringify(state));
+  safeStorage.setItem("wiraDailyState",JSON.stringify(state));
 }
 
 function learnedVocabularyCount(){
@@ -4350,7 +4418,7 @@ document.addEventListener("keydown",event=>{
 /* ===== Beranda stabil & ikan progress ===== */
 
 function saveHomeFeaturedIds(ids){
-  localStorage.setItem(
+  safeStorage.setItem(
     "wiraHomeFeaturedStories",
     JSON.stringify(ids.map(String))
   );
@@ -4359,7 +4427,7 @@ function saveHomeFeaturedIds(ids){
 function getHomeFeaturedIds(){
   try{
     const ids=JSON.parse(
-      localStorage.getItem("wiraHomeFeaturedStories")||"[]"
+      safeStorage.getItem("wiraHomeFeaturedStories")||"[]"
     );
     return Array.isArray(ids) ? ids.map(String) : [];
   }catch(error){
@@ -4369,7 +4437,7 @@ function getHomeFeaturedIds(){
 
 function getStoryActivityScore(story){
   const progress=getStorySrsProgress(story.id);
-  const lastOpened=localStorage.getItem("wiraLastOpenedStory");
+  const lastOpened=safeStorage.getItem("wiraLastOpenedStory");
   const completed=isStoryCompleted(story.id);
 
   let score=0;
@@ -4925,7 +4993,7 @@ function getLatestHomeStories(){
   if(!stories.length) return [];
 
   const savedIds=getHomeFeaturedIds();
-  const lastOpened=localStorage.getItem("wiraLastOpenedStory");
+  const lastOpened=safeStorage.getItem("wiraLastOpenedStory");
   const srsState=getSrsState();
 
   function score(story){
