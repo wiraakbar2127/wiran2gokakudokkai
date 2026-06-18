@@ -1579,7 +1579,9 @@ footer{
 <div class="srs-stat"><strong id="srsLearningCount">0</strong><span>Belajar</span></div>
 <div class="srs-stat"><strong id="srsMasteredCount">0</strong><span>Dikuasai</span></div>
 </div>
-<div class="srs-progress-card srs-overall-box">
+<div class="srs-layout">
+<div class="srs-main">
+<div class="srs-overall-box">
 <div class="srs-overall-head">
 <strong>Kosakata dipelajari</strong>
 <span id="srsLearnedText">0 / 0</span>
@@ -1597,8 +1599,6 @@ footer{
 </div>
 <small>Jawaban salah tidak dihitung sebagai kosakata yang sudah dipelajari.</small>
 </div>
-<div class="srs-layout">
-<div class="srs-main srs-question-card">
 <div id="srsPracticeArea"></div>
 </div>
 <aside class="srs-side"><h3 style="margin-top:0;color:var(--brown)">Cerita Aktif</h3><div class="srs-list" id="srsStoryList"></div></aside>
@@ -10094,178 +10094,84 @@ async function toggleUnderwaterAmbient(){
 </style>
 
 
-<!-- ===== PATCH WIRA: pisahkan card progress SRS dan card soal ===== -->
-<style id="wira-srs-progress-question-separated-patch">
-/* Progress kosakata dibuat sebagai card sendiri, bukan berada di dalam card soal */
-#srs.page.active .srs-progress-card{
-  background:var(--card)!important;
-  border:1px solid var(--line)!important;
-  border-radius:24px!important;
-  box-shadow:var(--shadow)!important;
-  padding:14px!important;
-  margin:0 0 16px!important;
-}
-#srs.page.active .srs-question-card{
-  background:var(--card)!important;
-  border:1px solid var(--line)!important;
-  border-radius:24px!important;
-  box-shadow:var(--shadow)!important;
-}
-#srs.page.active .srs-question-card #srsPracticeArea{
-  width:100%!important;
-}
 
-@media (min-width:701px){
-  #srs.page.active .srs-progress-card{
-    max-width:calc(100% - 300px);
-  }
-}
-
+<!-- PATCH WIRA: pisahkan progress bar SRS dari kartu soal di HP -->
+<style id="wira-srs-mobile-separate-progress-patch">
 @media (max-width:700px){
-  /* Saat belum mengetik: progress terlihat sebagai card terpisah */
-  #srs.page.active{
-    height:auto!important;
-    min-height:calc(100svh - var(--srs-top-offset,0px))!important;
-    overflow:visible!important;
-  }
+  /* Area SRS jangan dibuat seperti satu tabel/kartu besar */
   #srs.page.active .srs-layout{
     display:block!important;
     height:auto!important;
     min-height:0!important;
+    overflow:visible!important;
   }
-  #srs.page.active .srs-progress-card{
-    display:block!important;
-    padding:11px 12px!important;
-    margin:0 0 12px!important;
-    border-radius:18px!important;
-  }
-  #srs.page.active .srs-question-card{
+
+  /* Bungkus utama dibuat transparan agar progress dan soal terlihat sebagai dua kartu terpisah */
+  #srs.page.active .srs-main,
+  body.srs-keyboard-active #srs.page.active .srs-main,
+  body.srs-keyboard-open #srs.page.active .srs-main,
+  body.srs-mobile-focus #srs.page.active .srs-main{
     display:block!important;
     height:auto!important;
     min-height:0!important;
-    padding:12px!important;
     overflow:visible!important;
-    border-radius:18px!important;
+    padding:0!important;
+    background:transparent!important;
+    border:0!important;
+    box-shadow:none!important;
+    border-radius:0!important;
   }
-  #srs.page.active #srsPracticeArea{
+
+  /* Progress bar menjadi kartu sendiri */
+  #srs.page.active .srs-overall-box,
+  body.srs-keyboard-active #srs.page.active .srs-overall-box,
+  body.srs-keyboard-open #srs.page.active .srs-overall-box,
+  body.srs-mobile-focus #srs.page.active .srs-overall-box{
+    display:block!important;
+    visibility:visible!important;
+    opacity:1!important;
+    background:var(--card)!important;
+    border:1px solid var(--line)!important;
+    border-radius:18px!important;
+    box-shadow:var(--shadow)!important;
+    padding:12px 14px!important;
+    margin:0 0 14px!important;
+  }
+
+  /* Kartu soal menjadi bagian terpisah dari progress */
+  #srs.page.active #srsPracticeArea,
+  body.srs-keyboard-active #srs.page.active #srsPracticeArea,
+  body.srs-keyboard-open #srs.page.active #srsPracticeArea,
+  body.srs-mobile-focus #srs.page.active #srsPracticeArea{
+    display:block!important;
+    width:100%!important;
     height:auto!important;
     min-height:0!important;
-    display:block!important;
     overflow:visible!important;
+    background:var(--card)!important;
+    border:1px solid var(--line)!important;
+    border-radius:20px!important;
+    box-shadow:var(--shadow)!important;
+    padding:14px!important;
   }
+
   #srs.page.active #srsPracticeArea .srs-card{
+    width:100%!important;
     min-height:0!important;
     max-height:none!important;
     overflow:visible!important;
-  }
-
-  /* Saat keyboard/input aktif: langsung fokus ke card soal, progress disembunyikan sementara */
-  body.srs-keyboard-active #srs.page.active > .section-title,
-  body.srs-keyboard-open #srs.page.active > .section-title,
-  body.srs-mobile-focus #srs.page.active > .section-title,
-  html.srs-ios-keyboard-open #srs.page.active > .section-title,
-  body.srs-keyboard-active #srs.page.active > p,
-  body.srs-keyboard-open #srs.page.active > p,
-  body.srs-mobile-focus #srs.page.active > p,
-  html.srs-ios-keyboard-open #srs.page.active > p,
-  body.srs-keyboard-active #srs.page.active .srs-stats,
-  body.srs-keyboard-open #srs.page.active .srs-stats,
-  body.srs-mobile-focus #srs.page.active .srs-stats,
-  html.srs-ios-keyboard-open #srs.page.active .srs-stats,
-  body.srs-keyboard-active #srs.page.active .srs-progress-card,
-  body.srs-keyboard-open #srs.page.active .srs-progress-card,
-  body.srs-mobile-focus #srs.page.active .srs-progress-card,
-  html.srs-ios-keyboard-open #srs.page.active .srs-progress-card,
-  body.srs-keyboard-active #srs.page.active .srs-overall-box,
-  body.srs-keyboard-open #srs.page.active .srs-overall-box,
-  body.srs-mobile-focus #srs.page.active .srs-overall-box,
-  html.srs-ios-keyboard-open #srs.page.active .srs-overall-box{
-    display:none!important;
-    visibility:hidden!important;
-    opacity:0!important;
-    height:0!important;
-    margin:0!important;
     padding:0!important;
-    border:0!important;
-    overflow:hidden!important;
   }
 
-  body.srs-keyboard-active #srs.page.active,
-  body.srs-keyboard-open #srs.page.active,
-  body.srs-mobile-focus #srs.page.active,
-  html.srs-ios-keyboard-open #srs.page.active{
-    padding:8px 10px max(8px,env(safe-area-inset-bottom))!important;
-    overflow:hidden!important;
+  /* Side list tetap tidak tampil di HP agar tidak menempel dengan soal */
+  #srs.page.active .srs-side,
+  body.srs-keyboard-active #srs.page.active .srs-side,
+  body.srs-keyboard-open #srs.page.active .srs-side,
+  body.srs-mobile-focus #srs.page.active .srs-side{
+    display:none!important;
   }
-
-  body.srs-keyboard-active #srs.page.active .srs-layout,
-  body.srs-keyboard-open #srs.page.active .srs-layout,
-  body.srs-mobile-focus #srs.page.active .srs-layout,
-  html.srs-ios-keyboard-open #srs.page.active .srs-layout{
-    height:100%!important;
-    min-height:0!important;
-    margin:0!important;
-  }
-
-  body.srs-keyboard-active #srs.page.active .srs-question-card,
-  body.srs-keyboard-open #srs.page.active .srs-question-card,
-  body.srs-mobile-focus #srs.page.active .srs-question-card,
-  html.srs-ios-keyboard-open #srs.page.active .srs-question-card{
-    height:100%!important;
-    min-height:0!important;
-    padding:10px!important;
-    display:flex!important;
-    align-items:center!important;
-    justify-content:center!important;
-    overflow:hidden!important;
-  }
-
-  body.srs-keyboard-active #srs.page.active #srsPracticeArea,
-  body.srs-keyboard-open #srs.page.active #srsPracticeArea,
-  body.srs-mobile-focus #srs.page.active #srsPracticeArea,
-  html.srs-ios-keyboard-open #srs.page.active #srsPracticeArea{
-    height:100%!important;
-    width:100%!important;
-    display:flex!important;
-    align-items:center!important;
-    justify-content:center!important;
-    overflow:hidden!important;
-  }
-
-  /* Tombol musik dan achievement tetap muncul */
-  #ambientToggle,
-  .ambient-toggle,
-  #achievementBubble,
-  .achievement-bubble{
-    display:flex!important;
-    visibility:visible!important;
-    opacity:1!important;
-    pointer-events:auto!important;
-  }
-  #ambientToggle,.ambient-toggle{z-index:9998!important;right:18px!important;bottom:92px!important;}
-  #achievementBubble,.achievement-bubble{z-index:9997!important;right:18px!important;bottom:22px!important;}
 }
 </style>
-<script id="wira-srs-focus-question-card-script">
-(function(){
-  'use strict';
-  function activeMobileSrs(){
-    return window.matchMedia('(max-width:700px)').matches &&
-      document.getElementById('srs')?.classList.contains('active');
-  }
-  function focusQuestionCard(){
-    if(!activeMobileSrs()) return;
-    const card=document.querySelector('#srs.page.active .srs-question-card');
-    if(!card) return;
-    requestAnimationFrame(function(){
-      try{ card.scrollIntoView({block:'start',behavior:'smooth'}); }catch(_){ card.scrollIntoView(); }
-    });
-  }
-  document.addEventListener('focusin',function(e){
-    if(e.target?.id==='srsAnswerInput') focusQuestionCard();
-  },true);
-})();
-</script>
 
 </body>
 </html>
