@@ -1060,18 +1060,16 @@ select:disabled{
 }
 
 
-/* Tebalkan arti kosakata target pada terjemahan SRS */
+/* Arti SRS: hanya arti kosakata yang sedang ditanyakan dibuat tebal */
 .srs-translation-restored strong{
-  font-weight:800!important;
-  color:#244f73;
-  background:#eaf4fc;
-  padding:1px 4px;
-  border-radius:5px;
+  font-weight:inherit!important;
+  color:inherit!important;
+  background:transparent!important;
+  padding:0!important;
+  border-radius:0!important;
 }
 
-
-/* Target arti kosakata pada terjemahan SRS */
-.srs-translation-restored .srs-translation-target{
+.srs-translation-restored strong.srs-translation-target{
   display:inline!important;
   font-weight:900!important;
   color:#163f63!important;
@@ -4892,18 +4890,21 @@ function highlightSrsTranslationTarget(item){
   const temp=document.createElement("div");
   temp.innerHTML=String(item.translationHtml || "");
 
-  const targetIndex=Number(
-    String(item.key || "").split("::").pop()
-  ) || 0;
-
+  const keyParts=String(item.key || "").split("::");
+  const parsedIndex=Number.parseInt(keyParts[keyParts.length-1],10);
+  const targetIndex=Number.isFinite(parsedIndex) ? parsedIndex : 0;
   const strongTargets=[...temp.querySelectorAll("strong")];
 
-  if(strongTargets.length){
-    const selected=
-      strongTargets[targetIndex] ||
-      strongTargets[0];
+  strongTargets.forEach((strong,index)=>{
+    strong.classList.toggle(
+      "srs-translation-target",
+      index===targetIndex
+    );
+  });
 
-    selected.classList.add("srs-translation-target");
+  /* Kompatibilitas untuk cerita lama yang hanya memiliki satu arti bertanda strong. */
+  if(strongTargets.length && !temp.querySelector(".srs-translation-target")){
+    strongTargets[0].classList.add("srs-translation-target");
   }
 
   return temp.innerHTML;
