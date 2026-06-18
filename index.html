@@ -6276,7 +6276,7 @@ async function toggleUnderwaterAmbient(){
 
 
 <style>
-/* ===== SRS mobile stabil + tombol soal berikutnya ===== */
+/* ===== SRS mobile: kartu tetap di tengah saat keyboard terbuka ===== */
 .srs-result-actions{
   display:flex;
   align-items:center;
@@ -6296,72 +6296,98 @@ async function toggleUnderwaterAmbient(){
   html.srs-mobile-active body{
     overscroll-behavior:none;
   }
+
   #srs.page.active{
-    height:calc(var(--srs-vvh, 100vh) - var(--srs-top-offset, 0px));
+    height:calc(var(--srs-stable-height, 100svh) - var(--srs-top-offset, 0px));
     min-height:0;
     overflow:hidden;
-    padding:16px 12px max(10px,env(safe-area-inset-bottom));
+    padding:10px 12px max(10px,env(safe-area-inset-bottom));
   }
-  #srs.page.active > .section-title,
+
+  #srs.page.active > .section-title{
+    margin:4px 4px 2px;
+    font-size:22px;
+  }
   #srs.page.active > p{
-    margin-left:4px;
-    margin-right:4px;
+    margin:0 4px 8px!important;
+    font-size:12px;
   }
+
   #srs.page.active .srs-stats{
     grid-template-columns:repeat(3,minmax(0,1fr));
     gap:6px;
-    margin-bottom:10px;
+    margin-bottom:8px;
   }
-  #srs.page.active .srs-stat{padding:9px 4px;border-radius:12px}
-  #srs.page.active .srs-stat strong{font-size:19px}
-  #srs.page.active .srs-stat span{font-size:10px}
+  #srs.page.active .srs-stat{padding:7px 4px;border-radius:12px}
+  #srs.page.active .srs-stat strong{font-size:18px}
+  #srs.page.active .srs-stat span{font-size:9px}
+
   #srs.page.active .srs-layout{
     display:block;
-    height:calc(100% - 132px);
+    height:calc(100% - 108px);
     min-height:0;
   }
+
   #srs.page.active .srs-main{
     height:100%;
     min-height:0;
-    overflow-y:auto;
-    overscroll-behavior:contain;
-    -webkit-overflow-scrolling:touch;
-    padding:14px;
-    scroll-padding-bottom:110px;
+    overflow:hidden;
+    padding:10px;
+    display:grid;
+    grid-template-rows:auto minmax(0,1fr);
   }
+
   #srs.page.active .srs-side{display:none}
   #srs.page.active .srs-overall-box{
-    padding:10px;
-    margin-bottom:10px;
+    padding:8px 10px;
+    margin-bottom:8px;
   }
-  #srs.page.active .srs-card{
+
+  #srsPracticeArea{
     min-height:0;
-    justify-content:flex-start;
-    padding-bottom:86px;
+    height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
   }
+
+  #srs.page.active .srs-card{
+    width:100%;
+    max-height:100%;
+    min-height:0;
+    justify-content:center;
+    overflow:auto;
+    overscroll-behavior:contain;
+    padding:4px 2px 8px;
+    scroll-behavior:auto;
+  }
+
   #srs.page.active .srs-question{
-    font-size:19px;
-    line-height:1.85;
-    margin-bottom:12px;
+    font-size:18px;
+    line-height:1.75;
+    margin:0 0 10px;
   }
+
   #srs.page.active .srs-translation-restored{
-    font-size:14px;
-    margin:10px 0 12px;
-    padding:10px 12px;
+    font-size:13px;
+    margin:9px 0 10px;
+    padding:9px 11px;
   }
+
+  /* Tidak sticky: bar jawaban tidak ikut terdorong saat keyboard muncul */
   #srs.page.active .srs-answer-row,
   #srs.page.active .srs-answer-wrap{
-    position:sticky;
-    bottom:0;
-    z-index:8;
+    position:static!important;
     display:grid;
     grid-template-columns:minmax(0,1fr) auto;
     align-items:center;
-    gap:10px;
-    margin:12px -4px 0;
-    padding:10px 4px max(10px,env(safe-area-inset-bottom));
-    background:linear-gradient(180deg,rgba(255,255,255,0),#fff 24%,#fff 100%);
+    gap:12px;
+    margin:14px 0 0;
+    padding:0;
+    background:transparent;
   }
+
   #srs.page.active .srs-answer-input,
   #srs.page.active .srs-answer{
     width:100%;
@@ -6370,17 +6396,20 @@ async function toggleUnderwaterAmbient(){
     font-size:18px;
     margin:0;
   }
+
   #srs.page.active .srs-answer-row > .btn,
   #srs.page.active .srs-answer-wrap > .btn{
     height:48px;
-    min-width:82px;
+    min-width:88px;
     margin:0;
-    padding:10px 14px;
+    padding:10px 15px;
   }
+
   #srs.page.active .srs-inline-result{
-    margin-top:10px;
-    padding-top:10px;
+    margin-top:9px;
+    padding-top:9px;
   }
+
   #srs.page.active .srs-result-actions{
     display:grid;
     grid-template-columns:1fr;
@@ -6388,78 +6417,107 @@ async function toggleUnderwaterAmbient(){
   }
   #srs.page.active .srs-next-question-btn{
     width:100%;
-    min-height:50px;
+    min-height:48px;
     font-size:16px;
   }
-  #srs.page.active .srs-result-actions .srs-skip-note{text-align:center;font-size:12px}
+  #srs.page.active .srs-result-actions .srs-skip-note{
+    text-align:center;
+    font-size:12px;
+  }
 }
 </style>
 <script>
-/* VisualViewport menjaga halaman SRS stabil saat keyboard HP terbuka. */
+/*
+  Kunci tinggi layout SRS saat halaman dibuka.
+  Tinggi ini tidak diubah ketika keyboard virtual muncul,
+  sehingga kartu soal tidak mengecil atau meloncat.
+*/
 (function(){
   const root=document.documentElement;
-  let focusTimer=null;
+  let stableHeight=0;
+  let savedScrollY=0;
 
   function isMobileSrs(){
     return window.matchMedia('(max-width:700px)').matches &&
       document.getElementById('srs')?.classList.contains('active');
   }
 
-  function updateMobileSrsViewport(){
-    const viewport=window.visualViewport;
-    const height=viewport ? viewport.height : window.innerHeight;
+  function captureStableHeight(force=false){
+    if(!isMobileSrs()){
+      root.classList.remove('srs-mobile-active');
+      return;
+    }
+
+    const inputFocused=document.activeElement?.id==='srsAnswerInput';
+    if(force || !stableHeight || !inputFocused){
+      stableHeight=Math.max(window.innerHeight,document.documentElement.clientHeight);
+    }
+
     const topbar=document.querySelector('.topbar');
     const offset=topbar ? Math.min(topbar.getBoundingClientRect().height,145) : 0;
-    root.style.setProperty('--srs-vvh',`${Math.round(height)}px`);
+
+    root.style.setProperty('--srs-stable-height',`${Math.round(stableHeight)}px`);
     root.style.setProperty('--srs-top-offset',`${Math.round(offset)}px`);
-    root.classList.toggle('srs-mobile-active',isMobileSrs());
+    root.classList.add('srs-mobile-active');
   }
 
-  function settleInput(){
+  function keepCardStable(){
     if(!isMobileSrs()) return;
-    const input=document.getElementById('srsAnswerInput');
-    const scroller=document.querySelector('#srs.page.active .srs-main');
-    if(!input || !scroller) return;
-    clearTimeout(focusTimer);
-    focusTimer=setTimeout(()=>{
-      const inputRect=input.getBoundingClientRect();
-      const scrollRect=scroller.getBoundingClientRect();
-      const desired=scrollRect.top+Math.min(scrollRect.height*.55,260);
-      scroller.scrollTop += inputRect.top-desired;
-    },120);
-  }
 
-  window.addEventListener('resize',updateMobileSrsViewport,{passive:true});
-  window.visualViewport?.addEventListener('resize',()=>{
-    updateMobileSrsViewport();
-    settleInput();
-  },{passive:true});
-  window.visualViewport?.addEventListener('scroll',updateMobileSrsViewport,{passive:true});
+    const card=document.querySelector('#srs.page.active .srs-card');
+    const area=document.getElementById('srsPracticeArea');
+
+    requestAnimationFrame(()=>{
+      window.scrollTo(0,savedScrollY);
+      if(area) area.scrollTop=0;
+      if(card) card.scrollTop=0;
+    });
+
+    setTimeout(()=>{
+      window.scrollTo(0,savedScrollY);
+    },80);
+  }
 
   document.addEventListener('focusin',event=>{
-    if(event.target?.id==='srsAnswerInput'){
-      updateMobileSrsViewport();
-      settleInput();
-    }
+    if(event.target?.id!=='srsAnswerInput' || !isMobileSrs()) return;
+    savedScrollY=window.scrollY;
+    captureStableHeight(false);
+    keepCardStable();
   });
 
   document.addEventListener('focusout',event=>{
-    if(event.target?.id==='srsAnswerInput'){
-      setTimeout(updateMobileSrsViewport,80);
-    }
+    if(event.target?.id!=='srsAnswerInput') return;
+    setTimeout(()=>captureStableHeight(true),120);
   });
+
+  window.addEventListener('orientationchange',()=>{
+    stableHeight=0;
+    setTimeout(()=>captureStableHeight(true),250);
+  });
+
+  window.addEventListener('resize',()=>{
+    /* Abaikan resize dari keyboard; tangkap ulang hanya jika input tidak fokus. */
+    if(document.activeElement?.id!=='srsAnswerInput'){
+      captureStableHeight(true);
+    }
+  },{passive:true});
 
   const originalGoMobile=window.go;
   if(typeof originalGoMobile==='function'){
     window.go=function(id){
       originalGoMobile(id);
-      setTimeout(updateMobileSrsViewport,0);
-      setTimeout(updateMobileSrsViewport,250);
+      if(id==='srs'){
+        stableHeight=0;
+        setTimeout(()=>captureStableHeight(true),0);
+        setTimeout(()=>captureStableHeight(true),180);
+      }else{
+        root.classList.remove('srs-mobile-active');
+      }
     };
   }
 
-  window.addEventListener('load',updateMobileSrsViewport);
-  window.addEventListener('pageshow',updateMobileSrsViewport);
+  window.addEventListener('load',()=>captureStableHeight(true));
+  window.addEventListener('pageshow',()=>captureStableHeight(true));
 })();
 </script>
 
