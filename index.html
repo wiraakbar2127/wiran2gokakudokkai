@@ -1221,7 +1221,7 @@ footer{
 </head>
 <body>
 
-<div id="loadingScreen" class="loading-screen hidden" style="display:none!important" aria-live="polite" aria-label="Loading">
+<div id="loadingScreen" class="loading-screen" aria-live="polite" aria-label="Loading">
   <div class="loading-card">
     <div class="loading-ocean">
       <div class="loading-fish" aria-hidden="true">
@@ -1569,73 +1569,6 @@ footer{
 
 <footer>ウィラN2合格読解</footer>
 
-
-<script id="safe-storage-and-loading-fix">
-/* Pengaman startup: website tetap dapat dibuka saat storage browser bermasalah. */
-const safeStorage = (() => {
-  let nativeStorage = null;
-  const memory = new Map();
-
-  try {
-    nativeStorage = window["local" + "Storage"];
-    const testKey = "__wira_storage_test__";
-    nativeStorage.setItem(testKey, "1");
-    nativeStorage.removeItem(testKey);
-  } catch (error) {
-    console.warn("Penyimpanan browser tidak tersedia. Memakai penyimpanan sementara.", error);
-    nativeStorage = null;
-  }
-
-  return {
-    getItem(key) {
-      try {
-        if (nativeStorage) return nativeStorage.getItem(String(key));
-      } catch (error) {
-        console.warn("Gagal membaca storage:", key, error);
-      }
-      return memory.has(String(key)) ? memory.get(String(key)) : null;
-    },
-    setItem(key, value) {
-      const normalizedKey = String(key);
-      const normalizedValue = String(value);
-      memory.set(normalizedKey, normalizedValue);
-      try {
-        if (nativeStorage) nativeStorage.setItem(normalizedKey, normalizedValue);
-      } catch (error) {
-        console.warn("Gagal menyimpan storage:", normalizedKey, error);
-      }
-    },
-    removeItem(key) {
-      memory.delete(String(key));
-      try {
-        if (nativeStorage) nativeStorage.removeItem(String(key));
-      } catch (error) {
-        console.warn("Gagal menghapus storage:", key, error);
-      }
-    },
-    clear() {
-      memory.clear();
-      try {
-        if (nativeStorage) nativeStorage.clear();
-      } catch (error) {
-        console.warn("Gagal membersihkan storage:", error);
-      }
-    }
-  };
-})();
-
-/* Loading tidak boleh menutupi website selamanya, walaupun modul lain error. */
-function forceOpenWebsite() {
-  const loading = document.getElementById("loadingScreen");
-  if (loading) loading.classList.add("hidden");
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  window.setTimeout(forceOpenWebsite, 250);
-});
-window.addEventListener("load", () => window.setTimeout(forceOpenWebsite, 150));
-window.setTimeout(forceOpenWebsite, 4000);
-</script>
 <script>
 
 function showStoryBubbleLoading(){
@@ -1689,7 +1622,7 @@ const defaultStories = [];
 
 function getStories(){
   try{
-    const saved=JSON.parse(safeStorage.getItem("wiraStories") || "[]");
+    const saved=JSON.parse(localStorage.getItem("wiraStories") || "[]");
     return Array.isArray(saved) ? saved : [];
   }catch(error){
     console.error("Data cerita rusak:",error);
@@ -1699,7 +1632,7 @@ function getStories(){
 
 function getCompletedStories(){
   try{
-    const saved=JSON.parse(safeStorage.getItem("wiraCompletedStories")||"[]");
+    const saved=JSON.parse(localStorage.getItem("wiraCompletedStories")||"[]");
     return Array.isArray(saved) ? saved.map(String) : [];
   }catch(error){
     return [];
@@ -1713,7 +1646,7 @@ function isStoryCompleted(id){
 function setStoryCompleted(id){
   const completed=new Set(getCompletedStories());
   completed.add(String(id));
-  safeStorage.setItem("wiraCompletedStories",JSON.stringify([...completed]));
+  localStorage.setItem("wiraCompletedStories",JSON.stringify([...completed]));
 }
 
 function completionBadge(id){
@@ -1731,7 +1664,7 @@ function removeStoryCompleted(id){
     storyId=>String(storyId)!==String(id)
   );
 
-  safeStorage.setItem(
+  localStorage.setItem(
     "wiraCompletedStories",
     JSON.stringify(completed)
   );
@@ -1985,13 +1918,13 @@ function saveNavigationState(page,folder=null,storyId=null){
     storyId:storyId ? String(storyId) : null
   };
 
-  safeStorage.setItem("wiraNavigationState",JSON.stringify(state));
+  localStorage.setItem("wiraNavigationState",JSON.stringify(state));
 }
 
 function getNavigationState(){
   try{
     const state=JSON.parse(
-      safeStorage.getItem("wiraNavigationState")||"null"
+      localStorage.getItem("wiraNavigationState")||"null"
     );
 
     if(state && typeof state==="object"){
@@ -2223,7 +2156,7 @@ function sortFolders(folders){
 function getFolders(){
   let folders;
   try{
-    folders=JSON.parse(safeStorage.getItem("wiraFolders")||"null");
+    folders=JSON.parse(localStorage.getItem("wiraFolders")||"null");
   }catch(e){
     folders=null;
   }
@@ -2233,13 +2166,13 @@ function getFolders(){
   }
 
   folders=sortFolders(folders);
-  safeStorage.setItem("wiraFolders",JSON.stringify(folders));
+  localStorage.setItem("wiraFolders",JSON.stringify(folders));
   return folders;
 }
 
 function saveFolders(folders){
   const sorted=sortFolders(folders);
-  safeStorage.setItem("wiraFolders",JSON.stringify(sorted));
+  localStorage.setItem("wiraFolders",JSON.stringify(sorted));
   return sorted;
 }
 
@@ -2406,7 +2339,7 @@ function renameFolder(oldName){
 
   let stories=[];
   try{
-    stories=JSON.parse(safeStorage.getItem("wiraStories")||"[]");
+    stories=JSON.parse(localStorage.getItem("wiraStories")||"[]");
   }catch(e){
     stories=[];
   }
@@ -2417,7 +2350,7 @@ function renameFolder(oldName){
     }
   });
 
-  safeStorage.setItem("wiraStories",JSON.stringify(stories));
+  localStorage.setItem("wiraStories",JSON.stringify(stories));
 
   if(currentOpenFolder===oldName){
     currentOpenFolder=newName;
@@ -2563,7 +2496,7 @@ function moveStoryToFolder(id,newFolder){
   let saved=[];
 
   try{
-    saved=JSON.parse(safeStorage.getItem("wiraStories")||"[]");
+    saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
     if(!Array.isArray(saved)) saved=[];
   }catch(error){
     saved=[];
@@ -2579,7 +2512,7 @@ function moveStoryToFolder(id,newFolder){
   }
 
   story.level=newFolder;
-  safeStorage.setItem("wiraStories",JSON.stringify(saved));
+  localStorage.setItem("wiraStories",JSON.stringify(saved));
 
   const folderBeingViewed=currentOpenFolder;
 
@@ -2608,7 +2541,7 @@ async function importStoryFiles(){
 
   let saved=[];
   try{
-    saved=JSON.parse(safeStorage.getItem("wiraStories")||"[]");
+    saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
     if(!Array.isArray(saved)) saved=[];
   }catch(error){
     saved=[];
@@ -2680,7 +2613,7 @@ async function importStoryFiles(){
   }
 
   saveFolders(folders);
-  safeStorage.setItem("wiraStories",JSON.stringify(saved));
+  localStorage.setItem("wiraStories",JSON.stringify(saved));
 
   renderHome();
   renderCategories();
@@ -2712,7 +2645,7 @@ function renderManageList(){
 
 
   wrap.innerHTML=stories.map(s=>`
-    <div class="manage-card" id="manage-card-${encodeURIComponent(String(s.id))}">
+    <div class="manage-card" id="manage-card-${encodeURIComponent(String(story.id))}">
       <div class="manage-head">
         <div>
           <span class="tag">${s.theme||"読解"}</span>${completionBadge(s.id)}
@@ -2779,11 +2712,11 @@ function saveEditedStory(){
   };
 
   
-    let saved=JSON.parse(safeStorage.getItem("wiraStories")||"[]");
+    let saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
     const index=saved.findIndex(x=>x.id===id);
     if(index>=0)saved[index]=updated;
     else saved.push(updated);
-    safeStorage.setItem("wiraStories",JSON.stringify(saved));
+    localStorage.setItem("wiraStories",JSON.stringify(saved));
   alert("Perubahan cerita berhasil disimpan.");
   cancelEdit();
   renderManageList();
@@ -2802,12 +2735,12 @@ function deleteStory(id){
 
   if(!confirm(`Yakin ingin menghapus cerita "${story.title}"?`)) return;
 
-  let saved = JSON.parse(safeStorage.getItem("wiraStories") || "[]");
+  let saved = JSON.parse(localStorage.getItem("wiraStories") || "[]");
   saved = saved.filter(x => x.id !== id);
-  safeStorage.setItem("wiraStories", JSON.stringify(saved));
+  localStorage.setItem("wiraStories", JSON.stringify(saved));
 
   const completed=getCompletedStories().filter(storyId=>storyId!==String(id));
-  safeStorage.setItem("wiraCompletedStories",JSON.stringify(completed));
+  localStorage.setItem("wiraCompletedStories",JSON.stringify(completed));
 
   const navState=getNavigationState();
   if(String(navState.storyId||"")===String(id)){
@@ -2824,8 +2757,8 @@ function deleteStory(id){
 
 const SRS_INTERVALS=[10*60*1000,4*60*60*1000,24*60*60*1000,3*24*60*60*1000,7*24*60*60*1000,14*24*60*60*1000,30*24*60*60*1000];
 let srsQueue=[],srsCurrentIndex=0,srsLocked=false;
-function getSrsState(){try{const d=JSON.parse(safeStorage.getItem("wiraSrsState")||"{}");return d&&typeof d==="object"?d:{}}catch(e){return {}}}
-function saveSrsState(s){safeStorage.setItem("wiraSrsState",JSON.stringify(s))}
+function getSrsState(){try{const d=JSON.parse(localStorage.getItem("wiraSrsState")||"{}");return d&&typeof d==="object"?d:{}}catch(e){return {}}}
+function saveSrsState(s){localStorage.setItem("wiraSrsState",JSON.stringify(s))}
 function normalizeKana(t){return String(t||"").trim().replace(/\s+/g,"").replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60))}
 function getStrongTargets(jp){
   const temp=document.createElement("div");
@@ -2892,7 +2825,7 @@ function submitSrsAnswer(){if(srsLocked)return;const item=srsQueue[srsCurrentInd
 function updateSrsCountersOnly(){const items=buildSrsItems(),s=syncSrsState(items),now=Date.now();document.getElementById("srsDueCount").textContent=items.filter(i=>(s[i.key]?.due||0)<=now).length;document.getElementById("srsLearningCount").textContent=items.filter(i=>{const l=s[i.key]?.level||0;return l>0&&l<SRS_INTERVALS.length-1}).length;document.getElementById("srsMasteredCount").textContent=items.filter(i=>(s[i.key]?.level||0)>=SRS_INTERVALS.length-1).length}
 function formatSrsDuration(ms){const m=Math.round(ms/60000);if(m<60)return `${m} menit`;const h=Math.round(m/60);if(h<24)return `${h} jam`;return `${Math.round(h/24)} hari`}
 function romajiToHiragana(input){let text=String(input||"").toLowerCase();if(/[ぁ-ん]/.test(text)&&!/[a-z]/.test(text))return text;const map={kya:"きゃ",kyu:"きゅ",kyo:"きょ",sha:"しゃ",shu:"しゅ",sho:"しょ",cha:"ちゃ",chu:"ちゅ",cho:"ちょ",nya:"にゃ",nyu:"にゅ",nyo:"にょ",hya:"ひゃ",hyu:"ひゅ",hyo:"ひょ",mya:"みゃ",myu:"みゅ",myo:"みょ",rya:"りゃ",ryu:"りゅ",ryo:"りょ",gya:"ぎゃ",gyu:"ぎゅ",gyo:"ぎょ",ja:"じゃ",ju:"じゅ",jo:"じょ",bya:"びゃ",byu:"びゅ",byo:"びょ",pya:"ぴゃ",pyu:"ぴゅ",pyo:"ぴょ",shi:"し",chi:"ち",tsu:"つ",fu:"ふ",ka:"か",ki:"き",ku:"く",ke:"け",ko:"こ",sa:"さ",si:"し",su:"す",se:"せ",so:"そ",ta:"た",ti:"ち",tu:"つ",te:"て",to:"と",na:"な",ni:"に",nu:"ぬ",ne:"ね",no:"の",ha:"は",hi:"ひ",hu:"ふ",he:"へ",ho:"ほ",ma:"ま",mi:"み",mu:"む",me:"め",mo:"も",ya:"や",yu:"ゆ",yo:"よ",ra:"ら",ri:"り",ru:"る",re:"れ",ro:"ろ",wa:"わ",wo:"を",ga:"が",gi:"ぎ",gu:"ぐ",ge:"げ",go:"ご",za:"ざ",ji:"じ",zu:"ず",ze:"ぜ",zo:"ぞ",da:"だ",di:"ぢ",du:"づ",de:"で",do:"ど",ba:"ば",bi:"び",bu:"ぶ",be:"べ",bo:"ぼ",pa:"ぱ",pi:"ぴ",pu:"ぷ",pe:"ぺ",po:"ぽ",a:"あ",i:"い",u:"う",e:"え",o:"お",n:"ん"};let out="",i=0;while(i<text.length){const ch=text[i];if(/[ぁ-ん]/.test(ch)){out+=ch;i++;continue}if(i+1<text.length&&text[i]===text[i+1]&&/[bcdfghjklmpqrstvwxyz]/.test(text[i])&&text[i]!=="n"){out+="っ";i++;continue}let matched=false;for(const len of [3,2,1]){const part=text.slice(i,i+len);if(map[part]){if(part==="n"&&i+1<text.length&&/[aiueoy]/.test(text[i+1]))continue;out+=map[part];i+=len;matched=true;break}}if(!matched){out+=ch;i++}}return out}
-function resetSrsProgress(){if(!confirm("Yakin ingin menghapus seluruh progres SRS?"))return;safeStorage.removeItem("wiraSrsState");renderSrsPage()}
+function resetSrsProgress(){if(!confirm("Yakin ingin menghapus seluruh progres SRS?"))return;localStorage.removeItem("wiraSrsState");renderSrsPage()}
 
 
 document.getElementById("storyFile").addEventListener("change",event=>{
@@ -2914,7 +2847,6 @@ document.getElementById("readConfirmModal").addEventListener("click",event=>{
 });
 
 window.addEventListener("load",()=>{
-  hideLoading(0);
   restoreNavigationState();
 
   const state=getNavigationState();
@@ -3171,7 +3103,7 @@ function lockedStoryMessage(story){
 }
 
 function rememberLastOpenedStory(id){
-  safeStorage.setItem("wiraLastOpenedStory",String(id));
+  localStorage.setItem("wiraLastOpenedStory",String(id));
 }
 
 function openStory(id){
@@ -3201,7 +3133,7 @@ function renderHome(){
   if(!grid) return;
 
   const stories=getStories();
-  const lastId=safeStorage.getItem("wiraLastOpenedStory");
+  const lastId=localStorage.getItem("wiraLastOpenedStory");
   const completedIds=getCompletedStories();
 
   let priority=stories.find(story=>String(story.id)===String(lastId));
@@ -3473,7 +3405,7 @@ function daysBetweenKeys(fromKey,toKey){
 
 function getDailyState(){
   try{
-    const state=JSON.parse(safeStorage.getItem("wiraDailyState")||"null");
+    const state=JSON.parse(localStorage.getItem("wiraDailyState")||"null");
     if(state && typeof state==="object") return state;
   }catch(error){}
 
@@ -3486,7 +3418,7 @@ function getDailyState(){
 }
 
 function saveDailyState(state){
-  safeStorage.setItem("wiraDailyState",JSON.stringify(state));
+  localStorage.setItem("wiraDailyState",JSON.stringify(state));
 }
 
 function learnedVocabularyCount(){
@@ -4418,7 +4350,7 @@ document.addEventListener("keydown",event=>{
 /* ===== Beranda stabil & ikan progress ===== */
 
 function saveHomeFeaturedIds(ids){
-  safeStorage.setItem(
+  localStorage.setItem(
     "wiraHomeFeaturedStories",
     JSON.stringify(ids.map(String))
   );
@@ -4427,7 +4359,7 @@ function saveHomeFeaturedIds(ids){
 function getHomeFeaturedIds(){
   try{
     const ids=JSON.parse(
-      safeStorage.getItem("wiraHomeFeaturedStories")||"[]"
+      localStorage.getItem("wiraHomeFeaturedStories")||"[]"
     );
     return Array.isArray(ids) ? ids.map(String) : [];
   }catch(error){
@@ -4437,7 +4369,7 @@ function getHomeFeaturedIds(){
 
 function getStoryActivityScore(story){
   const progress=getStorySrsProgress(story.id);
-  const lastOpened=safeStorage.getItem("wiraLastOpenedStory");
+  const lastOpened=localStorage.getItem("wiraLastOpenedStory");
   const completed=isStoryCompleted(story.id);
 
   let score=0;
@@ -4993,7 +4925,7 @@ function getLatestHomeStories(){
   if(!stories.length) return [];
 
   const savedIds=getHomeFeaturedIds();
-  const lastOpened=safeStorage.getItem("wiraLastOpenedStory");
+  const lastOpened=localStorage.getItem("wiraLastOpenedStory");
   const srsState=getSrsState();
 
   function score(story){
@@ -8086,243 +8018,6 @@ async function toggleUnderwaterAmbient(){
   });
 
   window.addEventListener('pageshow',prepareCards);
-})();
-</script>
-
-
-
-<!-- ===== FINAL FIX: satu kosakata hanya muncul sekali total di dashboard SRS ===== -->
-<script id="final-global-unique-vocab-fix">
-(function(){
-  function stageOfFinal(record){
-    return Math.max(0,Math.min(10,Number(record?.correctStage ?? record?.level ?? 0)||0));
-  }
-
-  function visibleWordFinal(item){
-    const temp=document.createElement('div');
-    temp.innerHTML=item.correctSentenceHtml||item.questionHtml||'';
-    const target=temp.querySelector('.srs-correct-word, mark, strong');
-    if(!target) return String(item.answer||'Kosakata').trim();
-    const clone=target.cloneNode(true);
-    clone.querySelectorAll('rt,rp').forEach(node=>node.remove());
-    return (clone.textContent||item.answer||'Kosakata').trim();
-  }
-
-  function canonicalWordKey(text){
-    return String(text||'')
-      .normalize('NFKC')
-      .replace(/[\s　]+/g,'')
-      .replace(/[、。！？!?,.・「」『』（）()［］【】]/g,'')
-      .toLowerCase();
-  }
-
-  function globalUniqueEntriesFinal(){
-    const items=buildSrsItems();
-    const state=syncSrsState(items);
-    const map=new Map();
-
-    items.forEach(item=>{
-      const word=visibleWordFinal(item);
-      const key=canonicalWordKey(word) || normalizeKana(item.answer||'');
-      const record=state[item.key]||{};
-      const candidate={item,record,word,keys:[item.key]};
-      const existing=map.get(key);
-
-      if(!existing){
-        map.set(key,candidate);
-        return;
-      }
-
-      existing.keys.push(item.key);
-
-      /* Satu kata hanya punya satu status: pilih progres tertinggi.
-         Jika sama, pilih jadwal tes yang paling dekat. */
-      const oldStage=stageOfFinal(existing.record);
-      const newStage=stageOfFinal(record);
-      const oldDue=Number(existing.record?.due ?? Infinity);
-      const newDue=Number(record?.due ?? Infinity);
-
-      if(newStage>oldStage || (newStage===oldStage && newDue<oldDue)){
-        existing.item=item;
-        existing.record=record;
-        existing.word=word;
-      }
-    });
-
-    return [...map.values()];
-  }
-
-  function dueTextFinal(record){
-    const remaining=Number(record?.due||0)-Date.now();
-    return remaining<=0 ? 'Bisa dites sekarang' : `${formatSrsDuration(remaining)} lagi`;
-  }
-
-  window.openSrsStatusDetail=function(type){
-    const modal=document.getElementById('srsDetailModal');
-    if(!modal) return;
-
-    const filtered=globalUniqueEntriesFinal().filter(entry=>{
-      const stage=stageOfFinal(entry.record);
-      if(type==='unlearned') return stage===0;
-      if(type==='learning') return stage>0&&stage<10;
-      return stage>=10;
-    }).sort((a,b)=>a.word.localeCompare(b.word,'ja',{numeric:true,sensitivity:'base'}));
-
-    const titles={unlearned:'Belum Dipelajari',learning:'Sedang Belajar',mastered:'Dikuasai'};
-    const title=modal.querySelector('#srsDetailTitle');
-    const list=modal.querySelector('#srsDetailList');
-    if(title) title.textContent=`${titles[type]} (${filtered.length})`;
-    if(list){
-      list.innerHTML=filtered.length ? filtered.map(entry=>{
-        const r=entry.record||{};
-        const stage=stageOfFinal(r);
-        return `<div class="srs-vocab-detail">
-          <div class="srs-vocab-word">${escapeHtml(entry.word)}</div>
-          <div class="srs-vocab-meta">${escapeHtml(entry.item.storyTitle)}・Progres <strong>${stage}/10</strong><br>Benar ${Number(r.correct||0)} kali・Salah ${Number(r.wrong||0)} kali</div>
-          <span class="srs-vocab-time">${dueTextFinal(r)}</span>
-        </div>`;
-      }).join('') : '<div class="empty">Tidak ada kosakata dalam kategori ini.</div>';
-    }
-
-    modal.classList.add('active');
-  };
-
-  function refreshCountsFinal(){
-    const entries=globalUniqueEntriesFinal();
-    const counts={unlearned:0,learning:0,mastered:0};
-    entries.forEach(entry=>{
-      const stage=stageOfFinal(entry.record);
-      if(stage===0) counts.unlearned++;
-      else if(stage<10) counts.learning++;
-      else counts.mastered++;
-    });
-    const due=document.getElementById('srsDueCount');
-    const learning=document.getElementById('srsLearningCount');
-    const mastered=document.getElementById('srsMasteredCount');
-    if(due) due.textContent=counts.unlearned;
-    if(learning) learning.textContent=counts.learning;
-    if(mastered) mastered.textContent=counts.mastered;
-  }
-
-  const oldRender=window.renderSrsPage;
-  if(typeof oldRender==='function'){
-    window.renderSrsPage=function(){
-      const result=oldRender.apply(this,arguments);
-      setTimeout(refreshCountsFinal,0);
-      return result;
-    };
-  }
-
-  const oldCounters=window.updateSrsCountersOnly;
-  if(typeof oldCounters==='function'){
-    window.updateSrsCountersOnly=function(){
-      const result=oldCounters.apply(this,arguments);
-      setTimeout(refreshCountsFinal,0);
-      return result;
-    };
-  }
-
-  window.addEventListener('load',()=>setTimeout(refreshCountsFinal,0));
-  window.addEventListener('pageshow',()=>setTimeout(refreshCountsFinal,0));
-})();
-</script>
-
-
-<script id="startup-performance-final-fix">
-(function(){
-  /* Jangan pernah biarkan layar loading mengunci halaman. */
-  const loading=document.getElementById('loadingScreen');
-  if(loading){
-    loading.classList.add('hidden');
-    loading.style.setProperty('display','none','important');
-  }
-
-  /* Cache hasil parsing SRS. Versi lama menghitung ulang seluruh cerita
-     berkali-kali untuk setiap kartu Beranda. */
-  if(typeof window.buildSrsItems==='function'){
-    const rawBuild=window.buildSrsItems;
-    let cacheKey='';
-    let cacheItems=[];
-    window.buildSrsItems=function(){
-      /* Jangan parse ribuan ruby/strong saat Beranda baru dibuka. */
-      const srsPage=document.getElementById('srs');
-      if(!srsPage || !srsPage.classList.contains('active')) return [];
-
-      let nextKey='';
-      try{
-        nextKey=(safeStorage.getItem('wiraStories')||'')+'|'+
-                (safeStorage.getItem('wiraCompletedStories')||'');
-      }catch(error){
-        nextKey=String(Date.now());
-      }
-      if(nextKey===cacheKey) return cacheItems;
-      cacheItems=rawBuild.apply(this,arguments);
-      cacheKey=nextKey;
-      return cacheItems;
-    };
-  }
-
-  /* Beranda ringan: tidak menghitung progres/lock seluruh DAY saat startup. */
-  window.renderHome=function(){
-    const grid=document.getElementById('homeStoryGrid');
-    if(!grid) return;
-    let stories=[];
-    try{ stories=getStories(); }catch(error){ stories=[]; }
-
-    const lastId=(()=>{try{return safeStorage.getItem('wiraLastOpenedStory')}catch(e){return null}})();
-    const featured=[];
-    const last=stories.find(s=>String(s.id)===String(lastId));
-    if(last) featured.push(last);
-    stories.forEach(story=>{
-      if(featured.length<3 && !featured.some(x=>String(x.id)===String(story.id))){
-        featured.push(story);
-      }
-    });
-
-    const cards=featured.map(story=>`
-      <article class="story-card"
-        data-story-id="${encodeURIComponent(String(story.id))}"
-        onclick="openStory(decodeURIComponent(this.dataset.storyId))">
-        <span class="tag">${escapeHtml(story.theme||'読解')}</span>
-        ${completionBadge(story.id)}
-        <h3>${escapeHtml(story.title||'Tanpa Judul')}</h3>
-        <p>${escapeHtml(story.description||'Cerita bahasa Jepang dengan furigana interaktif.')}</p>
-      </article>`).join('');
-
-    grid.innerHTML=cards+`
-      <article class="story-card" onclick="go('generator')">
-        <span class="tag">新しい物語</span>
-        <h3>Import Cerita Baru</h3>
-        <p>Upload file JSON yang sudah dibuat, lalu simpan ke koleksi cerita.</p>
-      </article>`;
-  };
-
-  /* Satukan banyak panggilan refresh yang sebelumnya terjadi bersamaan. */
-  if(typeof window.syncAchievementNow==='function'){
-    const rawSync=window.syncAchievementNow;
-    let scheduled=false;
-    window.syncAchievementNow=function(){
-      if(scheduled) return;
-      scheduled=true;
-      setTimeout(()=>{
-        scheduled=false;
-        try{ rawSync(); }catch(error){ console.warn('Achievement dilewati:',error); }
-      },250);
-    };
-  }
-
-  function safeStartup(){
-    if(loading){
-      loading.classList.add('hidden');
-      loading.style.setProperty('display','none','important');
-    }
-    try{ renderHome(); }catch(error){ console.error('Beranda gagal dirender:',error); }
-  }
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',safeStartup,{once:true});
-  }else{
-    safeStartup();
-  }
 })();
 </script>
 
