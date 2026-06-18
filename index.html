@@ -7237,6 +7237,10 @@ async function toggleUnderwaterAmbient(){
   }
 
   function moveViewportForSrs(mode){
+    /* Mobile: jangan menggeser viewport otomatis. Scroll otomatis yang berjalan
+       bersamaan dengan visualViewport/keyboard membuat seluruh halaman terasa
+       melompat dan tidak stabil. */
+    if(window.matchMedia('(max-width:700px)').matches) return;
     cancelAnimationFrame(rafId);
     rafId=requestAnimationFrame(()=>{
       const area=document.getElementById('srsPracticeArea');
@@ -9903,6 +9907,114 @@ async function toggleUnderwaterAmbient(){
     };
     wrapped.__secondEnterPatch=true;
     window.nextSrsQuestion=wrapped;
+  }
+})();
+</script>
+
+
+
+<!-- ===== FINAL MOBILE SMOOTH SCROLL + FIRST TAP KEYBOARD ===== -->
+<style id="mobile-smooth-scroll-first-keyboard-style">
+@media (max-width:700px){
+  html{
+    scroll-behavior:smooth!important;
+    overscroll-behavior-y:auto!important;
+    overflow-x:hidden!important;
+    touch-action:pan-y pinch-zoom!important;
+  }
+  body{
+    width:100%!important;
+    max-width:100%!important;
+    overflow-x:hidden!important;
+    overflow-y:visible!important;
+    overscroll-behavior-y:auto!important;
+    touch-action:pan-y pinch-zoom!important;
+    -webkit-overflow-scrolling:touch;
+  }
+  html.srs-mobile-session,
+  html.srs-mobile-session body,
+  body.srs-keyboard-active,
+  body.srs-keyboard-open,
+  body.srs-mobile-focus{
+    overscroll-behavior-y:auto!important;
+    touch-action:pan-y pinch-zoom!important;
+  }
+  .page,
+  .page.active,
+  main,
+  #srs.page.active,
+  #srsPracticeArea,
+  #srs .srs-main,
+  #srs .srs-card{
+    touch-action:pan-y pinch-zoom!important;
+  }
+  #srsAnswerInput{
+    pointer-events:auto!important;
+    touch-action:manipulation!important;
+    -webkit-user-select:text!important;
+    user-select:text!important;
+    font-size:16px!important;
+  }
+}
+</style>
+<script id="mobile-smooth-scroll-first-keyboard-script">
+(function(){
+  'use strict';
+  const mobile=window.matchMedia('(max-width:700px)');
+
+  function srsActive(){
+    return mobile.matches && document.getElementById('srs')?.classList.contains('active');
+  }
+  function input(){ return document.getElementById('srsAnswerInput'); }
+  function prepareInput(el){
+    if(!el) return;
+    el.disabled=false;
+    el.readOnly=false;
+    el.setAttribute('inputmode','text');
+    el.setAttribute('enterkeyhint', el.dataset.locked==='1' ? 'next' : 'done');
+  }
+
+  /* Fokus dilakukan langsung di dalam gesture pertama pengguna. Pada iPhone,
+     fokus tertunda melalui timeout sering tidak dianggap sebagai gesture dan
+     keyboard tidak muncul. */
+  document.addEventListener('pointerdown',function(event){
+    if(!srsActive() || event.target?.id!=='srsAnswerInput') return;
+    const el=event.target;
+    prepareInput(el);
+    window.srsKeyboardSessionActive=true;
+    try{ el.focus({preventScroll:true}); }catch(_){ el.focus(); }
+  },true);
+
+  document.addEventListener('touchstart',function(event){
+    if(!srsActive() || event.target?.id!=='srsAnswerInput') return;
+    const el=event.target;
+    prepareInput(el);
+    window.srsKeyboardSessionActive=true;
+    try{ el.focus({preventScroll:true}); }catch(_){ el.focus(); }
+  },{capture:true,passive:true});
+
+  document.addEventListener('click',function(event){
+    if(!srsActive() || event.target?.id!=='srsAnswerInput') return;
+    const el=event.target;
+    prepareInput(el);
+    try{ el.focus({preventScroll:true}); }catch(_){ el.focus(); }
+    try{ el.setSelectionRange(el.value.length,el.value.length); }catch(_){ }
+  },true);
+
+  /* Bersihkan class sesi SRS ketika pindah page agar class keyboard tidak
+     memengaruhi scroll page lain. */
+  const oldGo=window.go;
+  if(typeof oldGo==='function' && !oldGo.__smoothMobilePatch){
+    const wrapped=function(page){
+      if(page!=='srs'){
+        document.documentElement.classList.remove('srs-mobile-session','srs-ios-keyboard-open');
+        document.body.classList.remove('srs-keyboard-active','srs-keyboard-open','srs-mobile-focus');
+        window.srsKeyboardSessionActive=false;
+      }
+      return oldGo.apply(this,arguments);
+    };
+    wrapped.__smoothMobilePatch=true;
+    window.go=wrapped;
   }
 })();
 </script>
