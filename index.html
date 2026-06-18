@@ -5216,6 +5216,279 @@ romajiToHiragana=function(input){
 
   return out;
 };
+
+
+/* ===== FINAL SRS ENGINE: ulang sampai benar + 10 jawaban benar untuk mastered ===== */
+(function(){
+  /* 10 tahap jawaban benar. Tahap ke-10 baru dianggap mastered. */
+  window.SRS_INTERVALS=[
+    5*60*1000,          // benar 1: 5 menit
+    15*60*1000,         // benar 2: 15 menit
+    60*60*1000,         // benar 3: 1 jam
+    4*60*60*1000,       // benar 4: 4 jam
+    12*60*60*1000,      // benar 5: 12 jam
+    24*60*60*1000,      // benar 6: 1 hari
+    3*24*60*60*1000,    // benar 7: 3 hari
+    7*24*60*60*1000,    // benar 8: 7 hari
+    14*24*60*60*1000,   // benar 9: 14 hari
+    30*24*60*60*1000    // benar 10: 30 hari / mastered
+  ];
+
+  const RESULT_DELAY=8000;
+  let engineTimer=null;
+  let engineWaiting=false;
+  let engineAdvancing=false;
+
+  function masteryCount(record){
+    return Math.max(0,Math.min(10,Number(record?.correctStage ?? record?.level ?? 0)||0));
+  }
+
+  function setMasteryCount(record,count){
+    const safe=Math.max(0,Math.min(10,Number(count)||0));
+    record.correctStage=safe;
+    record.level=safe;
+  }
+
+  function intervalForStage(stage){
+    const index=Math.max(0,Math.min(SRS_INTERVALS.length-1,stage-1));
+    return SRS_INTERVALS[index];
+  }
+
+  function formatDueDate(timestamp){
+    const date=new Date(timestamp);
+    return date.toLocaleString('id-ID',{
+      day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'
+    });
+  }
+
+  function revealEveryFurigana(){
+    document.querySelectorAll('#srsQuestionText ruby').forEach(ruby=>{
+      ruby.classList.add('show');
+      ruby.querySelectorAll('rt').forEach(rt=>{
+        rt.style.setProperty('display','ruby-text','important');
+        rt.style.setProperty('color','#0f4f86','important');
+        rt.style.setProperty('text-shadow','none','important');
+        rt.style.setProperty('user-select','text','important');
+      });
+    });
+  }
+
+  function insertWrongItemAgain(item){
+    /* Muncul lagi setelah maksimal dua soal lain, atau langsung bila antrean habis. */
+    const insertAt=Math.min(srsCurrentIndex+3,srsQueue.length);
+    srsQueue.splice(insertAt,0,item);
+  }
+
+  function nextScheduledItems(limit=5){
+    const state=getSrsState();
+    return buildSrsItems()
+      .map(item=>({item,record:state[item.key]}))
+      .filter(entry=>entry.record && Number(entry.record.due)>Date.now())
+      .sort((a,b)=>Number(a.record.due)-Number(b.record.due))
+      .slice(0,limit);
+  }
+
+  function renderSessionFinished(){
+    const area=document.getElementById('srsPracticeArea');
+    if(!area) return;
+
+    const upcoming=nextScheduledItems();
+    const scheduleHtml=upcoming.length
+      ? `<div class="srs-next-review-list" style="margin-top:18px;text-align:left">
+          <h3 style="color:var(--brown);margin-bottom:10px">Jadwal review berikutnya</h3>
+          ${upcoming.map(({item,record})=>{
+            const stage=masteryCount(record);
+            return `<div style="padding:10px 0;border-bottom:1px dashed var(--line)">
+              <strong>${escapeHtml(item.storyTitle)}</strong><br>
+              <span style="color:var(--muted)">Tahap ${stage}/10・${formatDueDate(record.due)} (${formatSrsDuration(Math.max(0,record.due-Date.now()))} lagi)</span>
+            </div>`;
+          }).join('')}
+        </div>`
+      : '<p style="color:var(--muted)">Belum ada jadwal review berikutnya.</p>';
+
+    area.innerHTML=`
+      <div class="srs-empty-card srs-empty">
+        <h2>復習完了！🎉</h2>
+        <p>Semua soal yang jatuh tempo sudah selesai. Kata yang tadi salah juga sudah dijawab benar.</p>
+        ${scheduleHtml}
+        <button class="btn" style="margin-top:18px" onclick="renderSrsPage()">Periksa Lagi</button>
+      </div>`;
+  }
+
+  function advanceAfterResult(){
+    if(!engineWaiting || engineAdvancing) return;
+    engineAdvancing=true;
+    engineWaiting=false;
+
+    if(engineTimer){
+      clearTimeout(engineTimer);
+      engineTimer=null;
+    }
+
+    srsCurrentIndex++;
+    srsLocked=false;
+    engineAdvancing=false;
+
+    if(srsCurrentIndex>=srsQueue.length){
+      renderSessionFinished();
+      updateSrsCountersOnly();
+      updateSrsOverallProgress();
+      return;
+    }
+
+    renderCurrentSrsCard();
+    updateSrsCountersOnly();
+  }
+
+  window.submitSrsAnswer=function(){
+    if(engineWaiting || srsLocked) return;
+
+    const item=srsQueue[srsCurrentIndex];
+    const input=document.getElementById('srsAnswerInput');
+    const question=document.getElementById('srsQuestionText');
+    const sentence=document.getElementById('srsSentenceText');
+    const inlineResult=document.getElementById('srsInlineResult');
+    if(!item || !input || !question || !sentence || !inlineResult) return;
+
+    let typed=String(input.value||'').trim();
+    if(!typed) return;
+
+    typed=romajiToHiragana(typed);
+    if(/n$/i.test(typed)) typed=typed.replace(/n$/i,'ん');
+    input.value=typed;
+
+    const correct=normalizeKana(typed)===normalizeKana(item.answer);
+    const state=getSrsState();
+    const record=state[item.key]||{
+      level:0,correctStage:0,due:Date.now(),correct:0,wrong:0,lastResult:null
+    };
+    const now=Date.now();
+
+    srsLocked=true;
+    engineWaiting=true;
+    sentence.innerHTML=item.correctSentenceHtml||item.questionHtml||'';
+    question.classList.remove('correct-answer','wrong-answer');
+    question.classList.add(correct?'correct-answer':'wrong-answer');
+
+    if(correct){
+      const stage=Math.min(10,masteryCount(record)+1);
+      const interval=intervalForStage(stage);
+      setMasteryCount(record,stage);
+      record.correct=(record.correct||0)+1;
+      record.lastResult='correct';
+      record.lastReviewed=now;
+      record.due=now+interval;
+
+      inlineResult.innerHTML=`
+        <div class="srs-result-title">✓ Benar！</div>
+        <div>Jawaban: <strong>${escapeHtml(item.answer)}</strong></div>
+        <div>Progres penguasaan: <strong>${stage}/10</strong></div>
+        <div>${stage>=10?'Kosakata ini sudah dianggap dikuasai.':'Review berikutnya'}: <strong>${formatSrsDuration(interval)}</strong> lagi.</div>
+        <div class="srs-skip-note">Tekan Enter atau Spasi untuk langsung lanjut.</div>`;
+    }else{
+      /* Salah tidak menghapus seluruh progres, tetapi mundur satu tahap agar tidak terlalu menghukum. */
+      const stage=Math.max(0,masteryCount(record)-1);
+      setMasteryCount(record,stage);
+      record.wrong=(record.wrong||0)+1;
+      record.lastResult='wrong';
+      record.lastReviewed=now;
+      record.due=now;
+      insertWrongItemAgain(item);
+
+      inlineResult.innerHTML=`
+        <div class="srs-result-title">✕ Belum tepat.</div>
+        <div>Jawaban benar: <strong>${escapeHtml(item.answer)}</strong></div>
+        <div>Progres penguasaan: <strong>${stage}/10</strong></div>
+        <div>Soal ini akan muncul lagi dalam sesi ini sampai dijawab benar.</div>
+        <div class="srs-skip-note">Tekan Enter atau Spasi untuk langsung lanjut.</div>`;
+    }
+
+    inlineResult.style.setProperty('display','block','important');
+    inlineResult.style.setProperty('visibility','visible','important');
+    inlineResult.style.setProperty('opacity','1','important');
+
+    state[item.key]=record;
+    saveSrsState(state);
+    input.disabled=true;
+    revealEveryFurigana();
+    updateDailyLearningRewards();
+    renderAchievementPanel();
+    renderHome();
+    updateSrsOverallProgress();
+    updateSrsCountersOnly();
+
+    engineTimer=window.setTimeout(advanceAfterResult,RESULT_DELAY);
+  };
+
+  document.addEventListener('keydown',event=>{
+    if(!engineWaiting) return;
+    if(event.key!=='Enter' && event.code!=='Space') return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    advanceAfterResult();
+  },true);
+
+  /* Override hitungan agar mastered benar-benar tahap 10. */
+  window.updateSrsCountersOnly=function(){
+    const items=buildSrsItems();
+    const state=syncSrsState(items);
+    const now=Date.now();
+    const due=items.filter(item=>(state[item.key]?.due||0)<=now).length;
+    const learning=items.filter(item=>{
+      const stage=masteryCount(state[item.key]);
+      return stage>0 && stage<10;
+    }).length;
+    const mastered=items.filter(item=>masteryCount(state[item.key])>=10).length;
+
+    document.getElementById('srsDueCount').textContent=due;
+    document.getElementById('srsLearningCount').textContent=learning;
+    document.getElementById('srsMasteredCount').textContent=mastered;
+    updateSrsOverallProgress();
+  };
+
+  window.renderSrsPage=function(){
+    const items=buildSrsItems();
+    const state=syncSrsState(items);
+    const now=Date.now();
+
+    document.getElementById('srsDueCount').textContent=items.filter(item=>(state[item.key]?.due||0)<=now).length;
+    document.getElementById('srsLearningCount').textContent=items.filter(item=>{
+      const stage=masteryCount(state[item.key]);
+      return stage>0&&stage<10;
+    }).length;
+    document.getElementById('srsMasteredCount').textContent=items.filter(item=>masteryCount(state[item.key])>=10).length;
+
+    updateSrsOverallProgress();
+    const storyMap=new Map();
+    items.forEach(item=>{
+      if(!storyMap.has(item.storyId)) storyMap.set(item.storyId,{title:item.storyTitle,total:0,due:0,mastered:0});
+      const info=storyMap.get(item.storyId);
+      info.total++;
+      if((state[item.key]?.due||0)<=now) info.due++;
+      if(masteryCount(state[item.key])>=10) info.mastered++;
+    });
+
+    const list=document.getElementById('srsStoryList');
+    list.innerHTML=storyMap.size?[...storyMap.values()].map(info=>`
+      <div class="srs-story-row">
+        <div><strong>${escapeHtml(info.title)}</strong><br><span>${info.mastered}/${info.total} dikuasai</span></div>
+        <span>${info.due} due</span>
+      </div>`).join(''):'<div class="empty">Belum ada cerita yang selesai dibaca.</div>';
+
+    srsQueue=getDueSrsItems();
+    srsCurrentIndex=0;
+    srsLocked=false;
+    engineWaiting=false;
+    if(engineTimer){clearTimeout(engineTimer);engineTimer=null;}
+
+    if(!srsQueue.length){
+      renderSessionFinished();
+    }else{
+      renderCurrentSrsCard();
+    }
+  };
+})();
+
 </script>
 
 <div id="achievementBubble" class="achievement-bubble" onclick="toggleAchievementPanel()" title="Achievement">
@@ -5846,7 +6119,7 @@ async function toggleUnderwaterAmbient(){
     stopExistingUnderwater();
     underwaterAudioContext=new AudioContextClass();
     underwaterMaster=underwaterAudioContext.createGain();
-    underwaterMaster.gain.value=.38;
+    underwaterMaster.gain.value=.22;
     underwaterMaster.connect(underwaterAudioContext.destination);
     underwaterNodes=[];
     window.underwaterExtraTimers=[];
@@ -5862,7 +6135,7 @@ async function toggleUnderwaterAmbient(){
     currentFilter.frequency.value=260;
     currentFilter.Q.value=.45;
     const currentGain=ctx.createGain();
-    currentGain.gain.value=.30;
+    currentGain.gain.value=.23;
     current.connect(currentFilter);
     currentFilter.connect(currentGain);
     currentGain.connect(underwaterMaster);
@@ -5890,7 +6163,6 @@ async function toggleUnderwaterAmbient(){
     underwaterNodes.push(current,currentFilter,currentGain,body,bodyGain,lfo,lfoGain);
     scheduleBubbleSounds();
     scheduleSmallFishSounds();
-    scheduleFishPassSounds();
     scheduleWhaleSounds();
     return true;
   };
@@ -5909,11 +6181,11 @@ async function toggleUnderwaterAmbient(){
     filter.frequency.value=520+Math.random()*420;
     filter.Q.value=4;
     gain.gain.setValueAtTime(.0001,now);
-    gain.gain.exponentialRampToValueAtTime(.085,now+.02);
+    gain.gain.exponentialRampToValueAtTime(.045,now+.02);
     gain.gain.exponentialRampToValueAtTime(.0001,now+.22);
     bubble.connect(filter); filter.connect(gain); gain.connect(underwaterMaster);
     bubble.start(now); bubble.stop(now+.24);
-    underwaterTimer=setTimeout(scheduleBubbleSounds,450+Math.random()*1200);
+    underwaterTimer=setTimeout(scheduleBubbleSounds,900+Math.random()*2200);
   };
 
   window.scheduleSmallFishSounds=function(){
@@ -5928,52 +6200,12 @@ async function toggleUnderwaterAmbient(){
       osc.frequency.setValueAtTime(900+Math.random()*700,now+i*.08);
       osc.frequency.exponentialRampToValueAtTime(500+Math.random()*300,now+i*.08+.05);
       gain.gain.setValueAtTime(.0001,now+i*.08);
-      gain.gain.exponentialRampToValueAtTime(.032,now+i*.08+.01);
+      gain.gain.exponentialRampToValueAtTime(.018,now+i*.08+.01);
       gain.gain.exponentialRampToValueAtTime(.0001,now+i*.08+.07);
       osc.connect(gain); gain.connect(underwaterMaster);
       osc.start(now+i*.08); osc.stop(now+i*.08+.08);
     }
-    const id=setTimeout(scheduleSmallFishSounds,3000+Math.random()*5500);
-    window.underwaterExtraTimers.push(id);
-  };
-
-  window.scheduleFishPassSounds=function(){
-    if(!underwaterPlaying || !underwaterAudioContext || !underwaterMaster) return;
-    const ctx=underwaterAudioContext;
-    const now=ctx.currentTime;
-    const osc=ctx.createOscillator();
-    const gain=ctx.createGain();
-    const filter=ctx.createBiquadFilter();
-    const panner=typeof ctx.createStereoPanner==='function' ? ctx.createStereoPanner() : null;
-
-    osc.type='triangle';
-    const startFreq=620+Math.random()*260;
-    osc.frequency.setValueAtTime(startFreq,now);
-    osc.frequency.exponentialRampToValueAtTime(300+Math.random()*170,now+.9);
-
-    filter.type='bandpass';
-    filter.frequency.value=700;
-    filter.Q.value=2.2;
-
-    gain.gain.setValueAtTime(.0001,now);
-    gain.gain.exponentialRampToValueAtTime(.045,now+.16);
-    gain.gain.exponentialRampToValueAtTime(.0001,now+1.05);
-
-    osc.connect(filter);
-    if(panner){
-      filter.connect(panner);
-      panner.connect(gain);
-      const fromLeft=Math.random()>.5;
-      panner.pan.setValueAtTime(fromLeft?-1:1,now);
-      panner.pan.linearRampToValueAtTime(fromLeft?1:-1,now+1.0);
-    }else{
-      filter.connect(gain);
-    }
-    gain.connect(underwaterMaster);
-    osc.start(now);
-    osc.stop(now+1.1);
-
-    const id=setTimeout(scheduleFishPassSounds,3500+Math.random()*6500);
+    const id=setTimeout(scheduleSmallFishSounds,5000+Math.random()*9000);
     window.underwaterExtraTimers.push(id);
   };
 
@@ -5989,7 +6221,7 @@ async function toggleUnderwaterAmbient(){
     osc.frequency.exponentialRampToValueAtTime(95+Math.random()*18,now+2.8);
     filter.type='lowpass'; filter.frequency.value=240;
     gain.gain.setValueAtTime(.0001,now);
-    gain.gain.exponentialRampToValueAtTime(.038,now+.5);
+    gain.gain.exponentialRampToValueAtTime(.028,now+.5);
     gain.gain.exponentialRampToValueAtTime(.0001,now+3.2);
     osc.connect(filter); filter.connect(gain); gain.connect(underwaterMaster);
     osc.start(now); osc.stop(now+3.3);
@@ -6006,11 +6238,10 @@ async function toggleUnderwaterAmbient(){
       if(underwaterAudioContext?.state==='suspended') await underwaterAudioContext.resume();
       if(underwaterMaster){
         underwaterMaster.gain.cancelScheduledValues(underwaterAudioContext.currentTime);
-        underwaterMaster.gain.setTargetAtTime(.38,underwaterAudioContext.currentTime,.12);
+        underwaterMaster.gain.setTargetAtTime(.22,underwaterAudioContext.currentTime,.12);
       }
       scheduleBubbleSounds();
       scheduleSmallFishSounds();
-      scheduleFishPassSounds();
       scheduleWhaleSounds();
       button?.classList.add('playing');
       if(button) button.textContent='♫';
