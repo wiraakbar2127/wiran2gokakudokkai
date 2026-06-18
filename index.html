@@ -2683,7 +2683,7 @@ function renderCurrentSrsCard(){const area=document.getElementById("srsPracticeA
         <div id="srsSentenceText">${item.questionHtml}</div>
         <div id="srsInlineResult" class="srs-inline-result"></div>
       </div><div class="srs-translation">${item.translationHtml}</div><div class="srs-answer-wrap"><input id="srsAnswerInput" class="srs-answer" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Ketik romaji atau hiragana"><button class="btn" onclick="submitSrsAnswer()">Jawab</button></div><div class="srs-romaji-note">Contoh: atsumaru otomatis menjadi あつまる.</div><div id="srsFeedback" class="srs-feedback"></div></div>`;const input=document.getElementById("srsAnswerInput");input.addEventListener("input",()=>{input.value=romajiToHiragana(input.value);input.setSelectionRange(input.value.length,input.value.length)});input.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submitSrsAnswer()}});setTimeout(()=>input.focus(),80)}
-function submitSrsAnswer(){if(srsLocked)return;const item=srsQueue[srsCurrentIndex],input=document.getElementById("srsAnswerInput"),fb=document.getElementById("srsFeedback");if(!item||!input||!fb)return;const ans=normalizeKana(input.value);if(!ans)return;srsLocked=true;const correct=ans===normalizeKana(item.answer),s=getSrsState(),r=s[item.key]||{level:0,due:Date.now(),correct:0,wrong:0},now=Date.now();if(correct){r.level=Math.min((r.level||0)+1,SRS_INTERVALS.length-1);r.correct=(r.correct||0)+1;r.lastResult="correct";r.due=now+SRS_INTERVALS[r.level];fb.className="srs-feedback correct";fb.innerHTML=`<strong>Benar！</strong><br>Jawaban: <strong>${escapeHtml(item.answer)}</strong><div class="srs-next-time">Muncul lagi ${formatSrsDuration(SRS_INTERVALS[r.level])}.</div>`}else{r.level=0;r.wrong=(r.wrong||0)+1;r.lastResult="wrong";r.due=now+SRS_INTERVALS[0];fb.className="srs-feedback wrong";fb.innerHTML=`<strong>Belum tepat.</strong><br>Jawaban benar: <strong>${escapeHtml(item.answer)}</strong><div class="srs-next-time">Diulang sekitar ${formatSrsDuration(SRS_INTERVALS[0])}.</div>`}s[item.key]=r;saveSrsState(s);input.disabled=true;setTimeout(()=>{srsCurrentIndex++;srsLocked=false;renderCurrentSrsCard();updateSrsCountersOnly()},correct?700:1500)}
+function submitSrsAnswer(){if(srsLocked)return;const item=srsQueue[srsCurrentIndex],input=document.getElementById("srsAnswerInput"),fb=document.getElementById("srsFeedback");if(!item||!input||!fb)return;const ans=normalizeKana(input.value);if(!ans)return;srsLocked=true;const correct=ans===normalizeKana(item.answer),s=getSrsState(),r=s[item.key]||{level:0,due:Date.now(),correct:0,wrong:0},now=Date.now();if(correct){r.level=Math.min((r.level||0)+1,SRS_INTERVALS.length-1);r.correct=(r.correct||0)+1;r.lastResult="correct";r.due=now+SRS_INTERVALS[r.level];fb.className="srs-feedback correct";fb.innerHTML=`<strong>Benar！</strong><br>Jawaban: <strong>${escapeHtml(item.answer)}</strong><div class="srs-next-time">Muncul lagi ${formatSrsDuration(SRS_INTERVALS[r.level])}.</div>`}else{r.level=0;r.wrong=(r.wrong||0)+1;r.lastResult="wrong";r.due=now+SRS_INTERVALS[0];fb.className="srs-feedback wrong";fb.innerHTML=`<strong>Belum tepat.</strong><br>Jawaban benar: <strong>${escapeHtml(item.answer)}</strong><div class="srs-next-time">Diulang sekitar ${formatSrsDuration(SRS_INTERVALS[0])}.</div>`}s[item.key]=r;saveSrsState(s);input.dataset.resultLocked='1';setTimeout(()=>{srsCurrentIndex++;srsLocked=false;renderCurrentSrsCard();updateSrsCountersOnly()},correct?700:1500)}
 function updateSrsCountersOnly(){const items=buildSrsItems(),s=syncSrsState(items),now=Date.now();document.getElementById("srsDueCount").textContent=items.filter(i=>(s[i.key]?.due||0)<=now).length;document.getElementById("srsLearningCount").textContent=items.filter(i=>{const l=s[i.key]?.level||0;return l>0&&l<SRS_INTERVALS.length-1}).length;document.getElementById("srsMasteredCount").textContent=items.filter(i=>(s[i.key]?.level||0)>=SRS_INTERVALS.length-1).length}
 function formatSrsDuration(ms){const m=Math.round(ms/60000);if(m<60)return `${m} menit`;const h=Math.round(m/60);if(h<24)return `${h} jam`;return `${Math.round(h/24)} hari`}
 function romajiToHiragana(input){let text=String(input||"").toLowerCase();if(/[ぁ-ん]/.test(text)&&!/[a-z]/.test(text))return text;const map={kya:"きゃ",kyu:"きゅ",kyo:"きょ",sha:"しゃ",shu:"しゅ",sho:"しょ",cha:"ちゃ",chu:"ちゅ",cho:"ちょ",nya:"にゃ",nyu:"にゅ",nyo:"にょ",hya:"ひゃ",hyu:"ひゅ",hyo:"ひょ",mya:"みゃ",myu:"みゅ",myo:"みょ",rya:"りゃ",ryu:"りゅ",ryo:"りょ",gya:"ぎゃ",gyu:"ぎゅ",gyo:"ぎょ",ja:"じゃ",ju:"じゅ",jo:"じょ",bya:"びゃ",byu:"びゅ",byo:"びょ",pya:"ぴゃ",pyu:"ぴゅ",pyo:"ぴょ",shi:"し",chi:"ち",tsu:"つ",fu:"ふ",ka:"か",ki:"き",ku:"く",ke:"け",ko:"こ",sa:"さ",si:"し",su:"す",se:"せ",so:"そ",ta:"た",ti:"ち",tu:"つ",te:"て",to:"と",na:"な",ni:"に",nu:"ぬ",ne:"ね",no:"の",ha:"は",hi:"ひ",hu:"ふ",he:"へ",ho:"ほ",ma:"ま",mi:"み",mu:"む",me:"め",mo:"も",ya:"や",yu:"ゆ",yo:"よ",ra:"ら",ri:"り",ru:"る",re:"れ",ro:"ろ",wa:"わ",wo:"を",ga:"が",gi:"ぎ",gu:"ぐ",ge:"げ",go:"ご",za:"ざ",ji:"じ",zu:"ず",ze:"ぜ",zo:"ぞ",da:"だ",di:"ぢ",du:"づ",de:"で",do:"ど",ba:"ば",bi:"び",bu:"ぶ",be:"べ",bo:"ぼ",pa:"ぱ",pi:"ぴ",pu:"ぷ",pe:"ぺ",po:"ぽ",a:"あ",i:"い",u:"う",e:"え",o:"お",n:"ん"};let out="",i=0;while(i<text.length){const ch=text[i];if(/[ぁ-ん]/.test(ch)){out+=ch;i++;continue}if(i+1<text.length&&text[i]===text[i+1]&&/[bcdfghjklmpqrstvwxyz]/.test(text[i])&&text[i]!=="n"){out+="っ";i++;continue}let matched=false;for(const len of [3,2,1]){const part=text.slice(i,i+len);if(map[part]){if(part==="n"&&i+1<text.length&&/[aiueoy]/.test(text[i+1]))continue;out+=map[part];i+=len;matched=true;break}}if(!matched){out+=ch;i++}}return out}
@@ -3222,7 +3222,7 @@ function submitSrsAnswer(){
 
   state[item.key]=record;
   saveSrsState(state);
-  input.disabled=true;
+  input.dataset.resultLocked='1';
 
   updateDailyLearningRewards();
   renderAchievementPanel();
@@ -5083,7 +5083,7 @@ renderCurrentSrsCard=function(){
 
     state[item.key]=record;
     saveSrsState(state);
-    input.disabled=true;
+    input.dataset.resultLocked='1';
 
     showAllResultFurigana();
     updateDailyLearningRewards();
@@ -5418,7 +5418,7 @@ romajiToHiragana=function(input){
 
     state[item.key]=record;
     saveSrsState(state);
-    input.disabled=true;
+    input.dataset.resultLocked='1';
     revealEveryFurigana();
     updateDailyLearningRewards();
     renderAchievementPanel();
@@ -6518,6 +6518,226 @@ async function toggleUnderwaterAmbient(){
 
   window.addEventListener('load',()=>captureStableHeight(true));
   window.addEventListener('pageshow',()=>captureStableHeight(true));
+})();
+</script>
+
+
+<style>
+/* ===== FINAL iPhone SRS: keyboard tetap terbuka & kartu mengikuti visible viewport ===== */
+@media(max-width:700px){
+  html.srs-ios-keyboard-open,
+  html.srs-ios-keyboard-open body{
+    overflow:hidden!important;
+    overscroll-behavior:none!important;
+  }
+
+  html.srs-ios-keyboard-open .topbar{
+    visibility:hidden!important;
+    pointer-events:none!important;
+  }
+
+  html.srs-ios-keyboard-open #srs.page.active{
+    position:fixed!important;
+    left:0!important;
+    right:0!important;
+    top:var(--srs-vv-top,0px)!important;
+    width:100%!important;
+    height:var(--srs-vv-height,100dvh)!important;
+    min-height:0!important;
+    padding:8px 12px max(8px,env(safe-area-inset-bottom))!important;
+    overflow:hidden!important;
+    z-index:90!important;
+    background:linear-gradient(180deg,#eaf4ff,#f8fbff)!important;
+  }
+
+  html.srs-ios-keyboard-open #srs.page.active > .section-title,
+  html.srs-ios-keyboard-open #srs.page.active > p,
+  html.srs-ios-keyboard-open #srs.page.active .srs-stats,
+  html.srs-ios-keyboard-open #srs.page.active .srs-overall-box{
+    display:none!important;
+  }
+
+  html.srs-ios-keyboard-open #srs.page.active .srs-layout,
+  html.srs-ios-keyboard-open #srs.page.active .srs-main{
+    height:100%!important;
+    min-height:0!important;
+    margin:0!important;
+  }
+
+  html.srs-ios-keyboard-open #srs.page.active .srs-main{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    padding:8px!important;
+    overflow:hidden!important;
+  }
+
+  html.srs-ios-keyboard-open #srsPracticeArea{
+    width:100%!important;
+    height:100%!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    overflow:hidden!important;
+  }
+
+  html.srs-ios-keyboard-open #srs.page.active .srs-card{
+    width:100%!important;
+    max-width:680px!important;
+    max-height:100%!important;
+    min-height:0!important;
+    margin:auto!important;
+    padding:8px 4px!important;
+    overflow-y:auto!important;
+    overscroll-behavior:contain!important;
+    justify-content:center!important;
+  }
+
+  html.srs-ios-keyboard-open #srs.page.active .srs-question{
+    margin-top:auto!important;
+  }
+
+  html.srs-ios-keyboard-open #srs.page.active .srs-answer-row,
+  html.srs-ios-keyboard-open #srs.page.active .srs-answer-wrap{
+    margin-bottom:auto!important;
+  }
+
+  #srsAnswerInput[data-result-locked="1"]{
+    caret-color:transparent;
+  }
+}
+</style>
+<script>
+/*
+  iPhone behavior:
+  - input tidak pernah di-disable sesudah submit, jadi keyboard tetap terbuka;
+  - selama hasil tampil, beforeinput dicegah agar isi tidak berubah;
+  - visualViewport menentukan area nyata di atas keyboard;
+  - soal selalu dipusatkan di area tersebut tanpa scroll halaman.
+*/
+(function(){
+  const root=document.documentElement;
+  const vv=window.visualViewport;
+  let baseViewportHeight=Math.max(window.innerHeight,document.documentElement.clientHeight);
+  let refocusTimer=null;
+
+  function isMobileSrs(){
+    return window.matchMedia('(max-width:700px)').matches &&
+      document.getElementById('srs')?.classList.contains('active');
+  }
+
+  function keyboardIsOpen(){
+    if(!vv) return document.activeElement?.id==='srsAnswerInput';
+    return (baseViewportHeight-vv.height)>120 &&
+      document.activeElement?.id==='srsAnswerInput';
+  }
+
+  function syncVisibleViewport(){
+    if(!isMobileSrs()){
+      root.classList.remove('srs-ios-keyboard-open');
+      return;
+    }
+
+    const height=vv ? vv.height : window.innerHeight;
+    const top=vv ? vv.offsetTop : 0;
+    root.style.setProperty('--srs-vv-height',`${Math.round(height)}px`);
+    root.style.setProperty('--srs-vv-top',`${Math.round(top)}px`);
+    root.classList.toggle('srs-ios-keyboard-open',keyboardIsOpen());
+
+    if(keyboardIsOpen()){
+      requestAnimationFrame(()=>{
+        window.scrollTo(0,0);
+        const card=document.querySelector('#srs.page.active .srs-card');
+        if(card) card.scrollTop=Math.max(0,(card.scrollHeight-card.clientHeight)/2);
+      });
+    }
+  }
+
+  function focusAnswerWithoutScroll(){
+    if(!isMobileSrs()) return;
+    const input=document.getElementById('srsAnswerInput');
+    if(!input) return;
+    try{ input.focus({preventScroll:true}); }catch(e){ input.focus(); }
+    syncVisibleViewport();
+  }
+
+  /* Jangan izinkan pengetikan tambahan selama hasil benar/salah tampil. */
+  document.addEventListener('beforeinput',event=>{
+    if(window.srsResultWaiting && event.target?.id==='srsAnswerInput'){
+      event.preventDefault();
+    }
+  },true);
+
+  document.addEventListener('keydown',event=>{
+    if(!window.srsResultWaiting || event.target?.id!=='srsAnswerInput') return;
+    if(event.key==='Enter' || event.code==='Space') return;
+    event.preventDefault();
+  },true);
+
+  document.addEventListener('focusin',event=>{
+    if(event.target?.id!=='srsAnswerInput') return;
+    syncVisibleViewport();
+    setTimeout(syncVisibleViewport,80);
+    setTimeout(syncVisibleViewport,260);
+  });
+
+  document.addEventListener('focusout',event=>{
+    if(event.target?.id!=='srsAnswerInput') return;
+    /* Selama SRS masih aktif, kembalikan fokus agar keyboard tidak menutup. */
+    if(isMobileSrs()){
+      clearTimeout(refocusTimer);
+      refocusTimer=setTimeout(focusAnswerWithoutScroll,30);
+    }
+  });
+
+  if(vv){
+    vv.addEventListener('resize',syncVisibleViewport,{passive:true});
+    vv.addEventListener('scroll',syncVisibleViewport,{passive:true});
+  }
+
+  window.addEventListener('resize',()=>{
+    if(!keyboardIsOpen()){
+      baseViewportHeight=Math.max(window.innerHeight,document.documentElement.clientHeight);
+    }
+    syncVisibleViewport();
+  },{passive:true});
+
+  /* Setelah soal berikutnya dirender, fokus langsung dipindahkan ke input baru. */
+  const oldRender=window.renderCurrentSrsCard;
+  if(typeof oldRender==='function'){
+    window.renderCurrentSrsCard=function(){
+      oldRender();
+      requestAnimationFrame(focusAnswerWithoutScroll);
+      setTimeout(focusAnswerWithoutScroll,40);
+    };
+  }
+
+  /* Setelah submit, input tetap aktif dan keyboard tetap terbuka. */
+  const oldSubmit=window.submitSrsAnswer;
+  if(typeof oldSubmit==='function'){
+    window.submitSrsAnswer=function(){
+      const input=document.getElementById('srsAnswerInput');
+      oldSubmit();
+      if(input){
+        input.dataset.resultLocked='1';
+        try{ input.focus({preventScroll:true}); }catch(e){ input.focus(); }
+      }
+      syncVisibleViewport();
+    };
+  }
+
+  const oldAdvance=window.advanceSrsResult;
+  if(typeof oldAdvance==='function'){
+    window.advanceSrsResult=function(){
+      oldAdvance();
+      requestAnimationFrame(focusAnswerWithoutScroll);
+    };
+  }
+
+  window.addEventListener('load',()=>{
+    baseViewportHeight=Math.max(window.innerHeight,document.documentElement.clientHeight);
+    syncVisibleViewport();
+  });
 })();
 </script>
 
