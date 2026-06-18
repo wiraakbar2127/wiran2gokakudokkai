@@ -10135,9 +10135,10 @@ async function toggleUnderwaterAmbient(){
   const root=document.documentElement;
   const body=document.body;
   const vv=window.visualViewport;
-  let baselineHeight=window.innerHeight;
+  let baselineHeight=Math.max(window.innerHeight,vv?.height||0);
   let focusMode=false;
-  let userDismissed=false;
+  let keyboardWasOpened=false;
+  let secondTapAllowed=false;
   let closeTimer=0;
 
   function onSrs(){
@@ -10152,78 +10153,121 @@ async function toggleUnderwaterAmbient(){
   function setFocusHeight(){
     body.style.setProperty('--srs-focus-height',Math.round(viewportHeight())+'px');
   }
-  function enter(){
+  function forceBlur(){
+    const el=answerInput();
+    if(!el) return;
+    try{ HTMLElement.prototype.blur.call(el); }catch(_){ try{el.blur();}catch(__){} }
+  }
+  function enterWithoutKeyboard(){
     if(!onSrs()) return;
     clearTimeout(closeTimer);
     focusMode=true;
-    userDismissed=false;
-    baselineHeight=Math.max(baselineHeight,window.innerHeight,vv?.height||0);
+    keyboardWasOpened=false;
+    secondTapAllowed=false;
+    baselineHeight=Math.max(window.innerHeight,vv?.height||0,baselineHeight);
     setFocusHeight();
-    body.classList.add('srs-immersive-focus','srs-keyboard-active');
+    body.classList.add('srs-immersive-focus');
+    body.classList.remove('srs-keyboard-active','srs-keyboard-open','srs-mobile-focus');
+    root.classList.remove('srs-ios-keyboard-open');
     root.classList.add('srs-mobile-session');
-    window.srsKeyboardSessionActive=true;
+    window.srsKeyboardSessionActive=false;
+    forceBlur();
   }
   function exit(){
     clearTimeout(closeTimer);
     focusMode=false;
-    userDismissed=true;
+    keyboardWasOpened=false;
+    secondTapAllowed=false;
+    forceBlur();
     body.classList.remove('srs-immersive-focus','srs-keyboard-active','srs-keyboard-open','srs-mobile-focus');
     root.classList.remove('srs-mobile-session','srs-ios-keyboard-open');
     window.srsKeyboardSessionActive=false;
     body.style.removeProperty('--srs-focus-height');
   }
+
+  /*
+    Tap pertama: cegah fokus bawaan dan buka halaman fokus saja.
+    Listener dipasang di window capture agar berjalan sebelum handler lama di document.
+  */
+  function interceptFirstTap(e){
+    if(e.target?.id!=='srsAnswerInput' || !onSrs()) return;
+
+    if(!focusMode){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      e.stopPropagation();
+      enterWithoutKeyboard();
+      return;
+    }
+
+    /* Tap kedua di mode fokus: izinkan handler lama/default membuka keyboard. */
+    secondTapAllowed=true;
+    window.srsKeyboardSessionActive=true;
+  }
+
+  window.addEventListener('pointerdown',interceptFirstTap,true);
+  window.addEventListener('touchstart',interceptFirstTap,{capture:true,passive:false});
+
+  document.addEventListener('focusin',function(e){
+    if(e.target?.id!=='srsAnswerInput' || !onSrs()) return;
+
+    /* Fokus liar dari script lama setelah tap pertama langsung dibatalkan. */
+    if(focusMode && !secondTapAllowed){
+      forceBlur();
+      return;
+    }
+
+    if(!focusMode){
+      enterWithoutKeyboard();
+      return;
+    }
+
+    keyboardWasOpened=true;
+    body.classList.add('srs-keyboard-active');
+    window.srsKeyboardSessionActive=true;
+  },true);
+
   function checkViewport(){
     if(!focusMode || !onSrs()) return;
     setFocusHeight();
+
+    if(keyboardOpen()){
+      keyboardWasOpened=true;
+      body.classList.add('srs-keyboard-active');
+      return;
+    }
+
+    /* Jangan keluar sebelum keyboard pernah benar-benar dibuka. */
+    if(!keyboardWasOpened) return;
+
     clearTimeout(closeTimer);
     closeTimer=setTimeout(function(){
-      /* Keyboard dianggap ditutup ketika viewport kembali hampir setinggi awal. */
-      if(focusMode && !keyboardOpen()){
-        const el=answerInput();
-        try{ HTMLElement.prototype.blur.call(el); }catch(_){ }
-        exit();
-      }
-    },140);
+      if(focusMode && keyboardWasOpened && !keyboardOpen()) exit();
+    },180);
   }
 
-  document.addEventListener('pointerdown',function(e){
-    if(e.target?.id==='srsAnswerInput' && onSrs()) enter();
-  },true);
-  document.addEventListener('focusin',function(e){
-    if(e.target?.id==='srsAnswerInput' && onSrs() && !userDismissed) enter();
-  },true);
-
-  /* Setelah pengguna menutup keyboard, focusout menjadi jalan keluar tambahan. */
   document.addEventListener('focusout',function(e){
-    if(e.target?.id!=='srsAnswerInput' || !focusMode) return;
+    if(e.target?.id!=='srsAnswerInput' || !focusMode || !keyboardWasOpened) return;
     clearTimeout(closeTimer);
     closeTimer=setTimeout(function(){
       if(!keyboardOpen()) exit();
-    },180);
+    },220);
   },true);
 
   vv?.addEventListener('resize',checkViewport);
   vv?.addEventListener('scroll',checkViewport);
   window.addEventListener('resize',function(){
-    if(!focusMode) baselineHeight=Math.max(baselineHeight,window.innerHeight);
+    if(!focusMode) baselineHeight=Math.max(window.innerHeight,vv?.height||0,baselineHeight);
     checkViewport();
   });
 
-  /* Mengalahkan controller lama yang menambahkan class fokus lagi setelah resize. */
-  vv?.addEventListener('resize',function(){
-    setTimeout(function(){
-      if(focusMode && !keyboardOpen()) exit();
-    },260);
-  });
-
   const oldGo=window.go;
-  if(typeof oldGo==='function' && !oldGo.__immersiveFocusExit){
+  if(typeof oldGo==='function' && !oldGo.__twoStepFocusExit){
     const wrapped=function(page){
       if(page!=='srs') exit();
-      else userDismissed=false;
       return oldGo.apply(this,arguments);
     };
-    wrapped.__immersiveFocusExit=true;
+    wrapped.__twoStepFocusExit=true;
     window.go=wrapped;
   }
 })();
