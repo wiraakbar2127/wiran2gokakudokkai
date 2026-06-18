@@ -1247,7 +1247,31 @@ footer{
   </div>
 </div>
 
-
+<script id="loading-failsafe">
+(function(){
+  function forceHideInitialLoading(){
+    var screen=document.getElementById('loadingScreen');
+    if(!screen) return;
+    screen.classList.add('hidden');
+    screen.setAttribute('aria-hidden','true');
+  }
+  // Tidak bergantung pada kode aplikasi lain. Loading pasti ditutup walau ada error JS.
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',function(){
+      window.setTimeout(forceHideInitialLoading,700);
+    },{once:true});
+  }else{
+    window.setTimeout(forceHideInitialLoading,700);
+  }
+  window.setTimeout(forceHideInitialLoading,3000);
+  window.addEventListener('error',function(){
+    window.setTimeout(forceHideInitialLoading,50);
+  });
+  window.addEventListener('unhandledrejection',function(){
+    window.setTimeout(forceHideInitialLoading,50);
+  });
+})();
+</script>
 
 <div class="sea-decor fish-a" aria-hidden="true">
   <svg viewBox="0 0 180 110" fill="none">
@@ -2645,7 +2669,7 @@ function renderManageList(){
 
 
   wrap.innerHTML=stories.map(s=>`
-    <div class="manage-card" id="manage-card-${encodeURIComponent(String(story.id))}">
+    <div class="manage-card" id="manage-card-${encodeURIComponent(String(s.id))}">
       <div class="manage-head">
         <div>
           <span class="tag">${s.theme||"読解"}</span>${completionBadge(s.id)}
@@ -2847,16 +2871,26 @@ document.getElementById("readConfirmModal").addEventListener("click",event=>{
 });
 
 window.addEventListener("load",()=>{
-  restoreNavigationState();
+  try{
+    restoreNavigationState();
 
-  const state=getNavigationState();
-  replaceInternalHistory(
-    state.page||"home",
-    state.folder||null,
-    state.storyId||null
-  );
-
-  hideLoading(1800);
+    const state=getNavigationState();
+    replaceInternalHistory(
+      state.page||"home",
+      state.folder||null,
+      state.storyId||null
+    );
+  }catch(error){
+    console.error("Gagal memulihkan halaman terakhir:",error);
+    try{
+      go("home");
+      replaceInternalHistory("home",null,null);
+    }catch(fallbackError){
+      console.error("Fallback beranda gagal:",fallbackError);
+    }
+  }finally{
+    hideLoading(350);
+  }
 });
 
 window.setTimeout(()=>{
@@ -8018,6 +8052,144 @@ async function toggleUnderwaterAmbient(){
   });
 
   window.addEventListener('pageshow',prepareCards);
+})();
+</script>
+
+
+
+<!-- ===== FINAL FIX: satu kosakata hanya muncul sekali total di dashboard SRS ===== -->
+<script id="final-global-unique-vocab-fix">
+(function(){
+  function stageOfFinal(record){
+    return Math.max(0,Math.min(10,Number(record?.correctStage ?? record?.level ?? 0)||0));
+  }
+
+  function visibleWordFinal(item){
+    const temp=document.createElement('div');
+    temp.innerHTML=item.correctSentenceHtml||item.questionHtml||'';
+    const target=temp.querySelector('.srs-correct-word, mark, strong');
+    if(!target) return String(item.answer||'Kosakata').trim();
+    const clone=target.cloneNode(true);
+    clone.querySelectorAll('rt,rp').forEach(node=>node.remove());
+    return (clone.textContent||item.answer||'Kosakata').trim();
+  }
+
+  function canonicalWordKey(text){
+    return String(text||'')
+      .normalize('NFKC')
+      .replace(/[\s　]+/g,'')
+      .replace(/[、。！？!?,.・「」『』（）()［］【】]/g,'')
+      .toLowerCase();
+  }
+
+  function globalUniqueEntriesFinal(){
+    const items=buildSrsItems();
+    const state=syncSrsState(items);
+    const map=new Map();
+
+    items.forEach(item=>{
+      const word=visibleWordFinal(item);
+      const key=canonicalWordKey(word) || normalizeKana(item.answer||'');
+      const record=state[item.key]||{};
+      const candidate={item,record,word,keys:[item.key]};
+      const existing=map.get(key);
+
+      if(!existing){
+        map.set(key,candidate);
+        return;
+      }
+
+      existing.keys.push(item.key);
+
+      /* Satu kata hanya punya satu status: pilih progres tertinggi.
+         Jika sama, pilih jadwal tes yang paling dekat. */
+      const oldStage=stageOfFinal(existing.record);
+      const newStage=stageOfFinal(record);
+      const oldDue=Number(existing.record?.due ?? Infinity);
+      const newDue=Number(record?.due ?? Infinity);
+
+      if(newStage>oldStage || (newStage===oldStage && newDue<oldDue)){
+        existing.item=item;
+        existing.record=record;
+        existing.word=word;
+      }
+    });
+
+    return [...map.values()];
+  }
+
+  function dueTextFinal(record){
+    const remaining=Number(record?.due||0)-Date.now();
+    return remaining<=0 ? 'Bisa dites sekarang' : `${formatSrsDuration(remaining)} lagi`;
+  }
+
+  window.openSrsStatusDetail=function(type){
+    const modal=document.getElementById('srsDetailModal');
+    if(!modal) return;
+
+    const filtered=globalUniqueEntriesFinal().filter(entry=>{
+      const stage=stageOfFinal(entry.record);
+      if(type==='unlearned') return stage===0;
+      if(type==='learning') return stage>0&&stage<10;
+      return stage>=10;
+    }).sort((a,b)=>a.word.localeCompare(b.word,'ja',{numeric:true,sensitivity:'base'}));
+
+    const titles={unlearned:'Belum Dipelajari',learning:'Sedang Belajar',mastered:'Dikuasai'};
+    const title=modal.querySelector('#srsDetailTitle');
+    const list=modal.querySelector('#srsDetailList');
+    if(title) title.textContent=`${titles[type]} (${filtered.length})`;
+    if(list){
+      list.innerHTML=filtered.length ? filtered.map(entry=>{
+        const r=entry.record||{};
+        const stage=stageOfFinal(r);
+        return `<div class="srs-vocab-detail">
+          <div class="srs-vocab-word">${escapeHtml(entry.word)}</div>
+          <div class="srs-vocab-meta">${escapeHtml(entry.item.storyTitle)}・Progres <strong>${stage}/10</strong><br>Benar ${Number(r.correct||0)} kali・Salah ${Number(r.wrong||0)} kali</div>
+          <span class="srs-vocab-time">${dueTextFinal(r)}</span>
+        </div>`;
+      }).join('') : '<div class="empty">Tidak ada kosakata dalam kategori ini.</div>';
+    }
+
+    modal.classList.add('active');
+  };
+
+  function refreshCountsFinal(){
+    const entries=globalUniqueEntriesFinal();
+    const counts={unlearned:0,learning:0,mastered:0};
+    entries.forEach(entry=>{
+      const stage=stageOfFinal(entry.record);
+      if(stage===0) counts.unlearned++;
+      else if(stage<10) counts.learning++;
+      else counts.mastered++;
+    });
+    const due=document.getElementById('srsDueCount');
+    const learning=document.getElementById('srsLearningCount');
+    const mastered=document.getElementById('srsMasteredCount');
+    if(due) due.textContent=counts.unlearned;
+    if(learning) learning.textContent=counts.learning;
+    if(mastered) mastered.textContent=counts.mastered;
+  }
+
+  const oldRender=window.renderSrsPage;
+  if(typeof oldRender==='function'){
+    window.renderSrsPage=function(){
+      const result=oldRender.apply(this,arguments);
+      setTimeout(refreshCountsFinal,0);
+      return result;
+    };
+  }
+
+  const oldCounters=window.updateSrsCountersOnly;
+  if(typeof oldCounters==='function'){
+    window.updateSrsCountersOnly=function(){
+      const result=oldCounters.apply(this,arguments);
+      setTimeout(refreshCountsFinal,0);
+      return result;
+    };
+  }
+
+  window.addEventListener('load',()=>setTimeout(refreshCountsFinal,0));
+  window.addEventListener('pageshow',()=>setTimeout(refreshCountsFinal,0));
 })();
 </script>
 
