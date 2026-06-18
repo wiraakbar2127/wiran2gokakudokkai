@@ -8644,7 +8644,7 @@ async function toggleUnderwaterAmbient(){
       card.setAttribute("role","button");
       card.setAttribute("tabindex","0");
       card.onclick = () => openSrsStatusDetail("ready");
-      card.innerHTML = '<strong id="srsReadyNumber">0</strong><span>Siap dites</span>';
+      card.innerHTML = '<strong id="srsReadyNumber">0</strong><span>Kosakata siap di SRS</span>';
       stats.appendChild(card);
     }
   }
@@ -8986,7 +8986,7 @@ async function toggleUnderwaterAmbient(){
       unlearned:"Belum Dipelajari",
       learning:"Belajar",
       mastered:"Dikuasai",
-      ready:"Siap dites"
+      ready:"Kosakata Siap di SRS"
     }[type] || "SRS";
 
     modal.querySelector("#srsDetailTitle").textContent = `${title} (${filtered.length})`;
