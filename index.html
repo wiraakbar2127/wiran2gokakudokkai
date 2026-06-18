@@ -9592,5 +9592,117 @@ async function toggleUnderwaterAmbient(){
   };
 })();
 </script>
+
+
+<!-- ===== FINAL SRS ENTER FLOW: first Enter = Jawab, second Enter = Next ===== -->
+<script id="srs-enter-two-stage-final">
+(function(){
+  'use strict';
+
+  let enterAdvanceArmed = false;
+  let lastSubmitAt = 0;
+
+  function srsActive(){
+    return !!document.getElementById('srs')?.classList.contains('active');
+  }
+
+  function answerInput(){
+    return document.getElementById('srsAnswerInput');
+  }
+
+  function feedbackVisible(){
+    const input = answerInput();
+    const feedback = document.getElementById('srsInlineFeedback');
+    return !!(
+      window.srsLocked ||
+      input?.dataset?.locked === '1' ||
+      feedback?.classList.contains('correct') ||
+      feedback?.classList.contains('wrong')
+    );
+  }
+
+  function keepKeyboard(){
+    const input = answerInput();
+    if(!input || !srsActive()) return;
+    try{ input.focus({preventScroll:true}); }catch(_){ input.focus(); }
+    try{ input.setSelectionRange(input.value.length,input.value.length); }catch(_){ }
+  }
+
+  const originalSubmit = window.submitSrsAnswer;
+  if(typeof originalSubmit === 'function'){
+    window.submitSrsAnswer = function(){
+      if(window.srsLocked) return;
+      const input = answerInput();
+      if(!input || !String(input.value || '').trim()) return;
+
+      enterAdvanceArmed = false;
+      lastSubmitAt = Date.now();
+      const result = originalSubmit.apply(this, arguments);
+
+      requestAnimationFrame(keepKeyboard);
+      setTimeout(keepKeyboard, 40);
+      return result;
+    };
+  }
+
+  window.submitOrNextSrs = function(){
+    const eventObject = window.event;
+    const fromKeyboard = eventObject?.type === 'keydown' || eventObject?.type === 'keyup';
+
+    if(feedbackVisible()){
+      /* Handler Enter lama kadang terpanggil lebih dari sekali dalam satu tekanan.
+         Jangan biarkan panggilan kedua pada tekanan pertama langsung mengganti soal. */
+      if(fromKeyboard && (!enterAdvanceArmed || Date.now() - lastSubmitAt < 120)){
+        keepKeyboard();
+        return;
+      }
+
+      enterAdvanceArmed = false;
+      if(typeof window.nextSrsQuestion === 'function') window.nextSrsQuestion();
+      requestAnimationFrame(keepKeyboard);
+      setTimeout(keepKeyboard, 60);
+      return;
+    }
+
+    if(typeof window.submitSrsAnswer === 'function') window.submitSrsAnswer();
+  };
+
+  /* Enter pertama baru boleh menjadi Next setelah tombol fisiknya dilepas.
+     Jadi satu tekanan tidak mungkin sekaligus Jawab dan Next. */
+  document.addEventListener('keyup', function(event){
+    if(!srsActive() || event.key !== 'Enter') return;
+    const input = answerInput();
+    if(!input || document.activeElement !== input) return;
+
+    if(feedbackVisible()){
+      enterAdvanceArmed = true;
+      input.setAttribute('enterkeyhint','next');
+      requestAnimationFrame(keepKeyboard);
+    }
+  }, true);
+
+  document.addEventListener('input', function(event){
+    if(event.target?.id !== 'srsAnswerInput') return;
+    if(!feedbackVisible()){
+      enterAdvanceArmed = false;
+      event.target.setAttribute('enterkeyhint','done');
+    }
+  }, true);
+
+  const originalNext = window.nextSrsQuestion;
+  if(typeof originalNext === 'function'){
+    window.nextSrsQuestion = function(){
+      enterAdvanceArmed = false;
+      const result = originalNext.apply(this, arguments);
+      const input = answerInput();
+      if(input) input.setAttribute('enterkeyhint','done');
+      requestAnimationFrame(keepKeyboard);
+      setTimeout(keepKeyboard, 80);
+      return result;
+    };
+  }
+})();
+</script>
+
 </body>
 </html>
