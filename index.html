@@ -6780,6 +6780,7 @@ async function toggleUnderwaterAmbient(){
   - soal selalu dipusatkan di area tersebut tanpa scroll halaman.
 */
 (function(){
+  if(typeof window.srsKeyboardSessionActive !== 'boolean') window.srsKeyboardSessionActive=false;
   const root=document.documentElement;
   const vv=window.visualViewport;
   let baseViewportHeight=Math.max(window.innerHeight,document.documentElement.clientHeight);
@@ -6818,7 +6819,7 @@ async function toggleUnderwaterAmbient(){
   }
 
   function focusAnswerWithoutScroll(){
-    if(!isMobileSrs()) return;
+    if(!isMobileSrs() || !window.srsKeyboardSessionActive) return;
     const input=document.getElementById('srsAnswerInput');
     if(!input) return;
     try{ input.focus({preventScroll:true}); }catch(e){ input.focus(); }
@@ -6847,11 +6848,14 @@ async function toggleUnderwaterAmbient(){
 
   document.addEventListener('focusout',event=>{
     if(event.target?.id!=='srsAnswerInput') return;
-    /* Selama SRS masih aktif, kembalikan fokus agar keyboard tidak menutup. */
-    if(isMobileSrs()){
-      clearTimeout(refocusTimer);
-      refocusTimer=setTimeout(focusAnswerWithoutScroll,30);
-    }
+    /* Pengguna yang menurunkan keyboard memegang kendali; jangan paksa naik lagi. */
+    clearTimeout(refocusTimer);
+    setTimeout(()=>{
+      if(document.activeElement?.id!=='srsAnswerInput'){
+        window.srsKeyboardSessionActive=false;
+        root.classList.remove('srs-ios-keyboard-open');
+      }
+    },120);
   });
 
   if(vv){
@@ -6871,8 +6875,10 @@ async function toggleUnderwaterAmbient(){
   if(typeof oldRender==='function'){
     window.renderCurrentSrsCard=function(){
       oldRender();
-      requestAnimationFrame(focusAnswerWithoutScroll);
-      setTimeout(focusAnswerWithoutScroll,40);
+      if(window.srsKeyboardSessionActive){
+        requestAnimationFrame(focusAnswerWithoutScroll);
+        setTimeout(focusAnswerWithoutScroll,40);
+      }
     };
   }
 
@@ -6884,7 +6890,9 @@ async function toggleUnderwaterAmbient(){
       oldSubmit();
       if(input){
         input.dataset.resultLocked='1';
-        try{ input.focus({preventScroll:true}); }catch(e){ input.focus(); }
+        if(window.srsKeyboardSessionActive){
+          try{ input.focus({preventScroll:true}); }catch(e){ input.focus(); }
+        }
       }
       syncVisibleViewport();
     };
@@ -6894,7 +6902,7 @@ async function toggleUnderwaterAmbient(){
   if(typeof oldAdvance==='function'){
     window.advanceSrsResult=function(){
       oldAdvance();
-      requestAnimationFrame(focusAnswerWithoutScroll);
+      if(window.srsKeyboardSessionActive) requestAnimationFrame(focusAnswerWithoutScroll);
     };
   }
 
@@ -8744,7 +8752,9 @@ async function toggleUnderwaterAmbient(){
     // Enter ditangani oleh satu listener global saja.
     // Jangan menambahkan listener Enter kedua pada input karena satu tekanan
     // dapat menjalankan submit lalu langsung berpindah ke soal berikutnya.
-    setTimeout(() => input.focus(), 80);
+    if(window.srsKeyboardSessionActive){
+      setTimeout(() => { try{ input.focus({preventScroll:true}); }catch(_){ input.focus(); } }, 80);
+    }
   };
 
   window.submitOrNextSrs = function(){
@@ -9326,13 +9336,14 @@ async function toggleUnderwaterAmbient(){
 
 <script id="srs-mobile-flex-keyboard-script">
 (function(){
+  if(typeof window.srsKeyboardSessionActive !== 'boolean') window.srsKeyboardSessionActive=false;
   function isMobileSrs(){
     return window.matchMedia('(max-width:700px)').matches &&
       document.getElementById('srs')?.classList.contains('active');
   }
 
   function focusSrsInput(){
-    if(!isMobileSrs()) return;
+    if(!isMobileSrs() || !window.srsKeyboardSessionActive) return;
     const input=document.getElementById('srsAnswerInput');
     if(!input) return;
     input.setAttribute('inputmode','text');
@@ -9416,6 +9427,7 @@ async function toggleUnderwaterAmbient(){
 
   document.addEventListener('focusin',event=>{
     if(event.target?.id==='srsAnswerInput' && isMobileSrs()){
+      window.srsKeyboardSessionActive=true;
       document.body.classList.add('srs-keyboard-open','srs-mobile-focus');
       setTimeout(fitMobileCard,40);
     }
@@ -9425,6 +9437,7 @@ async function toggleUnderwaterAmbient(){
     if(event.target?.id==='srsAnswerInput'){
       setTimeout(()=>{
         if(document.activeElement?.id!=='srsAnswerInput'){
+          window.srsKeyboardSessionActive=false;
           document.body.classList.remove('srs-keyboard-open','srs-mobile-focus');
         }
       },180);
@@ -9435,11 +9448,13 @@ async function toggleUnderwaterAmbient(){
     if(isMobileSrs()) setTimeout(fitMobileCard,30);
   });
 
-  document.addEventListener('click',event=>{
-    if(event.target.closest('[data-page="srs"]')){
-      setTimeout(focusSrsInput,180);
-    }
-  });
+  document.addEventListener('pointerdown',event=>{
+    const button=event.target.closest('#srsSubmitBtn');
+    if(!button || !isMobileSrs() || document.activeElement?.id!=='srsAnswerInput') return;
+    event.preventDefault();
+  },true);
+
+  /* Membuka halaman SRS tidak memunculkan keyboard. Keyboard baru aktif setelah input disentuh. */
 })();
 </script>
 
