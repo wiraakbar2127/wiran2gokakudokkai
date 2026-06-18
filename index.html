@@ -8965,5 +8965,218 @@ async function toggleUnderwaterAmbient(){
     opacity:.9;
   }
 </style>
+
+
+<style id="srs-final-blur-auto8-style">
+/* Arti soal disembunyikan sampai jawaban dikirim. */
+#srs.page.active #srsQuestionText:not(.correct-answer):not(.wrong-answer) .srs-translation-restored,
+#srs.page.active #srsQuestionText:not(.correct-answer):not(.wrong-answer) .srs-translation{
+  filter:blur(7px)!important;
+  opacity:.62!important;
+  user-select:none!important;
+  pointer-events:none!important;
+  cursor:default!important;
+  transition:filter .22s ease,opacity .22s ease!important;
+}
+
+/* Setelah menjawab, arti tampil normal. */
+#srs.page.active #srsQuestionText.correct-answer .srs-translation-restored,
+#srs.page.active #srsQuestionText.wrong-answer .srs-translation-restored,
+#srs.page.active #srsQuestionText.correct-answer .srs-translation,
+#srs.page.active #srsQuestionText.wrong-answer .srs-translation{
+  filter:none!important;
+  opacity:1!important;
+  user-select:text!important;
+  pointer-events:none!important;
+}
+
+/* Feedback akan lanjut otomatis; tombol/petunjuk manual tidak diperlukan. */
+#srs.page.active .srs-result-actions,
+#srs.page.active .srs-skip-note,
+#srs.page.active .srs-next-question-btn{
+  display:none!important;
+}
+</style>
+
+<script id="srs-final-blur-auto8-script">
+(function(){
+  const AUTO_ADVANCE_MS=8000;
+  let autoAdvanceTimer=null;
+
+  function clearAutoAdvance(){
+    if(autoAdvanceTimer){
+      window.clearTimeout(autoAdvanceTimer);
+      autoAdvanceTimer=null;
+    }
+  }
+
+  function scheduleAutoAdvance(){
+    clearAutoAdvance();
+    autoAdvanceTimer=window.setTimeout(function(){
+      autoAdvanceTimer=null;
+      if(window.srsResultWaiting && typeof window.advanceSrsResult==='function'){
+        window.advanceSrsResult();
+      }
+    },AUTO_ADVANCE_MS);
+  }
+
+  const previousSubmit=window.submitSrsAnswer;
+  if(typeof previousSubmit==='function'){
+    window.submitSrsAnswer=function(){
+      const wasWaiting=!!window.srsResultWaiting;
+      previousSubmit.apply(this,arguments);
+      if(!wasWaiting && window.srsResultWaiting){
+        scheduleAutoAdvance();
+      }
+    };
+  }
+
+  const previousAdvance=window.advanceSrsResult;
+  if(typeof previousAdvance==='function'){
+    window.advanceSrsResult=function(){
+      clearAutoAdvance();
+      return previousAdvance.apply(this,arguments);
+    };
+  }
+
+  const previousRender=window.renderCurrentSrsCard;
+  if(typeof previousRender==='function'){
+    window.renderCurrentSrsCard=function(){
+      clearAutoAdvance();
+      return previousRender.apply(this,arguments);
+    };
+  }
+})();
+</script>
+
+
+
+<!-- ===== SRS PC FINAL: tinggi kartu dan layar mengikuti isi soal/feedback ===== -->
+<style id="srs-pc-dynamic-height-style">
+@media (min-width:701px){
+  /* Lepaskan tinggi minimum/fixed lama pada desktop. */
+  #srs.page.active{
+    height:auto!important;
+    min-height:0!important;
+    overflow:visible!important;
+  }
+  #srs.page.active .srs-layout{
+    height:auto!important;
+    min-height:0!important;
+    align-items:start!important;
+  }
+  #srs.page.active .srs-main{
+    height:auto!important;
+    min-height:0!important;
+    overflow:visible!important;
+    display:block!important;
+  }
+  #srsPracticeArea{
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    display:block!important;
+    overflow:visible!important;
+    transition:height .22s ease;
+  }
+  #srsPracticeArea .srs-card{
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+    justify-content:flex-start!important;
+    padding-top:4px!important;
+    padding-bottom:8px!important;
+  }
+  #srsPracticeArea .srs-final-question{
+    height:auto!important;
+    min-height:0!important;
+  }
+  #srsPracticeArea .srs-final-feedback{
+    max-height:none!important;
+    overflow:visible!important;
+  }
+}
+</style>
+
+<script id="srs-pc-dynamic-height-script">
+(function(){
+  function isDesktopSrs(){
+    return window.matchMedia('(min-width:701px)').matches &&
+      document.getElementById('srs')?.classList.contains('active');
+  }
+
+  function fitDesktopSrsToContent(options={}){
+    if(!isDesktopSrs()) return;
+    const area=document.getElementById('srsPracticeArea');
+    const card=area?.querySelector('.srs-card, .srs-empty');
+    if(!area || !card) return;
+
+    requestAnimationFrame(()=>{
+      /* Memaksa browser menghitung ulang tinggi terbaru tanpa tinggi sisa soal sebelumnya. */
+      area.style.height='auto';
+      area.style.minHeight='0';
+      card.style.height='auto';
+      card.style.minHeight='0';
+
+      if(options.keepVisible){
+        const topbar=document.querySelector('.topbar');
+        const topOffset=(topbar?.getBoundingClientRect().height || 0)+16;
+        const rect=card.getBoundingClientRect();
+        const bottomLimit=window.innerHeight-18;
+
+        /* Geser hanya secukupnya ketika bagian bawah kartu keluar layar. */
+        if(rect.bottom>bottomLimit){
+          window.scrollBy({top:rect.bottom-bottomLimit,behavior:'smooth'});
+        }else if(rect.top<topOffset){
+          window.scrollBy({top:rect.top-topOffset,behavior:'smooth'});
+        }
+      }
+    });
+  }
+
+  const observer=new MutationObserver(()=>fitDesktopSrsToContent({keepVisible:true}));
+
+  function observeArea(){
+    const area=document.getElementById('srsPracticeArea');
+    if(!area) return;
+    observer.disconnect();
+    observer.observe(area,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style']});
+    fitDesktopSrsToContent();
+  }
+
+  document.addEventListener('DOMContentLoaded',observeArea);
+  window.addEventListener('load',observeArea);
+  window.addEventListener('resize',()=>fitDesktopSrsToContent());
+  document.addEventListener('click',event=>{
+    if(event.target.closest('[data-page="srs"], #srsSubmitBtn')){
+      setTimeout(()=>fitDesktopSrsToContent({keepVisible:true}),30);
+      setTimeout(()=>fitDesktopSrsToContent({keepVisible:true}),240);
+    }
+  });
+
+  /* Kaitkan ke render dan submit terakhir tanpa mengubah logika jawaban. */
+  const oldRender=window.renderCurrentSrsCard;
+  if(typeof oldRender==='function'){
+    window.renderCurrentSrsCard=function(){
+      const result=oldRender.apply(this,arguments);
+      setTimeout(observeArea,0);
+      setTimeout(()=>fitDesktopSrsToContent({keepVisible:true}),80);
+      return result;
+    };
+  }
+
+  const oldSubmit=window.submitSrsAnswer;
+  if(typeof oldSubmit==='function'){
+    window.submitSrsAnswer=function(){
+      const result=oldSubmit.apply(this,arguments);
+      setTimeout(()=>fitDesktopSrsToContent({keepVisible:true}),0);
+      setTimeout(()=>fitDesktopSrsToContent({keepVisible:true}),220);
+      return result;
+    };
+  }
+})();
+</script>
+
 </body>
 </html>
