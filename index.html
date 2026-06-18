@@ -8340,7 +8340,8 @@ async function toggleUnderwaterAmbient(){
   }
 
   function maxLevel(){
-    return typeof SRS_INTERVALS !== "undefined" ? SRS_INTERVALS.length - 1 : 10;
+    // SRS memiliki 10 tahap benar (0/10 sampai 10/10).
+    return 10;
   }
 
   function srsLevel(record){
@@ -8349,7 +8350,9 @@ async function toggleUnderwaterAmbient(){
 
   function srsInterval(level){
     if(typeof SRS_INTERVALS !== "undefined" && Array.isArray(SRS_INTERVALS)){
-      return SRS_INTERVALS[Math.max(0, Math.min(SRS_INTERVALS.length - 1, level))] || 0;
+      // level 1 memakai interval pertama; level 10 memakai interval terakhir.
+      const stage = Math.max(1, Math.min(10, Number(level) || 1));
+      return SRS_INTERVALS[Math.min(SRS_INTERVALS.length - 1, stage - 1)] || 0;
     }
     return 0;
   }
@@ -8566,6 +8569,8 @@ async function toggleUnderwaterAmbient(){
     return `Dipelajari lagi sekitar ${days} hari.`;
   }
 
+  window.getSrsVocabTimeLabel = getVocabTimeLabel;
+
   window.updateSrsCountersOnly = function(){
     updateCounters();
     updateOverallProgressV5();
@@ -8608,6 +8613,19 @@ async function toggleUnderwaterAmbient(){
     renderCurrentSrsCard();
   };
 
+  function getVocabTimeLabel(item){
+    const state = getStateSafe();
+    const record = state[item?.key] || {};
+    const level = srsLevel(record);
+    const progress = `${level}/10`;
+    if(level >= 10) return `SRS ${progress} • Dikuasai`;
+    const due = Number(record.due || 0);
+    if(!due || due <= Date.now()) return `SRS ${progress} • Siap dipelajari sekarang`;
+    const diff = Math.max(0, due - Date.now());
+    if(typeof formatSrsDuration === "function") return `SRS ${progress} • ${formatSrsDuration(diff)} lagi`;
+    return `SRS ${progress} • ${formatNextReview(due).replace(/^Dipelajari lagi\s*/i, "")}`;
+  }
+
   window.renderCurrentSrsCard = function(){
     const area = document.getElementById("srsPracticeArea");
     const bar = document.querySelector("#srsProgress>div");
@@ -8631,6 +8649,7 @@ async function toggleUnderwaterAmbient(){
         <div id="srsQuestionText" class="srs-final-question">
           <div class="srs-final-label">Kosakata</div>
           <div class="srs-final-word">${item.displayWordHtml || safeEscape(item.displayWord)}</div>
+          <div id="srsVocabTime" class="srs-vocab-current-time">${safeEscape(getVocabTimeLabel(item))}</div>
           <div class="srs-final-meaning">${safeEscape(item.meaning)}</div>
           <div id="srsInlineFeedback" class="srs-final-feedback"></div>
         </div>
@@ -9087,6 +9106,7 @@ async function toggleUnderwaterAmbient(){
     const source=card.querySelector('.srs-source');
     const word=card.querySelector('.srs-final-word');
     const meaning=card.querySelector('.srs-final-meaning');
+    const timeBadge=card.querySelector('#srsVocabTime');
     const feedback=card.querySelector('#srsInlineFeedback');
     const question=card.querySelector('#srsQuestionText');
     const btn=card.querySelector('#srsSubmitBtn');
@@ -9095,6 +9115,7 @@ async function toggleUnderwaterAmbient(){
     if(source) source.textContent=`${item.storyTitle||''}・${item.folder||''}`;
     if(word) word.innerHTML=item.displayWordHtml||esc(item.displayWord||item.answer||'');
     if(meaning) meaning.textContent=item.meaning||'';
+    if(timeBadge && typeof getSrsVocabTimeLabel==='function') timeBadge.textContent=getSrsVocabTimeLabel(item);
     if(feedback){feedback.className='srs-final-feedback';feedback.innerHTML='';}
     if(question) question.classList.remove('correct','wrong','correct-answer','wrong-answer');
 
@@ -9215,6 +9236,140 @@ async function toggleUnderwaterAmbient(){
       setTimeout(keepFocus,50);
     }
   },true);
+})();
+</script>
+
+
+<!-- ===== SRS FINAL FIX 10/10 + visible schedule + stable mobile keyboard ===== -->
+<style id="srs-final-10-mobile-stability-style">
+.srs-vocab-current-time{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  margin:-2px auto 12px;
+  padding:6px 11px;
+  border-radius:999px;
+  background:#e7f2fc;
+  border:1px solid #c5ddf1;
+  color:#315f86;
+  font-size:12px;
+  font-weight:900;
+  line-height:1.25;
+}
+@media(max-width:700px){
+  html.srs-mobile-session,html.srs-mobile-session body{overscroll-behavior:none}
+  body.srs-keyboard-active #srs.page.active{
+    min-height:100dvh!important;
+    padding-top:12px!important;
+    padding-bottom:12px!important;
+  }
+  body.srs-keyboard-active #srs.page.active .srs-side{display:none!important}
+  body.srs-keyboard-active #srs.page.active .srs-stats{display:none!important}
+  body.srs-keyboard-active #srs.page.active .srs-overall-box{display:none!important}
+  body.srs-keyboard-active #srs.page.active .section-title{display:none!important}
+  body.srs-keyboard-active #srs.page.active .srs-progress{margin:4px 0 9px!important}
+  body.srs-keyboard-active #srs.page.active .srs-final-question{margin-bottom:8px!important}
+  body.srs-keyboard-active #srs.page.active footer{display:none!important}
+  .srs-vocab-current-time{font-size:10px;padding:4px 8px;margin:0 auto 7px}
+}
+</style>
+<script id="srs-final-mobile-focus-controller">
+(function(){
+  'use strict';
+  const mobile=window.matchMedia('(max-width:700px)');
+  let session=false;
+  let refocusTimer=0;
+
+  function isActive(){
+    return mobile.matches && document.getElementById('srs')?.classList.contains('active');
+  }
+  function input(){return document.getElementById('srsAnswerInput');}
+  function markSession(){
+    if(!isActive()) return;
+    session=true;
+    window.srsKeyboardSessionActive=true;
+    document.documentElement.classList.add('srs-mobile-session');
+    document.body.classList.add('srs-keyboard-active');
+  }
+  function keep(){
+    if(!isActive() || !session) return;
+    const el=input();
+    if(!el) return;
+    el.disabled=false;
+    el.readOnly=false;
+    if(document.activeElement!==el){
+      try{el.focus({preventScroll:true});}catch(_){el.focus();}
+    }
+    try{el.setSelectionRange(el.value.length,el.value.length);}catch(_){ }
+  }
+  function scheduleKeep(){
+    cancelAnimationFrame(refocusTimer);
+    refocusTimer=requestAnimationFrame(()=>{
+      keep();
+      setTimeout(keep,40);
+      setTimeout(keep,140);
+    });
+  }
+
+  // Mencegah tombol mengambil fokus dari input sebelum event click dijalankan.
+  document.addEventListener('pointerdown',function(e){
+    if(!isActive()) return;
+    if(e.target?.id==='srsAnswerInput') markSession();
+    const button=e.target?.closest?.('#srsSubmitBtn');
+    if(button && session){
+      e.preventDefault();
+      markSession();
+    }
+  },true);
+
+  document.addEventListener('focusin',function(e){
+    if(e.target?.id==='srsAnswerInput') markSession();
+  },true);
+
+  document.addEventListener('click',function(e){
+    if(!isActive()) return;
+    if(e.target?.closest?.('#srsSubmitBtn') && session) scheduleKeep();
+  },true);
+
+  // Fokus boleh hilang hanya karena pengguna sendiri menekan tombol tutup keyboard.
+  // Tidak ada pemanggilan blur otomatis ketika hasil atau soal berikutnya dirender.
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden && session) scheduleKeep();
+  });
+
+  if(window.visualViewport){
+    visualViewport.addEventListener('resize',function(){
+      if(isActive() && session) document.body.classList.add('srs-keyboard-active');
+    });
+  }
+
+  const oldGo=window.go;
+  if(typeof oldGo==='function'){
+    window.go=function(page){
+      if(page!=='srs'){
+        session=false;
+        window.srsKeyboardSessionActive=false;
+        document.documentElement.classList.remove('srs-mobile-session');
+        document.body.classList.remove('srs-keyboard-active');
+      }
+      return oldGo.apply(this,arguments);
+    };
+  }
+
+  // Pastikan label waktu ikut berubah ketika soal diganti tanpa mengganti node input.
+  const oldNext=window.nextSrsQuestion;
+  if(typeof oldNext==='function'){
+    window.nextSrsQuestion=function(){
+      const result=oldNext.apply(this,arguments);
+      const item=(window.srsQueue||[])[Number(window.srsCurrentIndex||0)];
+      const badge=document.getElementById('srsVocabTime');
+      if(item && badge && typeof window.getSrsVocabTimeLabel==='function'){
+        badge.textContent=window.getSrsVocabTimeLabel(item);
+      }
+      if(session) scheduleKeep();
+      return result;
+    };
+  }
 })();
 </script>
 
