@@ -1219,6 +1219,137 @@ footer{
 </style>
 </head>
 <body>
+
+<script id="srs-enter-single-authority">
+(function(){
+  'use strict';
+
+  let srsInputSession = false;
+  let enterIsDown = false;
+  let stage = 'answer'; // answer -> next -> answer
+
+  function pageActive(){
+    return !!document.getElementById('srs')?.classList.contains('active');
+  }
+
+  function field(){
+    return document.getElementById('srsAnswerInput');
+  }
+
+  function focusField(delay){
+    setTimeout(function(){
+      const el=field();
+      if(!el || !pageActive()) return;
+      try{ el.focus({preventScroll:true}); }catch(_){ el.focus(); }
+      try{ el.setSelectionRange(el.value.length,el.value.length); }catch(_){ }
+    }, delay || 0);
+  }
+
+  function resultIsVisible(){
+    const el=field();
+    const inline=document.getElementById('srsInlineFeedback');
+    const question=document.querySelector('#srs .srs-question');
+    return !!(
+      window.srsLocked ||
+      el?.dataset?.locked==='1' ||
+      el?.dataset?.resultLocked==='1' ||
+      inline?.classList.contains('correct') ||
+      inline?.classList.contains('wrong') ||
+      question?.classList.contains('correct-answer') ||
+      question?.classList.contains('wrong-answer')
+    );
+  }
+
+  document.addEventListener('focusin',function(e){
+    if(e.target?.id==='srsAnswerInput'){
+      srsInputSession=true;
+      if(!resultIsVisible()) stage='answer';
+    }
+  },true);
+
+  document.addEventListener('focusout',function(e){
+    if(e.target?.id!=='srsAnswerInput') return;
+    // Jangan akhiri sesi hanya karena browser HP memindahkan activeElement sesaat.
+    setTimeout(function(){
+      if(!pageActive()) srsInputSession=false;
+    },0);
+  },true);
+
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Enter' || !pageActive()) return;
+    const el=field();
+    if(!el) return;
+    const belongsToSrs = e.target===el || document.activeElement===el || srsInputSession;
+    if(!belongsToSrs) return;
+
+    // Ini satu-satunya handler Enter yang boleh berjalan.
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    e.stopPropagation();
+
+    if(e.repeat || enterIsDown) return;
+    enterIsDown=true;
+
+    // Sinkronkan tahap dengan keadaan tampilan, tanpa bergantung pada fokus HP.
+    if(resultIsVisible()) stage='next';
+
+    if(stage==='next'){
+      stage='answer';
+      if(typeof window.nextSrsQuestion==='function'){
+        window.nextSrsQuestion();
+      }
+      focusField(0);
+      focusField(60);
+      return;
+    }
+
+    if(!String(el.value || '').trim()){
+      focusField(0);
+      return;
+    }
+
+    if(typeof window.submitSrsAnswer==='function'){
+      window.submitSrsAnswer();
+    }
+    // Begitu Enter pertama diproses, Enter fisik berikutnya adalah Next.
+    stage='next';
+    focusField(0);
+    focusField(40);
+  },true);
+
+  document.addEventListener('keyup',function(e){
+    if(e.key!=='Enter' || !pageActive()) return;
+    const el=field();
+    if(!el) return;
+    const belongsToSrs=e.target===el || document.activeElement===el || srsInputSession;
+    if(!belongsToSrs) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    e.stopPropagation();
+    enterIsDown=false;
+    focusField(0);
+  },true);
+
+  // Saat card soal baru dirender, kembalikan tahap ke Jawab.
+  const observer=new MutationObserver(function(){
+    const el=field();
+    if(!el || !pageActive()) return;
+    if(!resultIsVisible()){
+      stage='answer';
+      el.setAttribute('enterkeyhint','done');
+    }else{
+      stage='next';
+      el.setAttribute('enterkeyhint','next');
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded',function(){
+    const area=document.getElementById('srsPracticeArea') || document.getElementById('srs');
+    if(area) observer.observe(area,{subtree:true,childList:true,attributes:true,attributeFilter:['class','data-locked','data-result-locked']});
+  });
+})();
+</script>
+
 <div aria-label="Loading" aria-live="polite" class="loading-screen" id="loadingScreen">
 <div class="loading-card">
 <div class="loading-ocean">
