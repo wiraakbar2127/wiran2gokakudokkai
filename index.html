@@ -9672,12 +9672,16 @@ async function toggleUnderwaterAmbient(){
   document.addEventListener('keyup', function(event){
     if(!srsActive() || event.key !== 'Enter') return;
     const input = answerInput();
-    if(!input || document.activeElement !== input) return;
+    if(!input) return;
 
+    /* Jangan bergantung pada document.activeElement di HP.
+       Beberapa browser sementara memindahkan activeElement ketika tombol Enter
+       ditekan, walaupun keyboard dan kolom jawaban masih terlihat. */
     if(feedbackVisible()){
       enterAdvanceArmed = true;
       input.setAttribute('enterkeyhint','next');
       requestAnimationFrame(keepKeyboard);
+      setTimeout(keepKeyboard, 30);
     }
   }, true);
 
@@ -9700,6 +9704,74 @@ async function toggleUnderwaterAmbient(){
       setTimeout(keepKeyboard, 80);
       return result;
     };
+  }
+})();
+</script>
+
+
+<!-- ===== FINAL PATCH: Enter kedua selalu Next di mobile ===== -->
+<script id="srs-enter-second-next-guarantee">
+(function(){
+  'use strict';
+  let enterWasReleased = true;
+  let handledStamp = -1;
+
+  function active(){
+    return !!document.getElementById('srs')?.classList.contains('active');
+  }
+  function input(){ return document.getElementById('srsAnswerInput'); }
+  function hasResult(){
+    const el=input();
+    const fb=document.getElementById('srsInlineFeedback');
+    return !!(window.srsLocked || el?.dataset?.locked==='1' ||
+      fb?.classList.contains('correct') || fb?.classList.contains('wrong'));
+  }
+  function refocus(){
+    const el=input();
+    if(!el || !active()) return;
+    try{el.focus({preventScroll:true});}catch(_){el.focus();}
+  }
+
+  const previous=window.submitOrNextSrs;
+  window.submitOrNextSrs=function(){
+    const ev=window.event;
+    const stamp=Number(ev?.timeStamp || 0);
+
+    /* Abaikan panggilan ganda dari beberapa listener pada tekanan fisik yang sama. */
+    if(stamp && stamp===handledStamp) return;
+    if(stamp) handledStamp=stamp;
+
+    if(hasResult()){
+      /* Selama Enter pertama belum dilepas, jangan langsung melompat. */
+      if(!enterWasReleased){ refocus(); return; }
+      enterWasReleased=false;
+      if(typeof window.nextSrsQuestion==='function') window.nextSrsQuestion();
+      requestAnimationFrame(refocus);
+      setTimeout(refocus,50);
+      return;
+    }
+
+    enterWasReleased=false;
+    if(typeof window.submitSrsAnswer==='function') window.submitSrsAnswer();
+    requestAnimationFrame(refocus);
+  };
+
+  document.addEventListener('keyup',function(e){
+    if(!active() || e.key!=='Enter') return;
+    enterWasReleased=true;
+    requestAnimationFrame(refocus);
+  },true);
+
+  const oldNext=window.nextSrsQuestion;
+  if(typeof oldNext==='function' && !oldNext.__secondEnterPatch){
+    const wrapped=function(){
+      const result=oldNext.apply(this,arguments);
+      enterWasReleased=true;
+      handledStamp=-1;
+      return result;
+    };
+    wrapped.__secondEnterPatch=true;
+    window.nextSrsQuestion=wrapped;
   }
 })();
 </script>
