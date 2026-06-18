@@ -8187,259 +8187,46 @@ async function toggleUnderwaterAmbient(){
 </script>
 
 
-<!-- ===== PATCH PALING AKHIR: paksa tabel SRS benar-benar unik berdasarkan kosakata yang tampil ===== -->
-<script id="absolute-final-srs-visible-word-dedup">
-(function(){
-  function srsStage(record){
-    return Math.max(0, Math.min(10, Number(record?.correctStage ?? record?.level ?? 0) || 0));
+
+
+
+
+
+<!-- ===== SRS FINAL V5: feedback lengkap + progress tersimpan + spacing rapi ===== -->
+<style id="srs-final-v5-style">
+  #srs .srs-stats{grid-template-columns:repeat(4,1fr)!important}
+  #srs .srs-stat{cursor:pointer}
+  #srsReadyStatCard{background:linear-gradient(135deg,#174e86,#0f3b68)!important;color:#fff!important;border-color:rgba(255,255,255,.18)!important;box-shadow:0 12px 28px rgba(15,59,104,.22)}
+  #srsReadyStatCard strong{color:#fff!important}
+  #srsReadyStatCard span{color:rgba(255,255,255,.88)!important}
+
+  #srsPracticeArea .srs-card{
+    gap:0!important;
   }
-
-  function stripRubyAndGetText(html, fallback){
-    const temp = document.createElement('div');
-    temp.innerHTML = String(html || '');
-
-    const target =
-      temp.querySelector('.srs-correct-word') ||
-      temp.querySelector('.srs-question-target') ||
-      temp.querySelector('mark') ||
-      temp.querySelector('strong');
-
-    const node = target || temp;
-    const clone = node.cloneNode(true);
-    clone.querySelectorAll('rt,rp').forEach(n => n.remove());
-
-    return String(clone.textContent || fallback || '')
-      .replace(/＿＿＿＿/g, '')
-      .replace(/\s+/g, '')
-      .trim();
-  }
-
-  function getVisibleSrsWord(item){
-    return stripRubyAndGetText(
-      item.correctSentenceHtml || item.questionHtml || '',
-      item.displayWord || item.answer || 'Kosakata'
-    );
-  }
-
-  function normalizeSrsVocabKey(word, answer){
-    const w = String(word || '')
-      .replace(/\s+/g, '')
-      .replace(/[。、，,.!?！？「」『』（）()【】\[\]・]/g, '')
-      .trim();
-
-    // Prioritas utama: tulisan kosakata yang tampil di tabel.
-    // Kalau tulisan sama, cukup tampil 1 kali saja.
-    if(w) return 'word::' + w;
-
-    return 'answer::' + normalizeKana(String(answer || '').trim());
-  }
-
-  function bestEntry(oldEntry, newEntry){
-    if(!oldEntry) return newEntry;
-
-    const oldStage = srsStage(oldEntry.record);
-    const newStage = srsStage(newEntry.record);
-
-    if(newStage > oldStage) return newEntry;
-    if(newStage < oldStage) return oldEntry;
-
-    const oldDue = Number(oldEntry.record?.due || Infinity);
-    const newDue = Number(newEntry.record?.due || Infinity);
-
-    if(newDue < oldDue) return newEntry;
-    return oldEntry;
-  }
-
-  function getUniqueSrsEntriesFinal(){
-    const items = buildSrsItems();
-    const state = syncSrsState(items);
-    const map = new Map();
-
-    items.forEach(item => {
-      const word = getVisibleSrsWord(item);
-      const uniqueKey = normalizeSrsVocabKey(word, item.answer);
-      const record = state[item.key] || {};
-      const entry = { item, record, word: word || item.answer || 'Kosakata' };
-
-      map.set(uniqueKey, bestEntry(map.get(uniqueKey), entry));
-    });
-
-    return [...map.values()];
-  }
-
-  function dueTextFinal(record){
-    const remaining = Number(record?.due || 0) - Date.now();
-    return remaining <= 0 ? 'Bisa dites sekarang' : `${formatSrsDuration(remaining)} lagi`;
-  }
-
-  window.openSrsStatusDetail = function(type){
-    let modal = document.getElementById('srsDetailModal');
-
-    if(!modal){
-      modal = document.createElement('div');
-      modal.id = 'srsDetailModal';
-      modal.className = 'srs-detail-modal';
-      modal.innerHTML = `
-        <div class="srs-detail-card" role="dialog" aria-modal="true">
-          <div class="srs-detail-head">
-            <h2 id="srsDetailTitle">Daftar Kosakata</h2>
-            <button class="srs-detail-close" type="button" aria-label="Tutup">×</button>
-          </div>
-          <div id="srsDetailList"></div>
-        </div>`;
-      document.body.appendChild(modal);
-      modal.addEventListener('click', event => {
-        if(event.target === modal) modal.classList.remove('active');
-      });
-      modal.querySelector('.srs-detail-close').addEventListener('click', () => {
-        modal.classList.remove('active');
-      });
-    }
-
-    const filtered = getUniqueSrsEntriesFinal()
-      .filter(entry => {
-        const stage = srsStage(entry.record);
-        if(type === 'unlearned') return stage === 0;
-        if(type === 'learning') return stage > 0 && stage < 10;
-        return stage >= 10;
-      })
-      .sort((a,b) => String(a.word).localeCompare(String(b.word), 'ja'));
-
-    const titles = {
-      unlearned: 'Belum Dipelajari',
-      learning: 'Belajar',
-      mastered: 'Dikuasai'
-    };
-
-    modal.querySelector('#srsDetailTitle').textContent =
-      `${titles[type] || 'SRS'} (${filtered.length})`;
-
-    modal.querySelector('#srsDetailList').innerHTML = filtered.length
-      ? filtered.map(entry => {
-          const r = entry.record || {};
-          const stage = srsStage(r);
-
-          return `<div class="srs-vocab-detail">
-            <div class="srs-vocab-word">${escapeHtml(entry.word)}</div>
-            <div class="srs-vocab-meta">
-              ${escapeHtml(entry.item.storyTitle || 'Tanpa Judul')}・Progres <strong>${stage}/10</strong><br>
-              Benar ${Number(r.correct || 0)} kali・Salah ${Number(r.wrong || 0)} kali
-            </div>
-            <span class="srs-vocab-time">${dueTextFinal(r)}</span>
-          </div>`;
-        }).join('')
-      : '<div class="empty">Tidak ada kosakata dalam kategori ini.</div>';
-
-    modal.classList.add('active');
-  };
-
-  window.updateSrsCountersOnly = function(){
-    const entries = getUniqueSrsEntriesFinal();
-
-    const unlearned = entries.filter(entry => srsStage(entry.record) === 0).length;
-    const learning = entries.filter(entry => {
-      const stage = srsStage(entry.record);
-      return stage > 0 && stage < 10;
-    }).length;
-    const mastered = entries.filter(entry => srsStage(entry.record) >= 10).length;
-
-    const due = document.getElementById('srsDueCount');
-    const learn = document.getElementById('srsLearningCount');
-    const master = document.getElementById('srsMasteredCount');
-
-    if(due) due.textContent = unlearned;
-    if(learn) learn.textContent = learning;
-    if(master) master.textContent = mastered;
-  };
-
-  function wireFinalSrsButtons(){
-    const configs = [
-      ['srsDueCount', 'unlearned', 'Belum Dipelajari'],
-      ['srsLearningCount', 'learning', 'Belajar'],
-      ['srsMasteredCount', 'mastered', 'Dikuasai']
-    ];
-
-    configs.forEach(([id, type, label]) => {
-      const count = document.getElementById(id);
-      const card = count?.closest('.srs-stat');
-      if(!card) return;
-
-      const span = card.querySelector('span');
-      if(span) span.textContent = label;
-
-      card.setAttribute('role', 'button');
-      card.setAttribute('tabindex', '0');
-      card.onclick = () => window.openSrsStatusDetail(type);
-      card.onkeydown = event => {
-        if(event.key === 'Enter' || event.key === ' '){
-          event.preventDefault();
-          window.openSrsStatusDetail(type);
-        }
-      };
-    });
-  }
-
-  const previousRenderSrsPageFinal = window.renderSrsPage;
-  window.renderSrsPage = function(){
-    const result = typeof previousRenderSrsPageFinal === 'function'
-      ? previousRenderSrsPageFinal.apply(this, arguments)
-      : undefined;
-
-    setTimeout(() => {
-      wireFinalSrsButtons();
-      updateSrsCountersOnly();
-    }, 0);
-
-    return result;
-  };
-
-  document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-      wireFinalSrsButtons();
-      updateSrsCountersOnly();
-    }, 0);
-  });
-
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      wireFinalSrsButtons();
-      updateSrsCountersOnly();
-    }, 120);
-  });
-})();
-</script>
-
-
-
-<!-- ===== PATCH FINAL 2: SRS kosakata saja + kartu siap dites sejajar ===== -->
-<style id="absolute-final-srs-vocab-only-style-v2">
-  #srs .srs-stats{
-    grid-template-columns:repeat(4,1fr)!important;
-  }
-  #srs .srs-stat.srs-ready-stat{
-    background:linear-gradient(135deg,#174e86,#0f3b68)!important;
-    color:#fff!important;
-    border-color:rgba(255,255,255,.18)!important;
-    box-shadow:0 12px 28px rgba(15,59,104,.22);
-    cursor:default;
-  }
-  #srs .srs-stat.srs-ready-stat strong{
-    color:#fff!important;
-  }
-  #srs .srs-stat.srs-ready-stat span{
-    color:rgba(255,255,255,.86)!important;
-  }
-  .srs-vocab-only-card{
+  .srs-final-question{
     text-align:center;
-    padding:28px 10px 22px;
+    padding:28px 14px 24px;
+    border-radius:24px;
+    border:1px solid var(--line);
+    background:#f8fbff;
+    transition:.2s;
+    margin-bottom:28px!important;
   }
-  .srs-vocab-only-label{
+  .srs-final-question.correct{
+    background:#eaf8ef!important;
+    border-color:#bce5cc!important;
+  }
+  .srs-final-question.wrong{
+    background:#fff1f1!important;
+    border-color:#f0c7c7!important;
+  }
+  .srs-final-label{
     color:var(--muted);
-    font-weight:900;
     font-size:13px;
+    font-weight:900;
     margin-bottom:12px;
   }
-  .srs-vocab-only-word{
+  .srs-final-word{
     display:block;
     margin:0 auto 14px;
     font-size:clamp(48px,9vw,82px);
@@ -8448,11 +8235,11 @@ async function toggleUnderwaterAmbient(){
     line-height:1.15;
     color:#18324a;
   }
-  .srs-vocab-only-word rt,
-  .srs-vocab-only-word rp{
+  .srs-final-word rt,
+  .srs-final-word rp{
     display:none!important;
   }
-  .srs-vocab-only-meaning{
+  .srs-final-meaning{
     display:inline-block;
     max-width:100%;
     padding:11px 17px;
@@ -8464,301 +8251,576 @@ async function toggleUnderwaterAmbient(){
     font-weight:900;
     line-height:1.55;
   }
-  #srsQuestion.srs-vocab-only-mode,
-  #srs .srs-question.srs-vocab-only-mode{
-    background:transparent!important;
-    border:0!important;
-    padding:0!important;
-    font-size:inherit!important;
-    line-height:inherit!important;
+  .srs-final-feedback{
+    display:none;
+    margin:18px auto 0;
+    max-width:590px;
+    padding:16px 18px;
+    border-radius:18px;
+    line-height:1.7;
+    font-weight:850;
+    animation:srsFinalFeedbackPop .18s ease-out;
+    text-align:left;
   }
-  #srsQuestion.srs-vocab-only-mode.correct-answer,
-  #srsQuestion.srs-vocab-only-mode.wrong-answer,
-  #srs .srs-question.srs-vocab-only-mode.correct-answer,
-  #srs .srs-question.srs-vocab-only-mode.wrong-answer{
-    background:transparent!important;
-    border:0!important;
+  .srs-final-feedback.correct{
+    display:block;
+    background:#dff5e7;
+    border:1px solid #bce5cc;
+    color:#28704a;
   }
-  #srsQuestion.srs-vocab-only-mode .srs-inline-result,
-  #srs .srs-question.srs-vocab-only-mode .srs-inline-result{
-    margin-top:22px;
-    border-top:1px dashed var(--line);
+  .srs-final-feedback.wrong{
+    display:block;
+    background:#ffe3e3;
+    border:1px solid #f0c7c7;
+    color:#8a3b3b;
   }
+  .srs-final-feedback-title{
+    font-size:18px;
+    font-weight:950;
+    margin-bottom:7px;
+  }
+  .srs-final-answer-pill{
+    display:inline-block;
+    margin:4px 0 2px;
+    padding:5px 10px;
+    border-radius:10px;
+    background:#fff;
+    color:#18324a;
+    font-size:20px;
+    font-weight:950;
+  }
+  .srs-final-meaning-line{
+    margin-top:8px;
+  }
+  .srs-final-next-note{
+    margin-top:10px;
+    font-size:13px;
+    opacity:.85;
+  }
+  .srs-final-answer-wrap{
+    margin-top:0!important;
+    padding-top:0!important;
+    display:flex;
+    gap:12px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .srs-final-answer-wrap .srs-answer{
+    flex:1;
+    min-width:220px;
+  }
+  #srsSubmitBtn.next-mode{
+    background:#7aa7cf!important;
+  }
+  #srsFeedback{display:none!important}
+
+  @keyframes srsFinalFeedbackPop{
+    from{opacity:0;transform:translateY(6px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+
   @media(max-width:850px){
-    #srs .srs-stats{
-      grid-template-columns:repeat(2,1fr)!important;
-    }
+    #srs .srs-stats{grid-template-columns:repeat(2,1fr)!important}
   }
   @media(max-width:420px){
-    #srs .srs-stats{
-      grid-template-columns:1fr 1fr!important;
-      gap:8px!important;
-    }
-    #srs .srs-stat{
-      padding:11px 7px!important;
-    }
-    #srs .srs-stat strong{
-      font-size:21px!important;
-    }
-    #srs .srs-stat span{
-      font-size:11px!important;
-    }
-    .srs-vocab-only-word{
-      font-size:50px;
-    }
+    #srs .srs-stats{grid-template-columns:1fr 1fr!important;gap:8px!important}
+    #srs .srs-stat{padding:11px 7px!important}
+    #srs .srs-stat strong{font-size:21px!important}
+    #srs .srs-stat span{font-size:11px!important}
+    .srs-final-word{font-size:50px}
+    .srs-final-question{margin-bottom:24px!important}
   }
 </style>
 
-<script id="absolute-final-srs-vocab-only-ui">
+<script id="srs-final-v5-script">
 (function(){
-  function cleanText(v){
-    return String(v||'')
-      .replace(/\s+/g,'')
-      .replace(/[。、，,.!?！？「」『』（）()【】\[\]・]/g,'')
-      .trim();
+  function safeEscape(value){
+    if(typeof escapeHtml === "function") return escapeHtml(String(value ?? ""));
+    return String(value ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
   }
 
-  function stripRubyNode(node){
-    if(!node) return null;
-    const c = node.cloneNode(true);
-    c.querySelectorAll('rt,rp').forEach(n => n.remove());
-    return c;
+  function cleanKey(value){
+    return String(value || "")
+      .normalize("NFKC")
+      .replace(/\s+/g,"")
+      .replace(/[。、，,.!?！？「」『』（）()【】\[\]・]/g,"")
+      .trim()
+      .toLowerCase();
   }
 
-  function escapeSafe(v){
-    return typeof escapeHtml === 'function'
-      ? escapeHtml(String(v ?? ''))
-      : String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  function kataToHira(s){
+    return String(s || "").replace(/[ァ-ヶ]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
   }
 
-  function getTargetNodeFromItem(item){
-    const d = document.createElement('div');
-    d.innerHTML = String(item?.questionHtml || item?.correctSentenceHtml || '');
-    return d.querySelector('.srs-question-target') ||
-           d.querySelector('.srs-correct-word') ||
-           d.querySelector('mark') ||
-           d.querySelector('strong');
+  function normalizeAnswer(value){
+    let v = String(value || "").trim();
+    if(typeof romajiToHiragana === "function") v = romajiToHiragana(v);
+    if(typeof normalizeKana === "function") v = normalizeKana(v);
+    return cleanKey(kataToHira(v));
   }
 
-  function vocabHtml(item){
-    const target = getTargetNodeFromItem(item);
-    if(target){
-      const clean = stripRubyNode(target);
-      const html = clean.innerHTML.trim();
-      if(html) return html;
-      const text = clean.textContent.trim();
-      if(text) return escapeSafe(text);
+  function removeRubyFromNode(node){
+    const clone = node.cloneNode(true);
+    clone.querySelectorAll("rt,rp").forEach(n => n.remove());
+    return clone;
+  }
+
+  function vocabTextFromHtml(html, fallback){
+    const temp = document.createElement("div");
+    temp.innerHTML = String(html || "");
+    temp.querySelectorAll("rt,rp").forEach(n => n.remove());
+    return String(temp.textContent || fallback || "").replace(/\s+/g,"").trim();
+  }
+
+  function readingFromTargetHtml(html, fallbackText){
+    const temp = document.createElement("div");
+    temp.innerHTML = String(html || "");
+
+    const rubyNodes = [...temp.querySelectorAll("ruby")];
+    if(rubyNodes.length){
+      const joined = rubyNodes
+        .map(r => r.querySelector("rt")?.textContent?.trim() || "")
+        .filter(Boolean)
+        .join("");
+      if(joined) return kataToHira(joined);
     }
-    return escapeSafe(item?.answer || item?.displayWord || 'Kosakata');
+
+    const rts = [...temp.querySelectorAll("rt")]
+      .map(rt => String(rt.textContent || "").trim())
+      .filter(Boolean);
+    if(rts.length) return kataToHira(rts.join(""));
+
+    const plain = vocabTextFromHtml(html, fallbackText);
+    if(/^[ぁ-んァ-ンー]+$/.test(plain)) return kataToHira(plain);
+
+    return String(fallbackText || plain || "").trim();
   }
 
-  function vocabText(item){
-    const d = document.createElement('div');
-    d.innerHTML = vocabHtml(item);
-    return String(d.textContent || item?.answer || 'Kosakata').replace(/\s+/g,'').trim();
-  }
+  function meaningFromTranslation(transHtml, fallback){
+    const temp = document.createElement("div");
+    temp.innerHTML = String(transHtml || "");
 
-  function meaningOf(item){
-    const answer = cleanText(item?.answer || vocabText(item));
-    const d = document.createElement('div');
-    d.innerHTML = String(item?.translationHtml || item?.id || '');
-
-    // Arti target dari terjemahan biasanya ada di <strong>.
-    // Pilih strong yang bukan tulisan Jepang.
-    const strongs = [...d.querySelectorAll('strong')];
-    for(const s of strongs){
-      const t = String(s.textContent || '').trim();
+    const strongs = [...temp.querySelectorAll("strong")];
+    for(const strong of strongs){
+      const t = String(strong.textContent || "").trim();
       if(!t) continue;
-      if(/[ぁ-んァ-ン一-龯]/.test(t) && cleanText(t) === answer) continue;
-      if(/[ぁ-んァ-ン一-龯]/.test(t) && t.length <= 12) continue;
+      const looksJapanese = /[ぁ-んァ-ン一-龯]/.test(t);
+      if(looksJapanese && t.length <= 18) continue;
       return t;
     }
 
-    // Kalau tidak ada strong arti, cari pola setelah kata target dalam terjemahan.
-    d.querySelectorAll('rt,rp').forEach(n => n.remove());
-    const plain = String(d.textContent || '').replace(/\s+/g,' ').trim();
-    if(plain){
-      // buang label panjang bila ada, tetap fallback agar tidak kosong
-      return plain;
+    temp.querySelectorAll("rt,rp").forEach(n => n.remove());
+    const plain = String(temp.textContent || "").replace(/\s+/g," ").trim();
+    return plain || String(fallback || "Arti belum tersedia").trim();
+  }
+
+  function maxLevel(){
+    return typeof SRS_INTERVALS !== "undefined" ? SRS_INTERVALS.length - 1 : 10;
+  }
+
+  function srsLevel(record){
+    return Math.max(0, Math.min(maxLevel(), Number(record?.level ?? record?.correctStage ?? 0) || 0));
+  }
+
+  function srsInterval(level){
+    if(typeof SRS_INTERVALS !== "undefined" && Array.isArray(SRS_INTERVALS)){
+      return SRS_INTERVALS[Math.max(0, Math.min(SRS_INTERVALS.length - 1, level))] || 0;
+    }
+    return 0;
+  }
+
+  function getStateSafe(){
+    if(typeof getSrsState === "function") return getSrsState() || {};
+    try{return JSON.parse(localStorage.getItem("srsState") || "{}")}catch(e){return {}}
+  }
+
+  function saveStateSafe(state){
+    if(typeof saveSrsState === "function") return saveSrsState(state);
+    localStorage.setItem("srsState", JSON.stringify(state));
+  }
+
+  function makeTargetsFromSentence(jp){
+    const holder = document.createElement("div");
+    holder.innerHTML = String(jp || "");
+    const strongs = [...holder.querySelectorAll("strong")];
+
+    if(strongs.length){
+      return strongs.map((strong, index) => {
+        const fullHtml = strong.innerHTML;
+        const clean = removeRubyFromNode(strong);
+        const wordHtml = clean.innerHTML.trim() || safeEscape(clean.textContent.trim());
+        const wordText = vocabTextFromHtml(wordHtml, "");
+        const reading = readingFromTargetHtml(fullHtml, wordText);
+
+        return {
+          index,
+          targetHtml: fullHtml,
+          displayWordHtml: wordHtml,
+          displayWord: wordText,
+          readingAnswer: reading,
+          answer: reading || wordText
+        };
+      }).filter(t => t.displayWord || t.readingAnswer);
     }
 
-    return String(item?.meaning || item?.answer || 'Arti belum tersedia').trim();
+    if(typeof getStrongTargets === "function"){
+      return getStrongTargets(jp).map((t, index) => {
+        const temp = document.createElement("div");
+        temp.innerHTML = t.questionHtml || "";
+        const target = temp.querySelector(".srs-question-target") || temp.querySelector("strong") || temp.querySelector("ruby");
+        const html = target ? target.innerHTML : t.answer;
+        const clean = target ? removeRubyFromNode(target) : null;
+        const wordHtml = clean ? (clean.innerHTML || safeEscape(clean.textContent)) : safeEscape(t.answer);
+        const wordText = vocabTextFromHtml(wordHtml, t.answer);
+        const reading = readingFromTargetHtml(html, t.answer);
+
+        return {
+          index,
+          targetHtml: html,
+          displayWordHtml: wordHtml,
+          displayWord: wordText,
+          readingAnswer: reading,
+          answer: reading || t.answer
+        };
+      });
+    }
+
+    return [];
   }
 
-  function stageOfLocal(r){
-    return Math.max(0, Math.min(10, Number(r?.correctStage ?? r?.level ?? 0) || 0));
-  }
+  function buildUniqueItems(){
+    const done = new Set(getCompletedStories().map(String));
+    const raw = [];
 
-  function isReady(record){
-    return stageOfLocal(record) < 10 && (!record?.due || Number(record.due) <= Date.now());
-  }
+    getStories()
+      .filter(story => done.has(String(story.id)))
+      .forEach(story => {
+        (story.content || []).forEach((pair, si) => {
+          const jp = Array.isArray(pair) ? pair[0] : pair?.japanese || pair?.jp || "";
+          const idn = Array.isArray(pair) ? pair[1] : pair?.indonesian || pair?.id || "";
 
-  function allUniqueEntries(){
-    const raw = typeof buildSrsItems === 'function' ? buildSrsItems() : [];
-    const state = typeof syncSrsState === 'function' ? syncSrsState(raw) : {};
+          makeTargetsFromSentence(jp).forEach((target, ti) => {
+            const uniqueKey = cleanKey(target.displayWord || target.answer || target.readingAnswer);
+            if(!uniqueKey) return;
+
+            raw.push({
+              key:"vocab::" + uniqueKey,
+              storyId:String(story.id),
+              storyTitle:story.title || "Tanpa Judul",
+              folder:story.level || "N2",
+              targetHtml:target.targetHtml,
+              displayWordHtml:target.displayWordHtml,
+              displayWord:target.displayWord,
+              readingAnswer:target.readingAnswer,
+              answer:target.readingAnswer,
+              translationHtml:String(idn || ""),
+              meaning:meaningFromTranslation(idn, target.displayWord)
+            });
+          });
+        });
+      });
+
     const map = new Map();
-
     raw.forEach(item => {
-      const word = vocabText(item);
-      const key = cleanText(word) || cleanText(item.answer);
-      if(!key) return;
-
-      const entry = {
-        item,
-        record: state[item.key] || {},
-        word,
-        wordHtml: vocabHtml(item),
-        meaning: meaningOf(item)
-      };
+      const key = item.key;
+      if(!map.has(key)){
+        map.set(key, item);
+        return;
+      }
 
       const old = map.get(key);
-      if(!old){
-        map.set(key, entry);
-        return;
-      }
+      const oldReadingBad = !old.readingAnswer || old.readingAnswer.length <= 1;
+      const newReadingGood = item.readingAnswer && item.readingAnswer.length > old.readingAnswer.length;
+      const oldMeaningBad = !old.meaning || old.meaning === old.displayWord;
+      const newMeaningGood = item.meaning && item.meaning !== item.displayWord;
 
-      const oldStage = stageOfLocal(old.record);
-      const newStage = stageOfLocal(entry.record);
-      if(newStage > oldStage){
-        map.set(key, entry);
-        return;
-      }
-
-      if(newStage === oldStage){
-        const oldMeaningBad = !old.meaning || old.meaning === old.word;
-        const newMeaningGood = entry.meaning && entry.meaning !== entry.word;
-        if(oldMeaningBad && newMeaningGood) map.set(key, entry);
+      if((oldReadingBad && newReadingGood) || (oldMeaningBad && newMeaningGood)){
+        map.set(key, item);
       }
     });
 
     return [...map.values()];
   }
 
-  function readyCount(){
-    return allUniqueEntries().filter(e => isReady(e.record)).length;
+  window.buildSrsItems = function(){
+    return buildUniqueItems();
+  };
+
+  function syncStateWithItems(items){
+    if(typeof syncSrsState === "function") return syncSrsState(items);
+    const state = getStateSafe();
+    const now = Date.now();
+    items.forEach(item => {
+      if(!state[item.key]){
+        state[item.key] = {level:0,due:now,correct:0,wrong:0,lastResult:null};
+      }
+    });
+    saveStateSafe(state);
+    return state;
   }
 
-  function ensureReadyStatCard(){
-    const stats = document.querySelector('#srs .srs-stats') || document.querySelector('.srs-stats');
+  window.getDueSrsItems = function(){
+    const items = buildSrsItems();
+    const state = syncStateWithItems(items);
+    const now = Date.now();
+
+    return items
+      .filter(item => (state[item.key]?.due || 0) <= now && srsLevel(state[item.key]) < maxLevel())
+      .sort((a,b) => (state[a.key]?.due || 0) - (state[b.key]?.due || 0));
+  };
+
+  function ensureReadyCard(){
+    const stats = document.querySelector("#srs .srs-stats") || document.querySelector(".srs-stats");
     if(!stats) return;
 
-    let card = document.getElementById('srsReadyStatCard');
+    let card = document.getElementById("srsReadyStatCard");
     if(!card){
-      card = document.createElement('div');
-      card.id = 'srsReadyStatCard';
-      card.className = 'srs-stat srs-ready-stat';
+      card = document.createElement("div");
+      card.id = "srsReadyStatCard";
+      card.className = "srs-stat";
+      card.setAttribute("role","button");
+      card.setAttribute("tabindex","0");
+      card.onclick = () => openSrsStatusDetail("ready");
       card.innerHTML = '<strong id="srsReadyNumber">0</strong><span>Siap dites</span>';
       stats.appendChild(card);
     }
-
-    const n = document.getElementById('srsReadyNumber');
-    if(n) n.textContent = readyCount();
   }
 
-  function pickCurrentItem(){
-    const raw = typeof buildSrsItems === 'function' ? buildSrsItems() : [];
+  function updateCounters(){
+    const items = buildSrsItems();
+    const state = syncStateWithItems(items);
+    const now = Date.now();
+    const max = maxLevel();
 
-    if(window.currentSrsItem) return window.currentSrsItem;
-    if(window.activeSrsItem) return window.activeSrsItem;
-    if(window.srsCurrentItem) return window.srsCurrentItem;
-
-    const q = document.getElementById('srsQuestion') || document.querySelector('#srs .srs-question');
-    const dataKey = q?.dataset?.key || q?.getAttribute('data-key');
-    if(dataKey){
-      const byKey = raw.find(x => String(x.key) === String(dataKey));
-      if(byKey) return byKey;
-    }
-
-    const answer =
-      document.getElementById('srsAnswer')?.dataset?.answer ||
-      document.querySelector('#srsAnswer')?.getAttribute('data-answer') ||
-      window.currentSrsAnswer ||
-      window.srsCurrentAnswer ||
-      '';
-
-    if(answer){
-      const norm = cleanText(answer);
-      const byAnswer = raw.find(x => cleanText(x.answer) === norm || cleanText(vocabText(x)) === norm);
-      if(byAnswer) return byAnswer;
-    }
-
-    // Fallback paling kuat: ambil teks target dari kalimat yang sedang muncul,
-    // lalu cocokkan dengan daftar kosakata.
-    if(q){
-      const temp = document.createElement('div');
-      temp.innerHTML = q.innerHTML;
-      const target = temp.querySelector('.srs-question-target') || temp.querySelector('strong') || temp.querySelector('.srs-correct-word');
-      if(target){
-        target.querySelectorAll('rt,rp').forEach(n => n.remove());
-        const visible = cleanText(target.textContent || '');
-        const byVisible = raw.find(x => cleanText(vocabText(x)) === visible || cleanText(x.answer) === visible);
-        if(byVisible) return byVisible;
-      }
-    }
-
-    return null;
-  }
-
-  function forceQuestionToVocabOnly(){
-    const q = document.getElementById('srsQuestion') || document.querySelector('#srs .srs-question');
-    if(!q) return;
-
-    const item = pickCurrentItem();
-    if(!item) return;
-
-    q.classList.add('srs-vocab-only-mode');
-    q.innerHTML =
-      '<div class="srs-vocab-only-card">' +
-        '<div class="srs-vocab-only-label">Kosakata</div>' +
-        '<div class="srs-vocab-only-word">' + vocabHtml(item) + '</div>' +
-        '<div class="srs-vocab-only-meaning">' + escapeSafe(meaningOf(item)) + '</div>' +
-      '</div>';
-  }
-
-  function refreshCounters(){
-    const e = allUniqueEntries();
-
-    const unlearned = e.filter(x => stageOfLocal(x.record) === 0).length;
-    const learning = e.filter(x => {
-      const st = stageOfLocal(x.record);
-      return st > 0 && st < 10;
+    const unlearned = items.filter(i => srsLevel(state[i.key]) === 0).length;
+    const learning = items.filter(i => {
+      const level = srsLevel(state[i.key]);
+      return level > 0 && level < max;
     }).length;
-    const mastered = e.filter(x => stageOfLocal(x.record) >= 10).length;
+    const mastered = items.filter(i => srsLevel(state[i.key]) >= max).length;
+    const ready = items.filter(i => (state[i.key]?.due || 0) <= now && srsLevel(state[i.key]) < max).length;
 
-    const a = document.getElementById('srsDueCount');
-    const b = document.getElementById('srsLearningCount');
-    const c = document.getElementById('srsMasteredCount');
+    const dueEl = document.getElementById("srsDueCount");
+    const learnEl = document.getElementById("srsLearningCount");
+    const masterEl = document.getElementById("srsMasteredCount");
 
-    if(a) a.textContent = unlearned;
-    if(b) b.textContent = learning;
-    if(c) c.textContent = mastered;
+    if(dueEl) dueEl.textContent = unlearned;
+    if(learnEl) learnEl.textContent = learning;
+    if(masterEl) masterEl.textContent = mastered;
 
-    ensureReadyStatCard();
+    ensureReadyCard();
+    const readyEl = document.getElementById("srsReadyNumber");
+    if(readyEl) readyEl.textContent = ready;
   }
 
-  function refreshAll(){
-    ensureReadyStatCard();
-    forceQuestionToVocabOnly();
-    refreshCounters();
-  }
+  window.updateSrsCountersOnly = updateCounters;
 
-  // Detail tabel tetap unik
+  window.renderSrsPage = function(){
+    updateCounters();
+
+    const items = buildSrsItems();
+    const state = syncStateWithItems(items);
+    const now = Date.now();
+    const storyMap = new Map();
+
+    items.forEach(item => {
+      if(!storyMap.has(item.storyId)){
+        storyMap.set(item.storyId, {title:item.storyTitle,total:0,due:0});
+      }
+      const info = storyMap.get(item.storyId);
+      info.total++;
+      if((state[item.key]?.due || 0) <= now) info.due++;
+    });
+
+    const storyList = document.getElementById("srsStoryList");
+    if(storyList){
+      storyList.innerHTML = storyMap.size
+        ? [...storyMap.values()].map(x =>
+            `<div class="srs-story-row"><div><strong>${safeEscape(x.title)}</strong></div><span>${x.due}/${x.total} due</span></div>`
+          ).join("")
+        : '<div class="empty">Belum ada cerita yang selesai dibaca.</div>';
+    }
+
+    startSrsSession();
+  };
+
+  window.startSrsSession = function(){
+    window.srsQueue = getDueSrsItems();
+    window.srsCurrentIndex = 0;
+    window.srsLocked = false;
+    renderCurrentSrsCard();
+  };
+
+  window.renderCurrentSrsCard = function(){
+    const area = document.getElementById("srsPracticeArea");
+    const bar = document.querySelector("#srsProgress>div");
+    if(!area) return;
+
+    updateCounters();
+
+    if(!window.srsQueue?.length || window.srsCurrentIndex >= window.srsQueue.length){
+      if(bar) bar.style.width = "100%";
+      area.innerHTML = '<div class="srs-empty"><h2>復習完了！</h2><p>Tidak ada latihan yang jatuh tempo sekarang.</p><button class="btn" onclick="renderSrsPage()">Periksa Lagi</button></div>';
+      return;
+    }
+
+    const item = window.srsQueue[window.srsCurrentIndex];
+    if(bar) bar.style.width = `${(window.srsCurrentIndex / window.srsQueue.length) * 100}%`;
+
+    area.innerHTML = `
+      <div class="srs-card">
+        <div class="srs-source">${safeEscape(item.storyTitle)}・${safeEscape(item.folder)}</div>
+
+        <div id="srsQuestionText" class="srs-final-question">
+          <div class="srs-final-label">Kosakata</div>
+          <div class="srs-final-word">${item.displayWordHtml || safeEscape(item.displayWord)}</div>
+          <div class="srs-final-meaning">${safeEscape(item.meaning)}</div>
+          <div id="srsInlineFeedback" class="srs-final-feedback"></div>
+        </div>
+
+        <div class="srs-answer-wrap srs-final-answer-wrap">
+          <input id="srsAnswerInput" class="srs-answer" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Ketik cara baca satu kosakata penuh">
+          <button id="srsSubmitBtn" class="btn" type="button" onclick="submitOrNextSrs()">Jawab</button>
+        </div>
+
+        <div class="srs-romaji-note">Enter pertama memasukkan jawaban. Setelah feedback muncul, Enter berikutnya lanjut ke soal berikutnya.</div>
+        <div id="srsFeedback"></div>
+      </div>
+    `;
+
+    const input = document.getElementById("srsAnswerInput");
+    input.addEventListener("input", () => {
+      if(input.dataset.locked === "1") return;
+      if(typeof romajiToHiragana === "function"){
+        input.value = romajiToHiragana(input.value);
+        input.setSelectionRange(input.value.length, input.value.length);
+      }
+    });
+    input.addEventListener("keydown", event => {
+      if(event.key === "Enter"){
+        event.preventDefault();
+        submitOrNextSrs();
+      }
+    });
+
+    setTimeout(() => input.focus(), 80);
+  };
+
+  window.submitOrNextSrs = function(){
+    const input = document.getElementById("srsAnswerInput");
+    if(window.srsLocked || input?.dataset?.locked === "1"){
+      nextSrsQuestion();
+      return;
+    }
+    submitSrsAnswer();
+  };
+
+  window.submitSrsAnswer = function(){
+    if(window.srsLocked) return;
+
+    const item = window.srsQueue?.[window.srsCurrentIndex];
+    const input = document.getElementById("srsAnswerInput");
+    const feedback = document.getElementById("srsInlineFeedback");
+    const question = document.getElementById("srsQuestionText");
+    const submitBtn = document.getElementById("srsSubmitBtn");
+
+    if(!item || !input || !feedback || !question) return;
+
+    const userAnswer = normalizeAnswer(input.value);
+    if(!userAnswer) return;
+
+    const correctReading = item.readingAnswer || item.answer || "";
+    const correct = userAnswer === normalizeAnswer(correctReading);
+
+    const state = getStateSafe();
+    const record = state[item.key] || {level:0,due:Date.now(),correct:0,wrong:0,lastResult:null};
+    const now = Date.now();
+
+    window.srsLocked = true;
+    question.classList.remove("correct","wrong");
+    feedback.className = "srs-final-feedback";
+
+    if(correct){
+      record.level = Math.min((record.level || 0) + 1, maxLevel());
+      record.correct = (record.correct || 0) + 1;
+      record.lastResult = "correct";
+      record.due = now + srsInterval(record.level);
+
+      question.classList.add("correct");
+      feedback.classList.add("correct");
+      feedback.innerHTML =
+        `<div class="srs-final-feedback-title">✅ Benar!</div>` +
+        `<div>Jawaban benar: <span class="srs-final-answer-pill">${safeEscape(correctReading)}</span></div>` +
+        `<div class="srs-final-meaning-line">Arti: <strong>${safeEscape(item.meaning)}</strong></div>` +
+        `<div class="srs-final-next-note">Klik tombol Next atau tekan Enter untuk lanjut.</div>`;
+    }else{
+      record.level = 0;
+      record.wrong = (record.wrong || 0) + 1;
+      record.lastResult = "wrong";
+      record.due = now + srsInterval(0);
+
+      question.classList.add("wrong");
+      feedback.classList.add("wrong");
+      feedback.innerHTML =
+        `<div class="srs-final-feedback-title">❌ Salah.</div>` +
+        `<div>Jawaban benar: <span class="srs-final-answer-pill">${safeEscape(correctReading)}</span></div>` +
+        `<div class="srs-final-meaning-line">Arti: <strong>${safeEscape(item.meaning)}</strong></div>` +
+        `<div class="srs-final-next-note">Klik tombol Next atau tekan Enter untuk lanjut.</div>`;
+    }
+
+    state[item.key] = record;
+    saveStateSafe(state);
+
+    input.dataset.locked = "1";
+    input.readOnly = true;
+
+    if(submitBtn){
+      submitBtn.textContent = "Next";
+      submitBtn.classList.add("secondary","next-mode");
+      submitBtn.disabled = false;
+      submitBtn.onclick = submitOrNextSrs;
+    }
+
+    input.focus();
+    updateCounters();
+  };
+
+  window.nextSrsQuestion = function(){
+    window.srsCurrentIndex++;
+    window.srsLocked = false;
+    renderCurrentSrsCard();
+  };
+
+  document.addEventListener("keydown", event => {
+    if(event.key !== "Enter") return;
+    if(!document.getElementById("srs")?.classList.contains("active")) return;
+
+    const input = document.getElementById("srsAnswerInput");
+    if(!input) return;
+
+    event.preventDefault();
+    submitOrNextSrs();
+  }, true);
+
   window.openSrsStatusDetail = function(type){
-    const filtered = allUniqueEntries()
-      .filter(x => {
-        const st = stageOfLocal(x.record);
-        if(type === 'unlearned') return st === 0;
-        if(type === 'learning') return st > 0 && st < 10;
-        if(type === 'ready') return isReady(x.record);
-        return st >= 10;
-      })
-      .sort((a,b) => String(a.word).localeCompare(String(b.word), 'ja'));
+    const items = buildSrsItems();
+    const state = syncStateWithItems(items);
+    const now = Date.now();
+    const max = maxLevel();
 
-    let modal = document.getElementById('srsDetailModal');
+    const filtered = items.filter(item => {
+      const level = srsLevel(state[item.key]);
+      if(type === "unlearned") return level === 0;
+      if(type === "learning") return level > 0 && level < max;
+      if(type === "ready") return (state[item.key]?.due || 0) <= now && level < max;
+      return level >= max;
+    }).sort((a,b) => String(a.displayWord || a.answer).localeCompare(String(b.displayWord || b.answer), "ja"));
+
+    let modal = document.getElementById("srsDetailModal");
     if(!modal){
-      modal = document.createElement('div');
-      modal.id = 'srsDetailModal';
-      modal.className = 'srs-detail-modal';
+      modal = document.createElement("div");
+      modal.id = "srsDetailModal";
+      modal.className = "srs-detail-modal";
       modal.innerHTML =
         '<div class="srs-detail-card" role="dialog" aria-modal="true">' +
           '<div class="srs-detail-head">' +
@@ -8768,347 +8830,85 @@ async function toggleUnderwaterAmbient(){
           '<div id="srsDetailList"></div>' +
         '</div>';
       document.body.appendChild(modal);
-      modal.addEventListener('click', ev => {
-        if(ev.target === modal) modal.classList.remove('active');
+      modal.addEventListener("click", event => {
+        if(event.target === modal) modal.classList.remove("active");
       });
-      modal.querySelector('.srs-detail-close').addEventListener('click', () => modal.classList.remove('active'));
+      modal.querySelector(".srs-detail-close").addEventListener("click", () => modal.classList.remove("active"));
     }
 
     const title = {
-      unlearned:'Belum Dipelajari',
-      learning:'Belajar',
-      mastered:'Dikuasai',
-      ready:'Siap dites'
-    }[type] || 'SRS';
+      unlearned:"Belum Dipelajari",
+      learning:"Belajar",
+      mastered:"Dikuasai",
+      ready:"Siap dites"
+    }[type] || "SRS";
 
-    modal.querySelector('#srsDetailTitle').textContent = title + ' (' + filtered.length + ')';
-    modal.querySelector('#srsDetailList').innerHTML = filtered.length
-      ? filtered.map(x =>
-          '<div class="srs-vocab-detail">' +
-            '<div class="srs-vocab-word">' + x.wordHtml + '</div>' +
-            '<div class="srs-vocab-meta">' +
-              'Arti: <strong>' + escapeSafe(x.meaning) + '</strong><br>' +
-              escapeSafe(x.item.storyTitle || 'Tanpa Judul') + '・Progres <strong>' + stageOfLocal(x.record) + '/10</strong>' +
-            '</div>' +
-          '</div>'
-        ).join('')
+    modal.querySelector("#srsDetailTitle").textContent = `${title} (${filtered.length})`;
+    modal.querySelector("#srsDetailList").innerHTML = filtered.length
+      ? filtered.map(item => {
+          const record = state[item.key] || {};
+          return (
+            '<div class="srs-vocab-detail">' +
+              '<div class="srs-vocab-word">' + (item.displayWordHtml || safeEscape(item.displayWord)) + '</div>' +
+              '<div class="srs-vocab-meta">' +
+                'Cara baca: <strong>' + safeEscape(item.readingAnswer || item.answer) + '</strong><br>' +
+                'Arti: <strong>' + safeEscape(item.meaning) + '</strong><br>' +
+                safeEscape(item.storyTitle || "Tanpa Judul") + '・Progres <strong>' + srsLevel(record) + '/' + max + '</strong>' +
+              '</div>' +
+            '</div>'
+          );
+        }).join("")
       : '<div class="empty">Tidak ada kosakata dalam kategori ini.</div>';
 
-    modal.classList.add('active');
+    modal.classList.add("active");
   };
 
-  window.updateSrsCountersOnly = refreshCounters;
+  function wireStatusCards(){
+    const configs = [
+      ["srsDueCount","unlearned"],
+      ["srsLearningCount","learning"],
+      ["srsMasteredCount","mastered"],
+      ["srsReadyNumber","ready"]
+    ];
 
-  const oldRenderSrsPage = window.renderSrsPage;
-  window.renderSrsPage = function(){
-    const result = typeof oldRenderSrsPage === 'function'
-      ? oldRenderSrsPage.apply(this, arguments)
-      : undefined;
-    setTimeout(refreshAll, 0);
-    setTimeout(refreshAll, 80);
-    return result;
-  };
-
-  if(typeof window.renderSrsCard === 'function'){
-    const oldRenderSrsCard = window.renderSrsCard;
-    window.renderSrsCard = function(){
-      const result = oldRenderSrsCard.apply(this, arguments);
-      setTimeout(refreshAll, 0);
-      setTimeout(refreshAll, 80);
-      return result;
-    };
-  }
-
-  if(typeof window.showSrsQuestion === 'function'){
-    const oldShowSrsQuestion = window.showSrsQuestion;
-    window.showSrsQuestion = function(){
-      const result = oldShowSrsQuestion.apply(this, arguments);
-      setTimeout(refreshAll, 0);
-      setTimeout(refreshAll, 80);
-      return result;
-    };
-  }
-
-  // Saat tombol cek/jawaban/next ditekan, tampilan lama sering muncul lagi.
-  // Karena itu dipaksa ulang setelah klik.
-  document.addEventListener('click', ev => {
-    if(ev.target.closest('#srs button, #srs .btn, #srsPracticeArea button')){
-      setTimeout(refreshAll, 60);
-      setTimeout(refreshAll, 180);
-    }
-  }, true);
-
-  document.addEventListener('input', ev => {
-    if(ev.target.closest('#srs')){
-      setTimeout(ensureReadyStatCard, 0);
-    }
-  }, true);
-
-  document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(refreshAll, 120);
-    setTimeout(refreshAll, 450);
-  });
-
-  window.addEventListener('load', () => {
-    setTimeout(refreshAll, 250);
-    setTimeout(refreshAll, 700);
-  });
-
-  setInterval(() => {
-    if(document.getElementById('srs')?.classList.contains('active')) refreshAll();
-  }, 900);
-})();
-</script>
-
-
-<!-- ===== PATCH FINAL 3: feedback benar salah untuk SRS kosakata saja ===== -->
-<style id="absolute-final-srs-feedback-vocab-only-style">
-  #srsQuestion.srs-vocab-only-mode.srs-vocab-correct,
-  #srs .srs-question.srs-vocab-only-mode.srs-vocab-correct{
-    background:#eaf8ef!important;
-    border:1px solid #bce5cc!important;
-    border-radius:20px!important;
-    padding:18px!important;
-  }
-  #srsQuestion.srs-vocab-only-mode.srs-vocab-wrong,
-  #srs .srs-question.srs-vocab-only-mode.srs-vocab-wrong{
-    background:#fff1f1!important;
-    border:1px solid #f0c7c7!important;
-    border-radius:20px!important;
-    padding:18px!important;
-  }
-  .srs-vocab-result-box{
-    margin-top:18px;
-    padding:14px 16px;
-    border-radius:15px;
-    font-weight:800;
-    line-height:1.65;
-  }
-  .srs-vocab-result-box.correct{
-    background:#dff5e7;
-    border:1px solid #bce5cc;
-    color:#28704a;
-  }
-  .srs-vocab-result-box.wrong{
-    background:#ffe3e3;
-    border:1px solid #f0c7c7;
-    color:#8a3b3b;
-  }
-  .srs-vocab-correct-answer{
-    display:inline-block;
-    margin-top:7px;
-    padding:5px 9px;
-    border-radius:9px;
-    background:#fff;
-    color:#18324a;
-    font-size:20px;
-    font-weight:900;
-  }
-  .srs-vocab-correct-answer rt,
-  .srs-vocab-correct-answer rp{
-    display:none!important;
-  }
-</style>
-
-<script id="absolute-final-srs-feedback-vocab-only">
-(function(){
-  function esc(v){
-    return typeof escapeHtml === 'function'
-      ? escapeHtml(String(v ?? ''))
-      : String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  }
-
-  function normalize(v){
-    const s = String(v || '').trim();
-    if(typeof normalizeKana === 'function') return normalizeKana(s).toLowerCase();
-    return s
-      .normalize('NFKC')
-      .toLowerCase()
-      .replace(/\s+/g,'')
-      .replace(/[。、，,.!?！？「」『』（）()【】\[\]・]/g,'');
-  }
-
-  function stripRubyHtml(html){
-    const d = document.createElement('div');
-    d.innerHTML = String(html || '');
-    d.querySelectorAll('rt,rp').forEach(n => n.remove());
-    return d.innerHTML.trim();
-  }
-
-  function getQuestion(){
-    return document.getElementById('srsQuestion') || document.querySelector('#srs .srs-question');
-  }
-
-  function getInput(){
-    return document.getElementById('srsAnswer') ||
-           document.querySelector('#srs input[type="text"]') ||
-           document.querySelector('#srs .srs-answer');
-  }
-
-  function getCurrentItem(){
-    const raw = typeof buildSrsItems === 'function' ? buildSrsItems() : [];
-
-    if(window.currentSrsItem) return window.currentSrsItem;
-    if(window.activeSrsItem) return window.activeSrsItem;
-    if(window.srsCurrentItem) return window.srsCurrentItem;
-
-    const input = getInput();
-    const dataAnswer =
-      input?.dataset?.answer ||
-      input?.getAttribute('data-answer') ||
-      window.currentSrsAnswer ||
-      window.srsCurrentAnswer ||
-      '';
-
-    if(dataAnswer){
-      const n = normalize(dataAnswer);
-      const found = raw.find(x => normalize(x.answer) === n);
-      if(found) return found;
-    }
-
-    const q = getQuestion();
-    const key = q?.dataset?.key || q?.getAttribute('data-key');
-    if(key){
-      const found = raw.find(x => String(x.key) === String(key));
-      if(found) return found;
-    }
-
-    const wordText = q?.querySelector('.srs-vocab-only-word')?.textContent || '';
-    if(wordText){
-      const n = normalize(wordText);
-      const found = raw.find(x => normalize(x.answer) === n);
-      if(found) return found;
-    }
-
-    return null;
-  }
-
-  function answerHtml(item){
-    if(!item) return '';
-    const d = document.createElement('div');
-    d.innerHTML = String(item.questionHtml || item.correctSentenceHtml || '');
-    const target = d.querySelector('.srs-question-target') ||
-                   d.querySelector('.srs-correct-word') ||
-                   d.querySelector('mark') ||
-                   d.querySelector('strong');
-    if(target){
-      return stripRubyHtml(target.outerHTML || target.innerHTML);
-    }
-    return esc(item.answer || '');
-  }
-
-  function answerText(item){
-    const d = document.createElement('div');
-    d.innerHTML = answerHtml(item);
-    return String(d.textContent || item?.answer || '').trim();
-  }
-
-  function clearResult(){
-    const q = getQuestion();
-    if(!q) return;
-    q.classList.remove('srs-vocab-correct','srs-vocab-wrong');
-    q.querySelectorAll('.srs-vocab-result-box').forEach(n => n.remove());
-  }
-
-  function showResult(isCorrect, item){
-    const q = getQuestion();
-    if(!q || !q.classList.contains('srs-vocab-only-mode')) return;
-
-    q.classList.remove('srs-vocab-correct','srs-vocab-wrong');
-    q.classList.add(isCorrect ? 'srs-vocab-correct' : 'srs-vocab-wrong');
-
-    q.querySelectorAll('.srs-vocab-result-box').forEach(n => n.remove());
-
-    const box = document.createElement('div');
-    box.className = 'srs-vocab-result-box ' + (isCorrect ? 'correct' : 'wrong');
-
-    if(isCorrect){
-      box.innerHTML = '✅ Benar!';
-    }else{
-      box.innerHTML =
-        '❌ Salah<br>' +
-        'Jawaban benar:<br>' +
-        '<span class="srs-vocab-correct-answer">' + answerHtml(item) + '</span>';
-    }
-
-    q.appendChild(box);
-  }
-
-  function judgeNow(){
-    const item = getCurrentItem();
-    const input = getInput();
-    if(!item || !input) return;
-
-    const userAnswer = input.value || '';
-    if(!String(userAnswer).trim()) return;
-
-    const correctText = answerText(item) || item.answer || '';
-    const ok = normalize(userAnswer) === normalize(correctText) ||
-               normalize(userAnswer) === normalize(item.answer);
-
-    setTimeout(() => showResult(ok, item), 40);
-    setTimeout(() => showResult(ok, item), 170);
-  }
-
-  // Tangkap tombol cek jawaban seperti model lama
-  document.addEventListener('click', ev => {
-    const btn = ev.target.closest('button,.btn');
-    if(!btn || !btn.closest('#srs')) return;
-
-    const label = String(btn.textContent || '').trim().toLowerCase();
-
-    if(
-      label.includes('cek') ||
-      label.includes('jawab') ||
-      label.includes('check') ||
-      label.includes('submit') ||
-      label.includes('確認')
-    ){
-      judgeNow();
-    }
-
-    if(
-      label.includes('next') ||
-      label.includes('lanjut') ||
-      label.includes('berikut') ||
-      label.includes('次')
-    ){
-      setTimeout(clearResult, 20);
-      setTimeout(() => {
-        if(typeof forceQuestionToVocabOnly === 'function') forceQuestionToVocabOnly();
-      }, 80);
-    }
-  }, true);
-
-  // Enter di input juga cek jawaban
-  document.addEventListener('keydown', ev => {
-    const input = getInput();
-    if(ev.key === 'Enter' && input && ev.target === input){
-      judgeNow();
-    }
-  }, true);
-
-  // Kalau script lama menambah class correct-answer/wrong-answer, sinkronkan warnanya
-  const observe = () => {
-    const q = getQuestion();
-    if(!q) return;
-
-    const mo = new MutationObserver(() => {
-      if(!q.classList.contains('srs-vocab-only-mode')) return;
-
-      const item = getCurrentItem();
-      if(q.classList.contains('correct-answer')){
-        showResult(true, item);
-      }else if(q.classList.contains('wrong-answer')){
-        showResult(false, item);
-      }
+    configs.forEach(([id,type]) => {
+      const el = document.getElementById(id);
+      const card = el?.closest(".srs-stat");
+      if(!card) return;
+      card.setAttribute("role","button");
+      card.setAttribute("tabindex","0");
+      card.onclick = () => openSrsStatusDetail(type);
+      card.onkeydown = event => {
+        if(event.key === "Enter" || event.key === " "){
+          event.preventDefault();
+          openSrsStatusDetail(type);
+        }
+      };
     });
+  }
 
-    mo.observe(q, {attributes:true, attributeFilter:['class'], childList:false, subtree:false});
-  };
+  document.addEventListener("DOMContentLoaded", () => {
+    setTimeout(() => {
+      ensureReadyCard();
+      wireStatusCards();
+      updateCounters();
+    }, 150);
+  });
 
-  document.addEventListener('DOMContentLoaded', () => setTimeout(observe, 300));
-  window.addEventListener('load', () => setTimeout(observe, 500));
+  window.addEventListener("load", () => {
+    setTimeout(() => {
+      ensureReadyCard();
+      wireStatusCards();
+      updateCounters();
+    }, 350);
+  });
+
+  document.addEventListener("click", () => {
+    setTimeout(() => {
+      ensureReadyCard();
+      wireStatusCards();
+    }, 50);
+  }, true);
 })();
 </script>
 
