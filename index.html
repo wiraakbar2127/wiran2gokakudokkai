@@ -8731,7 +8731,7 @@ async function toggleUnderwaterAmbient(){
     saveStateSafe(state);
 
     input.dataset.locked = "1";
-    input.readOnly = true;
+    input.readOnly = false;
 
     if(submitBtn){
       submitBtn.textContent = "Next";
@@ -9142,6 +9142,148 @@ async function toggleUnderwaterAmbient(){
   }else installWrappers();
   window.addEventListener('load', installWrappers, {once:true});
   setTimeout(installWrappers,300);
+})();
+</script>
+
+
+<!-- ===== FINAL MOBILE SRS: preserve the same input node between questions ===== -->
+<style id="srs-mobile-persistent-compact-style">
+@media (max-width:700px){
+  #srs.page.active{padding-left:10px!important;padding-right:10px!important}
+  #srs.page.active .srs-main{padding:12px!important;border-radius:18px!important}
+  #srs.page.active .srs-card{min-height:0!important;padding:0!important}
+  #srs.page.active .srs-source{margin-bottom:8px!important;font-size:10px!important;padding:4px 8px!important}
+  #srs.page.active .srs-final-question{padding:10px!important;border-radius:13px!important}
+  #srs.page.active .srs-final-label{font-size:10px!important;margin-bottom:3px!important}
+  #srs.page.active .srs-final-word{font-size:25px!important;line-height:1.25!important;min-height:34px!important}
+  #srs.page.active .srs-final-answer-wrap,
+  #srs.page.active .srs-answer-wrap{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    gap:7px!important;
+    margin-top:9px!important;
+    align-items:center!important;
+  }
+  #srs.page.active #srsAnswerInput{
+    width:100%!important;
+    min-width:0!important;
+    height:40px!important;
+    min-height:40px!important;
+    padding:7px 10px!important;
+    border-radius:10px!important;
+    font-size:15px!important;
+    line-height:1.2!important;
+  }
+  #srs.page.active #srsSubmitBtn{
+    width:auto!important;
+    min-width:66px!important;
+    height:40px!important;
+    min-height:40px!important;
+    padding:7px 11px!important;
+    font-size:13px!important;
+  }
+  #srs.page.active .srs-final-feedback{
+    margin-top:7px!important;
+    padding:7px 9px!important;
+    border-radius:10px!important;
+    font-size:12px!important;
+    line-height:1.35!important;
+  }
+  #srs.page.active .srs-final-feedback > div{margin:0!important}
+  #srs.page.active .srs-final-answer-pill{padding:1px 5px!important;font-size:13px!important}
+  #srs.page.active .srs-final-meaning-line{margin-top:3px!important}
+  #srs.page.active .srs-next-time{
+    margin-top:4px!important;
+    padding-top:4px!important;
+    font-size:10px!important;
+  }
+  #srs.page.active .srs-romaji-note{display:none!important}
+}
+</style>
+<script id="srs-mobile-preserve-input-node-script">
+(function(){
+  'use strict';
+  const mq=window.matchMedia('(max-width:700px)');
+  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function active(){return !!document.getElementById('srs')?.classList.contains('active');}
+  function focusSameInput(input){
+    if(!input || !window.srsKeyboardSessionActive) return;
+    input.readOnly=false;
+    try{input.focus({preventScroll:true});}catch(_){input.focus();}
+    try{input.setSelectionRange(0,0);}catch(_){ }
+  }
+  function updateQuestionInPlace(){
+    const queue=window.srsQueue||[];
+    const index=Number(window.srsCurrentIndex||0);
+    const item=queue[index];
+    const input=document.getElementById('srsAnswerInput');
+    const card=input?.closest('.srs-card');
+    if(!item || !input || !card) return false;
+
+    const source=card.querySelector('.srs-source');
+    const word=card.querySelector('.srs-final-word');
+    const meaning=card.querySelector('.srs-final-meaning');
+    const feedback=card.querySelector('#srsInlineFeedback');
+    const question=card.querySelector('#srsQuestionText');
+    const btn=card.querySelector('#srsSubmitBtn');
+    const bar=document.querySelector('#srsProgress>div');
+
+    if(source) source.textContent=`${item.storyTitle||''}・${item.folder||''}`;
+    if(word) word.innerHTML=item.displayWordHtml||esc(item.displayWord||item.answer||'');
+    if(meaning) meaning.textContent=item.meaning||'';
+    if(feedback){feedback.className='srs-final-feedback';feedback.innerHTML='';}
+    if(question) question.classList.remove('correct','wrong','correct-answer','wrong-answer');
+
+    input.value='';
+    input.readOnly=false;
+    input.disabled=false;
+    delete input.dataset.locked;
+    input.placeholder='Ketik cara baca satu kosakata penuh';
+
+    if(btn){
+      btn.textContent='Jawab';
+      btn.disabled=false;
+      btn.classList.remove('secondary','next-mode');
+      btn.onclick=window.submitOrNextSrs;
+    }
+    if(bar) bar.style.width=`${(index/Math.max(queue.length,1))*100}%`;
+
+    // Do not scroll or replace the focused input. Keeping this exact DOM node
+    // is what allows the mobile keyboard to remain open.
+    focusSameInput(input);
+    requestAnimationFrame(()=>focusSameInput(input));
+    setTimeout(()=>focusSameInput(input),30);
+    return true;
+  }
+
+  const previousNext=window.nextSrsQuestion;
+  window.nextSrsQuestion=function(){
+    if(!mq.matches || !active()) return previousNext.apply(this,arguments);
+
+    const queue=window.srsQueue||[];
+    const nextIndex=Number(window.srsCurrentIndex||0)+1;
+    window.srsCurrentIndex=nextIndex;
+    window.srsLocked=false;
+
+    if(nextIndex>=queue.length){
+      if(typeof window.renderCurrentSrsCard==='function') return window.renderCurrentSrsCard();
+      return;
+    }
+    updateQuestionInPlace();
+  };
+  window.nextSrsQuestion.__preservesMobileInput=true;
+
+  // Enter should never blur the field. It submits/advances while the same
+  // input remains focused.
+  document.addEventListener('keydown',function(e){
+    if(!mq.matches || !active() || e.key!=='Enter' || e.repeat) return;
+    const input=document.getElementById('srsAnswerInput');
+    if(!input || document.activeElement!==input) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    window.submitOrNextSrs?.();
+    requestAnimationFrame(()=>focusSameInput(document.getElementById('srsAnswerInput')));
+  },true);
 })();
 </script>
 </body>
