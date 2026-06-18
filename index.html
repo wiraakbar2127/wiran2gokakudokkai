@@ -5238,6 +5238,7 @@ romajiToHiragana=function(input){
   let engineTimer=null;
   let engineWaiting=false;
   let engineAdvancing=false;
+  window.srsResultWaiting=false;
 
   function masteryCount(record){
     return Math.max(0,Math.min(10,Number(record?.correctStage ?? record?.level ?? 0)||0));
@@ -5319,6 +5320,7 @@ romajiToHiragana=function(input){
     if(!engineWaiting || engineAdvancing) return;
     engineAdvancing=true;
     engineWaiting=false;
+    window.srsResultWaiting=false;
 
     if(engineTimer){
       clearTimeout(engineTimer);
@@ -5366,6 +5368,7 @@ romajiToHiragana=function(input){
 
     srsLocked=true;
     engineWaiting=true;
+    window.srsResultWaiting=true;
     sentence.innerHTML=item.correctSentenceHtml||item.questionHtml||'';
     question.classList.remove('correct-answer','wrong-answer');
     question.classList.add(correct?'correct-answer':'wrong-answer');
@@ -5384,7 +5387,10 @@ romajiToHiragana=function(input){
         <div>Jawaban: <strong>${escapeHtml(item.answer)}</strong></div>
         <div>Progres penguasaan: <strong>${stage}/10</strong></div>
         <div>${stage>=10?'Kosakata ini sudah dianggap dikuasai.':'Review berikutnya'}: <strong>${formatSrsDuration(interval)}</strong> lagi.</div>
-        <div class="srs-skip-note">Tekan Enter atau Spasi untuk langsung lanjut.</div>`;
+        <div class="srs-result-actions">
+          <button type="button" class="btn srs-next-question-btn" onclick="window.advanceSrsResult()">Soal Selanjutnya →</button>
+          <div class="srs-skip-note">Atau tekan Enter / Spasi.</div>
+        </div>`;
     }else{
       /* Salah tidak menghapus seluruh progres, tetapi mundur satu tahap agar tidak terlalu menghukum. */
       const stage=Math.max(0,masteryCount(record)-1);
@@ -5400,7 +5406,10 @@ romajiToHiragana=function(input){
         <div>Jawaban benar: <strong>${escapeHtml(item.answer)}</strong></div>
         <div>Progres penguasaan: <strong>${stage}/10</strong></div>
         <div>Soal ini akan muncul lagi dalam sesi ini sampai dijawab benar.</div>
-        <div class="srs-skip-note">Tekan Enter atau Spasi untuk langsung lanjut.</div>`;
+        <div class="srs-result-actions">
+          <button type="button" class="btn srs-next-question-btn" onclick="window.advanceSrsResult()">Soal Selanjutnya →</button>
+          <div class="srs-skip-note">Atau tekan Enter / Spasi.</div>
+        </div>`;
     }
 
     inlineResult.style.setProperty('display','block','important');
@@ -5418,6 +5427,11 @@ romajiToHiragana=function(input){
     updateSrsCountersOnly();
 
     engineTimer=window.setTimeout(advanceAfterResult,RESULT_DELAY);
+  };
+
+  window.advanceSrsResult=function(){
+    if(!engineWaiting) return;
+    advanceAfterResult();
   };
 
   document.addEventListener('keydown',event=>{
@@ -5479,6 +5493,7 @@ romajiToHiragana=function(input){
     srsCurrentIndex=0;
     srsLocked=false;
     engineWaiting=false;
+    window.srsResultWaiting=false;
     if(engineTimer){clearTimeout(engineTimer);engineTimer=null;}
 
     if(!srsQueue.length){
@@ -6258,5 +6273,195 @@ async function toggleUnderwaterAmbient(){
   };
 })();
 </script>
+
+
+<style>
+/* ===== SRS mobile stabil + tombol soal berikutnya ===== */
+.srs-result-actions{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-top:14px;
+}
+.srs-next-question-btn{
+  min-height:46px;
+  padding:11px 18px;
+  font-weight:900;
+}
+.srs-result-actions .srs-skip-note{margin:0;color:inherit;opacity:.8}
+
+@media(max-width:700px){
+  html.srs-mobile-active,
+  html.srs-mobile-active body{
+    overscroll-behavior:none;
+  }
+  #srs.page.active{
+    height:calc(var(--srs-vvh, 100vh) - var(--srs-top-offset, 0px));
+    min-height:0;
+    overflow:hidden;
+    padding:16px 12px max(10px,env(safe-area-inset-bottom));
+  }
+  #srs.page.active > .section-title,
+  #srs.page.active > p{
+    margin-left:4px;
+    margin-right:4px;
+  }
+  #srs.page.active .srs-stats{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:6px;
+    margin-bottom:10px;
+  }
+  #srs.page.active .srs-stat{padding:9px 4px;border-radius:12px}
+  #srs.page.active .srs-stat strong{font-size:19px}
+  #srs.page.active .srs-stat span{font-size:10px}
+  #srs.page.active .srs-layout{
+    display:block;
+    height:calc(100% - 132px);
+    min-height:0;
+  }
+  #srs.page.active .srs-main{
+    height:100%;
+    min-height:0;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    padding:14px;
+    scroll-padding-bottom:110px;
+  }
+  #srs.page.active .srs-side{display:none}
+  #srs.page.active .srs-overall-box{
+    padding:10px;
+    margin-bottom:10px;
+  }
+  #srs.page.active .srs-card{
+    min-height:0;
+    justify-content:flex-start;
+    padding-bottom:86px;
+  }
+  #srs.page.active .srs-question{
+    font-size:19px;
+    line-height:1.85;
+    margin-bottom:12px;
+  }
+  #srs.page.active .srs-translation-restored{
+    font-size:14px;
+    margin:10px 0 12px;
+    padding:10px 12px;
+  }
+  #srs.page.active .srs-answer-row,
+  #srs.page.active .srs-answer-wrap{
+    position:sticky;
+    bottom:0;
+    z-index:8;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    align-items:center;
+    gap:10px;
+    margin:12px -4px 0;
+    padding:10px 4px max(10px,env(safe-area-inset-bottom));
+    background:linear-gradient(180deg,rgba(255,255,255,0),#fff 24%,#fff 100%);
+  }
+  #srs.page.active .srs-answer-input,
+  #srs.page.active .srs-answer{
+    width:100%;
+    min-width:0;
+    height:50px;
+    font-size:18px;
+    margin:0;
+  }
+  #srs.page.active .srs-answer-row > .btn,
+  #srs.page.active .srs-answer-wrap > .btn{
+    height:48px;
+    min-width:82px;
+    margin:0;
+    padding:10px 14px;
+  }
+  #srs.page.active .srs-inline-result{
+    margin-top:10px;
+    padding-top:10px;
+  }
+  #srs.page.active .srs-result-actions{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:7px;
+  }
+  #srs.page.active .srs-next-question-btn{
+    width:100%;
+    min-height:50px;
+    font-size:16px;
+  }
+  #srs.page.active .srs-result-actions .srs-skip-note{text-align:center;font-size:12px}
+}
+</style>
+<script>
+/* VisualViewport menjaga halaman SRS stabil saat keyboard HP terbuka. */
+(function(){
+  const root=document.documentElement;
+  let focusTimer=null;
+
+  function isMobileSrs(){
+    return window.matchMedia('(max-width:700px)').matches &&
+      document.getElementById('srs')?.classList.contains('active');
+  }
+
+  function updateMobileSrsViewport(){
+    const viewport=window.visualViewport;
+    const height=viewport ? viewport.height : window.innerHeight;
+    const topbar=document.querySelector('.topbar');
+    const offset=topbar ? Math.min(topbar.getBoundingClientRect().height,145) : 0;
+    root.style.setProperty('--srs-vvh',`${Math.round(height)}px`);
+    root.style.setProperty('--srs-top-offset',`${Math.round(offset)}px`);
+    root.classList.toggle('srs-mobile-active',isMobileSrs());
+  }
+
+  function settleInput(){
+    if(!isMobileSrs()) return;
+    const input=document.getElementById('srsAnswerInput');
+    const scroller=document.querySelector('#srs.page.active .srs-main');
+    if(!input || !scroller) return;
+    clearTimeout(focusTimer);
+    focusTimer=setTimeout(()=>{
+      const inputRect=input.getBoundingClientRect();
+      const scrollRect=scroller.getBoundingClientRect();
+      const desired=scrollRect.top+Math.min(scrollRect.height*.55,260);
+      scroller.scrollTop += inputRect.top-desired;
+    },120);
+  }
+
+  window.addEventListener('resize',updateMobileSrsViewport,{passive:true});
+  window.visualViewport?.addEventListener('resize',()=>{
+    updateMobileSrsViewport();
+    settleInput();
+  },{passive:true});
+  window.visualViewport?.addEventListener('scroll',updateMobileSrsViewport,{passive:true});
+
+  document.addEventListener('focusin',event=>{
+    if(event.target?.id==='srsAnswerInput'){
+      updateMobileSrsViewport();
+      settleInput();
+    }
+  });
+
+  document.addEventListener('focusout',event=>{
+    if(event.target?.id==='srsAnswerInput'){
+      setTimeout(updateMobileSrsViewport,80);
+    }
+  });
+
+  const originalGoMobile=window.go;
+  if(typeof originalGoMobile==='function'){
+    window.go=function(id){
+      originalGoMobile(id);
+      setTimeout(updateMobileSrsViewport,0);
+      setTimeout(updateMobileSrsViewport,250);
+    };
+  }
+
+  window.addEventListener('load',updateMobileSrsViewport);
+  window.addEventListener('pageshow',updateMobileSrsViewport);
+})();
+</script>
+
 </body>
 </html>
