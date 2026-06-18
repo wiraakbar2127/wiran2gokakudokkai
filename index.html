@@ -9398,10 +9398,11 @@ async function toggleUnderwaterAmbient(){
     padding-top:12px!important;
     padding-bottom:12px!important;
   }
-  body.srs-keyboard-active #srs.page.active .srs-side{display:none!important}
-  body.srs-keyboard-active #srs.page.active .srs-stats{display:none!important}
-  body.srs-keyboard-active #srs.page.active .srs-overall-box{display:none!important}
-  body.srs-keyboard-active #srs.page.active .section-title{display:none!important}
+  /* Saat keyboard HP aktif, bagian statistik/progress SRS tetap ditampilkan */
+  body.srs-keyboard-active #srs.page.active .srs-side{display:block!important}
+  body.srs-keyboard-active #srs.page.active .srs-stats{display:grid!important}
+  body.srs-keyboard-active #srs.page.active .srs-overall-box{display:block!important}
+  body.srs-keyboard-active #srs.page.active .section-title{display:block!important}
   body.srs-keyboard-active #srs.page.active .srs-progress{margin:4px 0 9px!important}
   body.srs-keyboard-active #srs.page.active .srs-final-question{margin-bottom:8px!important}
   body.srs-keyboard-active #srs.page.active footer{display:none!important}
@@ -10018,6 +10019,79 @@ async function toggleUnderwaterAmbient(){
   }
 })();
 </script>
+
+
+<!-- ===== PATCH WIRA: SRS mobile header tetap tampil + musik & achievement muncul ===== -->
+<style id="wira-srs-mobile-keep-header-patch">
+@media (max-width:700px){
+  /* Jangan sembunyikan bagian yang dilingkari saat kolom jawaban diklik */
+  body.srs-keyboard-active #srs.page.active .srs-stats,
+  body.srs-keyboard-open #srs.page.active .srs-stats,
+  body.srs-mobile-focus #srs.page.active .srs-stats{
+    display:grid!important;
+    grid-template-columns:repeat(2,1fr)!important;
+    gap:10px!important;
+    margin-bottom:14px!important;
+  }
+
+  body.srs-keyboard-active #srs.page.active .srs-overall-box,
+  body.srs-keyboard-open #srs.page.active .srs-overall-box,
+  body.srs-mobile-focus #srs.page.active .srs-overall-box{
+    display:block!important;
+    visibility:visible!important;
+    opacity:1!important;
+    margin-bottom:14px!important;
+  }
+
+  body.srs-keyboard-active #srs.page.active .section-title,
+  body.srs-keyboard-open #srs.page.active .section-title,
+  body.srs-mobile-focus #srs.page.active .section-title{
+    display:block!important;
+    visibility:visible!important;
+    opacity:1!important;
+  }
+
+  /* Layout tetap rapi di HP ketika keyboard muncul */
+  body.srs-keyboard-active #srs.page.active{
+    padding-top:18px!important;
+  }
+
+  body.srs-keyboard-active #srs.page.active .srs-main,
+  body.srs-keyboard-open #srs.page.active .srs-main,
+  body.srs-mobile-focus #srs.page.active .srs-main{
+    padding:18px!important;
+  }
+
+  /* Tombol musik dan achievement selalu muncul kembali */
+  #ambientToggle,
+  .ambient-toggle{
+    display:flex!important;
+    visibility:visible!important;
+    opacity:1!important;
+    pointer-events:auto!important;
+    z-index:9998!important;
+  }
+
+  #achievementBubble,
+  .achievement-bubble{
+    display:flex!important;
+    visibility:visible!important;
+    opacity:1!important;
+    pointer-events:auto!important;
+    z-index:9997!important;
+  }
+
+  .ambient-toggle{
+    right:18px!important;
+    bottom:92px!important;
+  }
+
+  .achievement-bubble{
+    right:18px!important;
+    bottom:22px!important;
+  }
+}
+</style>
 
 </body>
 </html>
