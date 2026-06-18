@@ -6298,7 +6298,7 @@ async function toggleUnderwaterAmbient(){
     stopExistingUnderwater();
     underwaterAudioContext=new AudioContextClass();
     underwaterMaster=underwaterAudioContext.createGain();
-    underwaterMaster.gain.value=.22;
+    underwaterMaster.gain.value=.38;
     underwaterMaster.connect(underwaterAudioContext.destination);
     underwaterNodes=[];
     window.underwaterExtraTimers=[];
@@ -6314,7 +6314,7 @@ async function toggleUnderwaterAmbient(){
     currentFilter.frequency.value=260;
     currentFilter.Q.value=.45;
     const currentGain=ctx.createGain();
-    currentGain.gain.value=.23;
+    currentGain.gain.value=.31;
     current.connect(currentFilter);
     currentFilter.connect(currentGain);
     currentGain.connect(underwaterMaster);
@@ -6417,7 +6417,7 @@ async function toggleUnderwaterAmbient(){
       if(underwaterAudioContext?.state==='suspended') await underwaterAudioContext.resume();
       if(underwaterMaster){
         underwaterMaster.gain.cancelScheduledValues(underwaterAudioContext.currentTime);
-        underwaterMaster.gain.setTargetAtTime(.22,underwaterAudioContext.currentTime,.12);
+        underwaterMaster.gain.setTargetAtTime(.38,underwaterAudioContext.currentTime,.12);
       }
       scheduleBubbleSounds();
       scheduleSmallFishSounds();
@@ -7162,7 +7162,7 @@ async function toggleUnderwaterAmbient(){
 
 </script>
 
-\n\n<script id="srs-dynamic-follow-script">
+<script id="srs-dynamic-follow-script">
 /* Follows the real SRS card height on desktop and mobile. */
 (function(){
   let rafId=0;
@@ -7266,5 +7266,898 @@ async function toggleUnderwaterAmbient(){
   });
 })();
 </script>
+
+<style id="srs-detail-dashboard-style">
+/* Statistik SRS dapat diklik */
+#srs .srs-stat{
+  cursor:pointer;
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+  user-select:none;
+}
+#srs .srs-stat:hover,
+#srs .srs-stat:focus-visible{
+  transform:translateY(-2px);
+  border-color:#91bde2;
+  box-shadow:0 10px 24px rgba(47,111,174,.14);
+  outline:none;
+}
+.srs-detail-modal{
+  position:fixed;inset:0;z-index:10020;display:none;
+  align-items:center;justify-content:center;padding:18px;
+  background:rgba(18,45,70,.45);backdrop-filter:blur(5px);
+}
+.srs-detail-modal.active{display:flex}
+.srs-detail-card{
+  width:min(680px,100%);max-height:min(78vh,760px);overflow:auto;
+  background:#fff;border:1px solid var(--line);border-radius:24px;
+  padding:22px;box-shadow:0 24px 70px rgba(22,61,95,.25);
+}
+.srs-detail-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.srs-detail-head h2{margin:0;color:var(--brown)}
+.srs-detail-close{border:0;width:36px;height:36px;border-radius:50%;background:var(--soft);color:var(--brown);font-size:22px;cursor:pointer}
+.srs-vocab-detail{padding:13px 0;border-bottom:1px dashed var(--line)}
+.srs-vocab-detail:last-child{border-bottom:0}
+.srs-vocab-word{font-size:21px;font-weight:900;color:#244f73}
+.srs-vocab-meta{margin-top:5px;color:var(--muted);font-size:13px;line-height:1.6}
+.srs-vocab-time{display:inline-block;margin-top:5px;padding:4px 9px;border-radius:999px;background:#eef7ff;color:#2f6fae;font-size:12px;font-weight:800}
+.srs-final-check-notice{
+  margin-top:12px;padding:12px 14px;border-radius:13px;
+  background:#fff7dd;border:1px solid #eed27d;color:#735714;
+  font-weight:800;line-height:1.55;
+}
+@media(max-width:700px){
+  .srs-detail-modal{padding:10px;align-items:flex-end}
+  .srs-detail-card{max-height:76vh;border-radius:22px 22px 12px 12px;padding:17px}
+  .srs-vocab-word{font-size:18px}
+}
+</style>
+<script id="srs-detail-dashboard-script">
+(function(){
+  const finalRetryUsed=new Set();
+
+  function stageOf(record){
+    return Math.max(0,Math.min(10,Number(record?.correctStage ?? record?.level ?? 0)||0));
+  }
+
+  function cleanWordHtml(item){
+    const temp=document.createElement('div');
+    temp.innerHTML=item.correctSentenceHtml||item.questionHtml||'';
+    const target=temp.querySelector('.srs-correct-word, mark, strong');
+    if(!target) return item.answer||'Kosakata';
+    const clone=target.cloneNode(true);
+    clone.querySelectorAll('rt,rp').forEach(node=>node.remove());
+    return clone.textContent.trim()||item.answer||'Kosakata';
+  }
+
+  function dueText(record){
+    const due=Number(record?.due||0);
+    const remaining=due-Date.now();
+    if(remaining<=0) return 'Bisa dites sekarang';
+    return `${formatSrsDuration(remaining)} lagi`;
+  }
+
+  function ensureModal(){
+    let modal=document.getElementById('srsDetailModal');
+    if(modal) return modal;
+    modal=document.createElement('div');
+    modal.id='srsDetailModal';
+    modal.className='srs-detail-modal';
+    modal.innerHTML=`<div class="srs-detail-card" role="dialog" aria-modal="true">
+      <div class="srs-detail-head"><h2 id="srsDetailTitle">Daftar Kosakata</h2><button class="srs-detail-close" type="button" aria-label="Tutup">×</button></div>
+      <div id="srsDetailList"></div>
+    </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click',event=>{if(event.target===modal) modal.classList.remove('active')});
+    modal.querySelector('.srs-detail-close').addEventListener('click',()=>modal.classList.remove('active'));
+    return modal;
+  }
+
+  window.openSrsStatusDetail=function(type){
+    const modal=ensureModal();
+    const items=buildSrsItems();
+    const state=syncSrsState(items);
+    const filtered=items.filter(item=>{
+      const stage=stageOf(state[item.key]);
+      if(type==='unlearned') return stage===0;
+      if(type==='learning') return stage>0&&stage<10;
+      return stage>=10;
+    }).sort((a,b)=>cleanWordHtml(a).localeCompare(cleanWordHtml(b),'ja'));
+    const titles={unlearned:'Belum Dipelajari',learning:'Sedang Belajar',mastered:'Dikuasai'};
+    modal.querySelector('#srsDetailTitle').textContent=`${titles[type]} (${filtered.length})`;
+    modal.querySelector('#srsDetailList').innerHTML=filtered.length?filtered.map(item=>{
+      const r=state[item.key]||{};
+      const stage=stageOf(r);
+      return `<div class="srs-vocab-detail">
+        <div class="srs-vocab-word">${escapeHtml(cleanWordHtml(item))}</div>
+        <div class="srs-vocab-meta">${escapeHtml(item.storyTitle)}・Progres <strong>${stage}/10</strong><br>Benar ${Number(r.correct||0)} kali・Salah ${Number(r.wrong||0)} kali</div>
+        <span class="srs-vocab-time">${dueText(r)}</span>
+      </div>`;
+    }).join(''):'<div class="empty">Tidak ada kosakata dalam kategori ini.</div>';
+    modal.classList.add('active');
+  };
+
+  function wireStats(){
+    const stats=[
+      ['srsDueCount','unlearned','Belum Dipelajari'],
+      ['srsLearningCount','learning','Belajar'],
+      ['srsMasteredCount','mastered','Dikuasai']
+    ];
+    stats.forEach(([id,type,label])=>{
+      const count=document.getElementById(id);
+      const card=count?.closest('.srs-stat');
+      if(!count||!card) return;
+      const span=card.querySelector('span');
+      if(span) span.textContent=label;
+      card.setAttribute('role','button');
+      card.setAttribute('tabindex','0');
+      card.onclick=()=>openSrsStatusDetail(type);
+      card.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openSrsStatusDetail(type)}};
+    });
+  }
+
+  function refreshCategoryCounts(){
+    const items=buildSrsItems();
+    const state=syncSrsState(items);
+    const unlearned=items.filter(item=>stageOf(state[item.key])===0).length;
+    const learning=items.filter(item=>{const s=stageOf(state[item.key]);return s>0&&s<10}).length;
+    const mastered=items.filter(item=>stageOf(state[item.key])>=10).length;
+    const a=document.getElementById('srsDueCount');
+    const b=document.getElementById('srsLearningCount');
+    const c=document.getElementById('srsMasteredCount');
+    if(a) a.textContent=unlearned;
+    if(b) b.textContent=learning;
+    if(c) c.textContent=mastered;
+    wireStats();
+  }
+
+  /* Tahap 9/10 mendapat satu kesempatan cek sebelum kesalahan dicatat. */
+  const oldSubmit=window.submitSrsAnswer;
+  if(typeof oldSubmit==='function'){
+    window.submitSrsAnswer=function(){
+      if(window.srsResultWaiting) return oldSubmit.apply(this,arguments);
+      const item=window.srsQueue?.[window.srsCurrentIndex];
+      const input=document.getElementById('srsAnswerInput');
+      if(!item||!input) return oldSubmit.apply(this,arguments);
+      let typed=romajiToHiragana(String(input.value||'').trim());
+      if(/n$/i.test(typed)) typed=typed.replace(/n$/i,'ん');
+      if(!typed) return;
+      const state=getSrsState();
+      const record=state[item.key]||{};
+      const stage=stageOf(record);
+      const correct=normalizeKana(typed)===normalizeKana(item.answer);
+
+      if(stage===9 && !correct && !finalRetryUsed.has(item.key)){
+        finalRetryUsed.add(item.key);
+        const question=document.getElementById('srsQuestionText');
+        const oldNotice=question?.querySelector('.srs-final-check-notice');
+        oldNotice?.remove();
+        const notice=document.createElement('div');
+        notice.className='srs-final-check-notice';
+        notice.textContent='Aku kasih kamu satu kali kesempatan untuk mengecek. Periksa jawabanmu, lalu kirim sekali lagi.';
+        question?.appendChild(notice);
+        input.value=typed;
+        input.select();
+        try{input.focus({preventScroll:true})}catch(e){input.focus()}
+        return;
+      }
+
+      const result=oldSubmit.apply(this,arguments);
+      if(stage===9){
+        finalRetryUsed.delete(item.key);
+      }
+      window.setTimeout(refreshCategoryCounts,0);
+      return result;
+    };
+  }
+
+  const oldRender=window.renderSrsPage;
+  if(typeof oldRender==='function'){
+    window.renderSrsPage=function(){
+      const result=oldRender.apply(this,arguments);
+      refreshCategoryCounts();
+      return result;
+    };
+  }
+  const oldCounters=window.updateSrsCountersOnly;
+  if(typeof oldCounters==='function'){
+    window.updateSrsCountersOnly=function(){
+      const result=oldCounters.apply(this,arguments);
+      refreshCategoryCounts();
+      return result;
+    };
+  }
+
+  window.addEventListener('load',()=>{ensureModal();refreshCategoryCounts()});
+})();
+</script>
+
+
+<script>
+/* ===== Ambient freedive: napas teredam, ikan berenang, dan gelembung ===== */
+(function(){
+  const previousCreate=window.createUnderwaterAmbient;
+  const previousToggle=window.toggleUnderwaterAmbient;
+
+  function rememberTimer(id){
+    window.underwaterExtraTimers=window.underwaterExtraTimers||[];
+    window.underwaterExtraTimers.push(id);
+    return id;
+  }
+
+  function makeSoftNoise(ctx,duration=.8){
+    const length=Math.max(1,Math.floor(ctx.sampleRate*duration));
+    const buffer=ctx.createBuffer(1,length,ctx.sampleRate);
+    const data=buffer.getChannelData(0);
+    let smooth=0;
+    for(let i=0;i<length;i++){
+      smooth=smooth*.86+(Math.random()*2-1)*.14;
+      data[i]=smooth;
+    }
+    return buffer;
+  }
+
+  window.scheduleFreediveBreath=function(){
+    if(!underwaterPlaying||!underwaterAudioContext||!underwaterMaster) return;
+    const ctx=underwaterAudioContext;
+    const now=ctx.currentTime;
+
+    // Hembusan napas penyelam yang teredam di dalam air.
+    const breath=ctx.createBufferSource();
+    breath.buffer=makeSoftNoise(ctx,1.25);
+    const filter=ctx.createBiquadFilter();
+    filter.type='bandpass';
+    filter.frequency.value=420;
+    filter.Q.value=.7;
+    const gain=ctx.createGain();
+    gain.gain.setValueAtTime(.0001,now);
+    gain.gain.exponentialRampToValueAtTime(.075,now+.16);
+    gain.gain.exponentialRampToValueAtTime(.028,now+.72);
+    gain.gain.exponentialRampToValueAtTime(.0001,now+1.18);
+    breath.connect(filter); filter.connect(gain); gain.connect(underwaterMaster);
+    breath.start(now); breath.stop(now+1.22);
+
+    // Rangkaian gelembung napas.
+    const count=7+Math.floor(Math.random()*6);
+    for(let i=0;i<count;i++){
+      const t=now+.12+i*(.055+Math.random()*.04);
+      const osc=ctx.createOscillator();
+      const bubbleGain=ctx.createGain();
+      const bubbleFilter=ctx.createBiquadFilter();
+      osc.type='sine';
+      osc.frequency.setValueAtTime(170+Math.random()*230,t);
+      osc.frequency.exponentialRampToValueAtTime(480+Math.random()*420,t+.12);
+      bubbleFilter.type='bandpass';
+      bubbleFilter.frequency.value=500+Math.random()*650;
+      bubbleFilter.Q.value=5;
+      bubbleGain.gain.setValueAtTime(.0001,t);
+      bubbleGain.gain.exponentialRampToValueAtTime(.055+Math.random()*.025,t+.012);
+      bubbleGain.gain.exponentialRampToValueAtTime(.0001,t+.15);
+      osc.connect(bubbleFilter); bubbleFilter.connect(bubbleGain); bubbleGain.connect(underwaterMaster);
+      osc.start(t); osc.stop(t+.17);
+    }
+
+    rememberTimer(setTimeout(scheduleFreediveBreath,6500+Math.random()*7000));
+  };
+
+  window.scheduleSwimmingFish=function(){
+    if(!underwaterPlaying||!underwaterAudioContext||!underwaterMaster) return;
+    const ctx=underwaterAudioContext;
+    const now=ctx.currentTime;
+    const duration=1.6+Math.random()*1.2;
+    const source=ctx.createBufferSource();
+    source.buffer=makeSoftNoise(ctx,duration);
+    const filter=ctx.createBiquadFilter();
+    filter.type='bandpass';
+    filter.frequency.value=720+Math.random()*520;
+    filter.Q.value=1.8;
+    const gain=ctx.createGain();
+    gain.gain.setValueAtTime(.0001,now);
+    gain.gain.exponentialRampToValueAtTime(.035,now+.28);
+    gain.gain.setValueAtTime(.035,now+duration-.34);
+    gain.gain.exponentialRampToValueAtTime(.0001,now+duration);
+
+    let lastNode=gain;
+    if(ctx.createStereoPanner){
+      const pan=ctx.createStereoPanner();
+      const fromLeft=Math.random()>.5;
+      pan.pan.setValueAtTime(fromLeft?-1:1,now);
+      pan.pan.linearRampToValueAtTime(fromLeft?1:-1,now+duration);
+      gain.connect(pan);
+      pan.connect(underwaterMaster);
+      lastNode=pan;
+    }else{
+      gain.connect(underwaterMaster);
+    }
+    source.connect(filter); filter.connect(gain);
+    source.start(now); source.stop(now+duration);
+
+    // Klik halus ikan saat lewat.
+    const clicks=2+Math.floor(Math.random()*3);
+    for(let i=0;i<clicks;i++){
+      const t=now+.25+i*(duration/(clicks+1));
+      const osc=ctx.createOscillator();
+      const clickGain=ctx.createGain();
+      osc.type='triangle';
+      osc.frequency.setValueAtTime(1050+Math.random()*650,t);
+      osc.frequency.exponentialRampToValueAtTime(620+Math.random()*280,t+.045);
+      clickGain.gain.setValueAtTime(.0001,t);
+      clickGain.gain.exponentialRampToValueAtTime(.022,t+.008);
+      clickGain.gain.exponentialRampToValueAtTime(.0001,t+.065);
+      osc.connect(clickGain); clickGain.connect(underwaterMaster);
+      osc.start(t); osc.stop(t+.075);
+    }
+
+    rememberTimer(setTimeout(scheduleSwimmingFish,3800+Math.random()*6500));
+  };
+
+  window.createUnderwaterAmbient=function(){
+    const ok=previousCreate ? previousCreate() : false;
+    if(!ok) return false;
+    if(underwaterMaster){
+      underwaterMaster.gain.value=.5;
+    }
+    // previousCreate sudah menyalakan lapisan dasar. Tambahkan lapisan baru sekali saja.
+    scheduleFreediveBreath();
+    scheduleSwimmingFish();
+    return true;
+  };
+
+  window.toggleUnderwaterAmbient=async function(){
+    const button=document.getElementById('ambientToggle');
+    underwaterPlaying=!underwaterPlaying;
+    if(underwaterPlaying){
+      if(!underwaterAudioContext){
+        createUnderwaterAmbient();
+      }
+      if(underwaterAudioContext?.state==='suspended'){
+        await underwaterAudioContext.resume();
+      }
+      if(underwaterMaster){
+        underwaterMaster.gain.cancelScheduledValues(underwaterAudioContext.currentTime);
+        underwaterMaster.gain.setTargetAtTime(.5,underwaterAudioContext.currentTime,.12);
+      }
+      button?.classList.add('playing');
+      if(button){button.textContent='♫';button.title='Matikan ambient freedive';}
+    }else{
+      if(underwaterTimer){clearTimeout(underwaterTimer);underwaterTimer=null;}
+      if(window.underwaterExtraTimers){
+        window.underwaterExtraTimers.forEach(clearTimeout);
+        window.underwaterExtraTimers=[];
+      }
+      if(underwaterMaster&&underwaterAudioContext){
+        underwaterMaster.gain.setTargetAtTime(0,underwaterAudioContext.currentTime,.08);
+      }
+      try{underwaterAudioContext?.close();}catch(e){}
+      underwaterAudioContext=null;underwaterMaster=null;underwaterNodes=[];
+      button?.classList.remove('playing');
+      if(button){button.textContent='♪';button.title='Nyalakan ambient freedive';}
+    }
+  };
+})();
+</script>
+
+
+<style id="final-srs-unique-sticky-style">
+/* Header panel tetap terlihat ketika daftar kosakata di-scroll */
+.srs-detail-head{
+  position:sticky;
+  top:-22px;
+  z-index:5;
+  margin:-22px -22px 14px;
+  padding:18px 22px 12px;
+  background:rgba(255,255,255,.97);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);
+}
+.srs-detail-close{
+  position:sticky;
+  top:0;
+  flex:0 0 auto;
+  z-index:6;
+  box-shadow:0 5px 14px rgba(47,111,174,.13);
+}
+@media(max-width:700px){
+  .srs-detail-head{
+    top:-17px;
+    margin:-17px -17px 12px;
+    padding:14px 17px 10px;
+  }
+}
+</style>
+
+<script id="final-srs-unique-dashboard-script">
+(function(){
+  function stageOf(record){
+    return Math.max(0,Math.min(10,Number(record?.correctStage ?? record?.level ?? 0)||0));
+  }
+
+  function visibleWord(item){
+    const temp=document.createElement('div');
+    temp.innerHTML=item.correctSentenceHtml||item.questionHtml||'';
+    const target=temp.querySelector('.srs-correct-word, mark, strong');
+    if(!target) return String(item.answer||'Kosakata').trim();
+    const clone=target.cloneNode(true);
+    clone.querySelectorAll('rt,rp').forEach(node=>node.remove());
+    return (clone.textContent||item.answer||'Kosakata').trim();
+  }
+
+  function uniqueSrsEntries(){
+    const items=buildSrsItems();
+    const state=syncSrsState(items);
+    const map=new Map();
+
+    items.forEach(item=>{
+      const word=visibleWord(item);
+      const uniqueKey=`${word}::${normalizeKana(item.answer||'')}`;
+      const record=state[item.key]||{};
+      const existing=map.get(uniqueKey);
+
+      if(!existing){
+        map.set(uniqueKey,{item,record,word,keys:[item.key]});
+        return;
+      }
+
+      existing.keys.push(item.key);
+      /* Tampilkan progres tertinggi dan jadwal terdekat untuk kata yang sama. */
+      if(stageOf(record)>stageOf(existing.record)){
+        existing.item=item;
+        existing.record=record;
+      }else if(stageOf(record)===stageOf(existing.record)){
+        const oldDue=Number(existing.record?.due||Infinity);
+        const newDue=Number(record?.due||Infinity);
+        if(newDue<oldDue){
+          existing.item=item;
+          existing.record=record;
+        }
+      }
+    });
+
+    return [...map.values()];
+  }
+
+  function dueText(record){
+    const remaining=Number(record?.due||0)-Date.now();
+    return remaining<=0 ? 'Bisa dites sekarang' : `${formatSrsDuration(remaining)} lagi`;
+  }
+
+  window.openSrsStatusDetail=function(type){
+    let modal=document.getElementById('srsDetailModal');
+    if(!modal) return;
+
+    const filtered=uniqueSrsEntries().filter(entry=>{
+      const stage=stageOf(entry.record);
+      if(type==='unlearned') return stage===0;
+      if(type==='learning') return stage>0&&stage<10;
+      return stage>=10;
+    }).sort((a,b)=>a.word.localeCompare(b.word,'ja'));
+
+    const titles={unlearned:'Belum Dipelajari',learning:'Sedang Belajar',mastered:'Dikuasai'};
+    modal.querySelector('#srsDetailTitle').textContent=`${titles[type]} (${filtered.length})`;
+    modal.querySelector('#srsDetailList').innerHTML=filtered.length ? filtered.map(entry=>{
+      const r=entry.record||{};
+      const stage=stageOf(r);
+      return `<div class="srs-vocab-detail">
+        <div class="srs-vocab-word">${escapeHtml(entry.word)}</div>
+        <div class="srs-vocab-meta">${escapeHtml(entry.item.storyTitle)}・Progres <strong>${stage}/10</strong><br>Benar ${Number(r.correct||0)} kali・Salah ${Number(r.wrong||0)} kali</div>
+        <span class="srs-vocab-time">${dueText(r)}</span>
+      </div>`;
+    }).join('') : '<div class="empty">Tidak ada kosakata dalam kategori ini.</div>';
+
+    modal.classList.add('active');
+  };
+
+  function refreshUniqueCounts(){
+    const entries=uniqueSrsEntries();
+    const unlearned=entries.filter(entry=>stageOf(entry.record)===0).length;
+    const learning=entries.filter(entry=>{const stage=stageOf(entry.record);return stage>0&&stage<10}).length;
+    const mastered=entries.filter(entry=>stageOf(entry.record)>=10).length;
+    const due=document.getElementById('srsDueCount');
+    const learn=document.getElementById('srsLearningCount');
+    const master=document.getElementById('srsMasteredCount');
+    if(due) due.textContent=unlearned;
+    if(learn) learn.textContent=learning;
+    if(master) master.textContent=mastered;
+  }
+
+  const previousRender=window.renderSrsPage;
+  if(typeof previousRender==='function'){
+    window.renderSrsPage=function(){
+      const result=previousRender.apply(this,arguments);
+      window.setTimeout(refreshUniqueCounts,0);
+      return result;
+    };
+  }
+
+  const previousCounters=window.updateSrsCountersOnly;
+  if(typeof previousCounters==='function'){
+    window.updateSrsCountersOnly=function(){
+      const result=previousCounters.apply(this,arguments);
+      window.setTimeout(refreshUniqueCounts,0);
+      return result;
+    };
+  }
+
+  window.addEventListener('load',()=>window.setTimeout(refreshUniqueCounts,80));
+})();
+</script>
+
+<script id="final-clean-underwater-ambient-script">
+/* Ambient final: arus bawah laut, gelembung, dan paus sesekali. */
+(function(){
+  function clearAmbientTimers(){
+    if(window.underwaterTimer){clearTimeout(window.underwaterTimer);window.underwaterTimer=null;}
+    if(window.underwaterExtraTimers){
+      window.underwaterExtraTimers.forEach(clearTimeout);
+      window.underwaterExtraTimers=[];
+    }
+  }
+
+  function rememberTimer(id){
+    window.underwaterExtraTimers=window.underwaterExtraTimers||[];
+    window.underwaterExtraTimers.push(id);
+    return id;
+  }
+
+  function makeWaterNoise(ctx,seconds=2){
+    const length=Math.floor(ctx.sampleRate*seconds);
+    const buffer=ctx.createBuffer(1,length,ctx.sampleRate);
+    const data=buffer.getChannelData(0);
+    let smooth=0;
+    for(let i=0;i<length;i++){
+      smooth=smooth*.975+(Math.random()*2-1)*.025;
+      data[i]=smooth*.7;
+    }
+    return buffer;
+  }
+
+  function scheduleBubbleCluster(){
+    if(!window.underwaterPlaying||!window.underwaterAudioContext||!window.underwaterMaster) return;
+    const ctx=window.underwaterAudioContext;
+    const now=ctx.currentTime;
+    const amount=3+Math.floor(Math.random()*5);
+
+    for(let i=0;i<amount;i++){
+      const start=now+i*(.08+Math.random()*.1);
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      const filter=ctx.createBiquadFilter();
+      osc.type='sine';
+      osc.frequency.setValueAtTime(210+Math.random()*250,start);
+      osc.frequency.exponentialRampToValueAtTime(520+Math.random()*420,start+.13);
+      filter.type='bandpass';
+      filter.frequency.value=650+Math.random()*450;
+      filter.Q.value=4;
+      gain.gain.setValueAtTime(.0001,start);
+      gain.gain.exponentialRampToValueAtTime(.035+Math.random()*.025,start+.012);
+      gain.gain.exponentialRampToValueAtTime(.0001,start+.16);
+      osc.connect(filter);filter.connect(gain);gain.connect(window.underwaterMaster);
+      osc.start(start);osc.stop(start+.18);
+    }
+
+    rememberTimer(setTimeout(scheduleBubbleCluster,1800+Math.random()*3200));
+  }
+
+  function scheduleWhaleCall(){
+    if(!window.underwaterPlaying||!window.underwaterAudioContext||!window.underwaterMaster) return;
+    const ctx=window.underwaterAudioContext;
+    const now=ctx.currentTime;
+    const duration=3.8+Math.random()*2.2;
+    const osc=ctx.createOscillator();
+    const gain=ctx.createGain();
+    const filter=ctx.createBiquadFilter();
+    osc.type='sine';
+    osc.frequency.setValueAtTime(135+Math.random()*35,now);
+    osc.frequency.exponentialRampToValueAtTime(82+Math.random()*18,now+duration*.55);
+    osc.frequency.exponentialRampToValueAtTime(115+Math.random()*22,now+duration);
+    filter.type='lowpass';
+    filter.frequency.value=360;
+    gain.gain.setValueAtTime(.0001,now);
+    gain.gain.exponentialRampToValueAtTime(.055,now+.65);
+    gain.gain.setValueAtTime(.045,now+duration-.8);
+    gain.gain.exponentialRampToValueAtTime(.0001,now+duration);
+    osc.connect(filter);filter.connect(gain);gain.connect(window.underwaterMaster);
+    osc.start(now);osc.stop(now+duration+.05);
+
+    rememberTimer(setTimeout(scheduleWhaleCall,18000+Math.random()*22000));
+  }
+
+  window.createUnderwaterAmbient=function(){
+    const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+    if(!AudioContextClass) return false;
+
+    clearAmbientTimers();
+    try{window.underwaterAudioContext?.close();}catch(e){}
+
+    const ctx=new AudioContextClass();
+    const master=ctx.createGain();
+    master.gain.value=.42;
+    master.connect(ctx.destination);
+
+    const water=ctx.createBufferSource();
+    water.buffer=makeWaterNoise(ctx,2.5);
+    water.loop=true;
+    const low=ctx.createBiquadFilter();
+    low.type='lowpass';
+    low.frequency.value=520;
+    low.Q.value=.65;
+    const waterGain=ctx.createGain();
+    waterGain.gain.value=.42;
+    water.connect(low);low.connect(waterGain);waterGain.connect(master);
+    water.start();
+
+    /* Gerakan arus yang sangat lembut, bukan suara hewan atau napas. */
+    const lfo=ctx.createOscillator();
+    const lfoGain=ctx.createGain();
+    lfo.frequency.value=.09;
+    lfoGain.gain.value=.11;
+    lfo.connect(lfoGain);lfoGain.connect(waterGain.gain);
+    lfo.start();
+
+    window.underwaterAudioContext=ctx;
+    window.underwaterMaster=master;
+    window.underwaterNodes=[water,low,waterGain,lfo,lfoGain];
+
+    scheduleBubbleCluster();
+    rememberTimer(setTimeout(scheduleWhaleCall,7000+Math.random()*8000));
+    return true;
+  };
+
+  window.toggleUnderwaterAmbient=async function(){
+    const button=document.getElementById('ambientToggle');
+    window.underwaterPlaying=!window.underwaterPlaying;
+
+    if(window.underwaterPlaying){
+      if(!window.underwaterAudioContext){
+        window.createUnderwaterAmbient();
+      }
+      if(window.underwaterAudioContext?.state==='suspended'){
+        await window.underwaterAudioContext.resume();
+      }
+      if(window.underwaterMaster){
+        const now=window.underwaterAudioContext.currentTime;
+        window.underwaterMaster.gain.cancelScheduledValues(now);
+        window.underwaterMaster.gain.setTargetAtTime(.42,now,.1);
+      }
+      button?.classList.add('playing');
+      if(button){button.textContent='♫';button.title='Matikan ambient bawah laut';}
+    }else{
+      clearAmbientTimers();
+      if(window.underwaterMaster&&window.underwaterAudioContext){
+        window.underwaterMaster.gain.setTargetAtTime(0,window.underwaterAudioContext.currentTime,.08);
+      }
+      try{window.underwaterAudioContext?.close();}catch(e){}
+      window.underwaterAudioContext=null;
+      window.underwaterMaster=null;
+      window.underwaterNodes=[];
+      button?.classList.remove('playing');
+      if(button){button.textContent='♪';button.title='Nyalakan ambient bawah laut';}
+    }
+  };
+})();
+</script>
+
+
+<script id="final-srs-stat-click-fix">
+(function(){
+  function ensureSrsDetailModalFinal(){
+    let modal=document.getElementById('srsDetailModal');
+    if(modal) return modal;
+
+    modal=document.createElement('div');
+    modal.id='srsDetailModal';
+    modal.className='srs-detail-modal';
+    modal.innerHTML=`
+      <div class="srs-detail-card" role="dialog" aria-modal="true">
+        <div class="srs-detail-head">
+          <h2 id="srsDetailTitle">Daftar Kosakata</h2>
+          <button class="srs-detail-close" type="button" aria-label="Tutup">×</button>
+        </div>
+        <div id="srsDetailList"></div>
+      </div>`;
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click',event=>{
+      if(event.target===modal) modal.classList.remove('active');
+    });
+    modal.querySelector('.srs-detail-close')?.addEventListener('click',()=>{
+      modal.classList.remove('active');
+    });
+    return modal;
+  }
+
+  function statusTypeFromCard(card){
+    if(card.querySelector('#srsDueCount')) return 'unlearned';
+    if(card.querySelector('#srsLearningCount')) return 'learning';
+    if(card.querySelector('#srsMasteredCount')) return 'mastered';
+    return null;
+  }
+
+  function openFromCard(card){
+    const type=statusTypeFromCard(card);
+    if(!type) return;
+    ensureSrsDetailModalFinal();
+    if(typeof window.openSrsStatusDetail==='function'){
+      window.openSrsStatusDetail(type);
+    }
+  }
+
+  function prepareCards(){
+    document.querySelectorAll('#srs .srs-stat').forEach(card=>{
+      card.setAttribute('role','button');
+      card.setAttribute('tabindex','0');
+      card.style.pointerEvents='auto';
+      const count=card.querySelector('strong');
+      const label=card.querySelector('span');
+      if(count?.id==='srsDueCount' && label) label.textContent='Belum Dipelajari';
+      if(count?.id==='srsLearningCount' && label) label.textContent='Belajar';
+      if(count?.id==='srsMasteredCount' && label) label.textContent='Dikuasai';
+    });
+  }
+
+  document.addEventListener('click',event=>{
+    const card=event.target.closest('#srs .srs-stat');
+    if(!card) return;
+    event.preventDefault();
+    openFromCard(card);
+  },true);
+
+  document.addEventListener('keydown',event=>{
+    if(event.key!=='Enter' && event.key!==' ') return;
+    const card=event.target.closest?.('#srs .srs-stat');
+    if(!card) return;
+    event.preventDefault();
+    openFromCard(card);
+  },true);
+
+  const observer=new MutationObserver(()=>prepareCards());
+  window.addEventListener('load',()=>{
+    prepareCards();
+    ensureSrsDetailModalFinal();
+    const stats=document.querySelector('#srs .srs-stats');
+    if(stats) observer.observe(stats,{subtree:true,childList:true,characterData:true});
+  });
+
+  window.addEventListener('pageshow',prepareCards);
+})();
+</script>
+
+
+
+<!-- ===== FINAL FIX: satu kosakata hanya muncul sekali total di dashboard SRS ===== -->
+<script id="final-global-unique-vocab-fix">
+(function(){
+  function stageOfFinal(record){
+    return Math.max(0,Math.min(10,Number(record?.correctStage ?? record?.level ?? 0)||0));
+  }
+
+  function visibleWordFinal(item){
+    const temp=document.createElement('div');
+    temp.innerHTML=item.correctSentenceHtml||item.questionHtml||'';
+    const target=temp.querySelector('.srs-correct-word, mark, strong');
+    if(!target) return String(item.answer||'Kosakata').trim();
+    const clone=target.cloneNode(true);
+    clone.querySelectorAll('rt,rp').forEach(node=>node.remove());
+    return (clone.textContent||item.answer||'Kosakata').trim();
+  }
+
+  function canonicalWordKey(text){
+    return String(text||'')
+      .normalize('NFKC')
+      .replace(/[\s　]+/g,'')
+      .replace(/[、。！？!?,.・「」『』（）()［］【】]/g,'')
+      .toLowerCase();
+  }
+
+  function globalUniqueEntriesFinal(){
+    const items=buildSrsItems();
+    const state=syncSrsState(items);
+    const map=new Map();
+
+    items.forEach(item=>{
+      const word=visibleWordFinal(item);
+      const key=canonicalWordKey(word) || normalizeKana(item.answer||'');
+      const record=state[item.key]||{};
+      const candidate={item,record,word,keys:[item.key]};
+      const existing=map.get(key);
+
+      if(!existing){
+        map.set(key,candidate);
+        return;
+      }
+
+      existing.keys.push(item.key);
+
+      /* Satu kata hanya punya satu status: pilih progres tertinggi.
+         Jika sama, pilih jadwal tes yang paling dekat. */
+      const oldStage=stageOfFinal(existing.record);
+      const newStage=stageOfFinal(record);
+      const oldDue=Number(existing.record?.due ?? Infinity);
+      const newDue=Number(record?.due ?? Infinity);
+
+      if(newStage>oldStage || (newStage===oldStage && newDue<oldDue)){
+        existing.item=item;
+        existing.record=record;
+        existing.word=word;
+      }
+    });
+
+    return [...map.values()];
+  }
+
+  function dueTextFinal(record){
+    const remaining=Number(record?.due||0)-Date.now();
+    return remaining<=0 ? 'Bisa dites sekarang' : `${formatSrsDuration(remaining)} lagi`;
+  }
+
+  window.openSrsStatusDetail=function(type){
+    const modal=document.getElementById('srsDetailModal');
+    if(!modal) return;
+
+    const filtered=globalUniqueEntriesFinal().filter(entry=>{
+      const stage=stageOfFinal(entry.record);
+      if(type==='unlearned') return stage===0;
+      if(type==='learning') return stage>0&&stage<10;
+      return stage>=10;
+    }).sort((a,b)=>a.word.localeCompare(b.word,'ja',{numeric:true,sensitivity:'base'}));
+
+    const titles={unlearned:'Belum Dipelajari',learning:'Sedang Belajar',mastered:'Dikuasai'};
+    const title=modal.querySelector('#srsDetailTitle');
+    const list=modal.querySelector('#srsDetailList');
+    if(title) title.textContent=`${titles[type]} (${filtered.length})`;
+    if(list){
+      list.innerHTML=filtered.length ? filtered.map(entry=>{
+        const r=entry.record||{};
+        const stage=stageOfFinal(r);
+        return `<div class="srs-vocab-detail">
+          <div class="srs-vocab-word">${escapeHtml(entry.word)}</div>
+          <div class="srs-vocab-meta">${escapeHtml(entry.item.storyTitle)}・Progres <strong>${stage}/10</strong><br>Benar ${Number(r.correct||0)} kali・Salah ${Number(r.wrong||0)} kali</div>
+          <span class="srs-vocab-time">${dueTextFinal(r)}</span>
+        </div>`;
+      }).join('') : '<div class="empty">Tidak ada kosakata dalam kategori ini.</div>';
+    }
+
+    modal.classList.add('active');
+  };
+
+  function refreshCountsFinal(){
+    const entries=globalUniqueEntriesFinal();
+    const counts={unlearned:0,learning:0,mastered:0};
+    entries.forEach(entry=>{
+      const stage=stageOfFinal(entry.record);
+      if(stage===0) counts.unlearned++;
+      else if(stage<10) counts.learning++;
+      else counts.mastered++;
+    });
+    const due=document.getElementById('srsDueCount');
+    const learning=document.getElementById('srsLearningCount');
+    const mastered=document.getElementById('srsMasteredCount');
+    if(due) due.textContent=counts.unlearned;
+    if(learning) learning.textContent=counts.learning;
+    if(mastered) mastered.textContent=counts.mastered;
+  }
+
+  const oldRender=window.renderSrsPage;
+  if(typeof oldRender==='function'){
+    window.renderSrsPage=function(){
+      const result=oldRender.apply(this,arguments);
+      setTimeout(refreshCountsFinal,0);
+      return result;
+    };
+  }
+
+  const oldCounters=window.updateSrsCountersOnly;
+  if(typeof oldCounters==='function'){
+    window.updateSrsCountersOnly=function(){
+      const result=oldCounters.apply(this,arguments);
+      setTimeout(refreshCountsFinal,0);
+      return result;
+    };
+  }
+
+  window.addEventListener('load',()=>setTimeout(refreshCountsFinal,0));
+  window.addEventListener('pageshow',()=>setTimeout(refreshCountsFinal,0));
+})();
+</script>
+
 </body>
 </html>
