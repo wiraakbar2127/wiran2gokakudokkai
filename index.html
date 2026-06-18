@@ -1247,31 +1247,7 @@ footer{
   </div>
 </div>
 
-<script id="loading-failsafe">
-(function(){
-  function forceHideInitialLoading(){
-    var screen=document.getElementById('loadingScreen');
-    if(!screen) return;
-    screen.classList.add('hidden');
-    screen.setAttribute('aria-hidden','true');
-  }
-  // Tidak bergantung pada kode aplikasi lain. Loading pasti ditutup walau ada error JS.
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',function(){
-      window.setTimeout(forceHideInitialLoading,700);
-    },{once:true});
-  }else{
-    window.setTimeout(forceHideInitialLoading,700);
-  }
-  window.setTimeout(forceHideInitialLoading,3000);
-  window.addEventListener('error',function(){
-    window.setTimeout(forceHideInitialLoading,50);
-  });
-  window.addEventListener('unhandledrejection',function(){
-    window.setTimeout(forceHideInitialLoading,50);
-  });
-})();
-</script>
+
 
 <div class="sea-decor fish-a" aria-hidden="true">
   <svg viewBox="0 0 180 110" fill="none">
@@ -2669,7 +2645,7 @@ function renderManageList(){
 
 
   wrap.innerHTML=stories.map(s=>`
-    <div class="manage-card" id="manage-card-${encodeURIComponent(String(s.id))}">
+    <div class="manage-card" id="manage-card-${encodeURIComponent(String(story.id))}">
       <div class="manage-head">
         <div>
           <span class="tag">${s.theme||"読解"}</span>${completionBadge(s.id)}
@@ -2871,26 +2847,16 @@ document.getElementById("readConfirmModal").addEventListener("click",event=>{
 });
 
 window.addEventListener("load",()=>{
-  try{
-    restoreNavigationState();
+  restoreNavigationState();
 
-    const state=getNavigationState();
-    replaceInternalHistory(
-      state.page||"home",
-      state.folder||null,
-      state.storyId||null
-    );
-  }catch(error){
-    console.error("Gagal memulihkan halaman terakhir:",error);
-    try{
-      go("home");
-      replaceInternalHistory("home",null,null);
-    }catch(fallbackError){
-      console.error("Fallback beranda gagal:",fallbackError);
-    }
-  }finally{
-    hideLoading(350);
-  }
+  const state=getNavigationState();
+  replaceInternalHistory(
+    state.page||"home",
+    state.folder||null,
+    state.storyId||null
+  );
+
+  hideLoading(1800);
 });
 
 window.setTimeout(()=>{
@@ -7971,9 +7937,141 @@ async function toggleUnderwaterAmbient(){
 </script>
 
 
-<script id="final-srs-stat-click-fix">
+
+<!-- ===== PATCH FINAL: SRS unik, tombol tabel aktif, tidak ada duplikasi kosakata ===== -->
+<style id="srs-final-no-duplicate-style">
+  .srs-stat{cursor:pointer;transition:.18s}
+  .srs-stat:hover{transform:translateY(-2px);box-shadow:0 10px 25px rgba(47,111,174,.12)}
+  .srs-detail-modal{position:fixed;inset:0;z-index:10050;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(18,45,70,.42);backdrop-filter:blur(5px)}
+  .srs-detail-modal.active{display:flex}
+  .srs-detail-card{width:min(560px,100%);max-height:min(78vh,720px);overflow:auto;background:white;border:1px solid var(--line);border-radius:26px;padding:22px;box-shadow:0 24px 70px rgba(22,61,95,.24)}
+  .srs-detail-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .srs-detail-head h2{margin:0;color:var(--brown)}
+  .srs-detail-close{border:0;background:var(--soft);color:var(--brown);width:36px;height:36px;border-radius:50%;font-size:22px;cursor:pointer}
+  .srs-vocab-detail{padding:13px 0;border-bottom:1px dashed var(--line)}
+  .srs-vocab-detail:last-child{border-bottom:0}
+  .srs-vocab-word{font-size:22px;font-weight:900;color:var(--brown);line-height:1.5}
+  .srs-vocab-meta{color:var(--muted);line-height:1.6;font-size:13px}
+  .srs-vocab-time{display:inline-block;margin-top:7px;padding:5px 9px;border-radius:999px;background:var(--soft);color:var(--brown);font-size:12px;font-weight:800}
+</style>
+<script id="srs-final-no-duplicate-script">
 (function(){
-  function ensureSrsDetailModalFinal(){
+  function stageOf(record){
+    return Math.max(0,Math.min(10,Number(record?.correctStage ?? record?.level ?? 0)||0));
+  }
+
+  function cleanTargetText(html,fallback){
+    const box=document.createElement('div');
+    box.innerHTML=String(html||'');
+    const target=box.querySelector('.srs-correct-word, .srs-question-target, mark, strong');
+    const node=target || box;
+    const clone=node.cloneNode(true);
+    clone.querySelectorAll('rt,rp').forEach(n=>n.remove());
+    return String(clone.textContent||fallback||'').replace(/＿＿＿＿/g,'').trim();
+  }
+
+  function uniqueKeyFromTarget(word,answer){
+    const w=String(word||'').trim();
+    const a=normalizeKana(String(answer||'').trim());
+    return 'vocab::'+w+'::'+a;
+  }
+
+  function chooseBetterRecord(a,b){
+    if(!a) return b;
+    if(!b) return a;
+    const sa=stageOf(a), sb=stageOf(b);
+    if(sb>sa) return b;
+    if(sb<sa) return a;
+    const da=Number(a.due||Infinity), db=Number(b.due||Infinity);
+    if(db<da) return b;
+    return a;
+  }
+
+  function makeRecordCopy(record){
+    return record ? JSON.parse(JSON.stringify(record)) : null;
+  }
+
+  window.buildSrsItems=function(){
+    const completed=new Set(getCompletedStories().map(String));
+    const items=[];
+    const seen=new Map();
+
+    getStories()
+      .filter(story=>completed.has(String(story.id)))
+      .forEach(story=>{
+        (story.content||[]).forEach((pair,sentenceIndex)=>{
+          const jp=Array.isArray(pair)?pair[0]:(pair?.japanese||pair?.jp||'');
+          const idn=Array.isArray(pair)?pair[1]:(pair?.indonesian||pair?.id||'');
+
+          getStrongTargets(jp).forEach((target,targetIndex)=>{
+            const word=cleanTargetText(target.correctSentenceHtml||target.questionHtml,target.answer);
+            const key=uniqueKeyFromTarget(word,target.answer);
+            const oldKey=`${story.id}::${sentenceIndex}::${targetIndex}`;
+
+            if(seen.has(key)){
+              const saved=seen.get(key);
+              saved.oldKeys.push(oldKey);
+              return;
+            }
+
+            const item={
+              key,
+              oldKeys:[oldKey],
+              storyId:String(story.id),
+              storyTitle:story.title||'Tanpa Judul',
+              folder:story.level||'N2',
+              questionHtml:target.questionHtml,
+              correctSentenceHtml:target.correctSentenceHtml||target.questionHtml,
+              translationHtml:String(idn||''),
+              answer:normalizeKana(target.answer),
+              displayWord:word||normalizeKana(target.answer)
+            };
+            seen.set(key,item);
+            items.push(item);
+          });
+        });
+      });
+
+    return items;
+  };
+
+  window.syncSrsState=function(items){
+    const state=getSrsState();
+    const now=Date.now();
+
+    items.forEach(item=>{
+      let best=state[item.key]||null;
+      (item.oldKeys||[]).forEach(oldKey=>{
+        best=chooseBetterRecord(best,state[oldKey]);
+      });
+
+      if(best){
+        state[item.key]=makeRecordCopy(best);
+      }else if(!state[item.key]){
+        state[item.key]={level:0,correctStage:0,due:now,correct:0,wrong:0,lastResult:null};
+      }
+    });
+
+    saveSrsState(state);
+    return state;
+  };
+
+  window.getDueSrsItems=function(){
+    const items=buildSrsItems();
+    const state=syncSrsState(items);
+    const now=Date.now();
+    return items
+      .filter(item=>(state[item.key]?.due||0)<=now)
+      .sort((a,b)=>(state[a.key]?.due||0)-(state[b.key]?.due||0));
+  };
+
+  function dueText(record){
+    const remaining=Number(record?.due||0)-Date.now();
+    if(remaining<=0) return 'Bisa dites sekarang';
+    return `${formatSrsDuration(remaining)} lagi`;
+  }
+
+  function ensureSrsDetailModal(){
     let modal=document.getElementById('srsDetailModal');
     if(modal) return modal;
 
@@ -7981,215 +8079,1036 @@ async function toggleUnderwaterAmbient(){
     modal.id='srsDetailModal';
     modal.className='srs-detail-modal';
     modal.innerHTML=`
-      <div class="srs-detail-card" role="dialog" aria-modal="true">
+      <div class="srs-detail-card">
         <div class="srs-detail-head">
-          <h2 id="srsDetailTitle">Daftar Kosakata</h2>
+          <h2 id="srsDetailTitle">SRS</h2>
           <button class="srs-detail-close" type="button" aria-label="Tutup">×</button>
         </div>
         <div id="srsDetailList"></div>
       </div>`;
-
     document.body.appendChild(modal);
-    modal.addEventListener('click',event=>{
-      if(event.target===modal) modal.classList.remove('active');
-    });
-    modal.querySelector('.srs-detail-close')?.addEventListener('click',()=>{
-      modal.classList.remove('active');
-    });
+    modal.addEventListener('click',event=>{if(event.target===modal) modal.classList.remove('active')});
+    modal.querySelector('.srs-detail-close').addEventListener('click',()=>modal.classList.remove('active'));
     return modal;
   }
 
-  function statusTypeFromCard(card){
-    if(card.querySelector('#srsDueCount')) return 'unlearned';
-    if(card.querySelector('#srsLearningCount')) return 'learning';
-    if(card.querySelector('#srsMasteredCount')) return 'mastered';
-    return null;
-  }
+  window.openSrsStatusDetail=function(type){
+    const modal=ensureSrsDetailModal();
+    const items=buildSrsItems();
+    const state=syncSrsState(items);
 
-  function openFromCard(card){
-    const type=statusTypeFromCard(card);
-    if(!type) return;
-    ensureSrsDetailModalFinal();
-    if(typeof window.openSrsStatusDetail==='function'){
-      window.openSrsStatusDetail(type);
-    }
-  }
+    const filtered=items.filter(item=>{
+      const stage=stageOf(state[item.key]);
+      if(type==='unlearned') return stage===0;
+      if(type==='learning') return stage>0&&stage<10;
+      return stage>=10;
+    }).sort((a,b)=>String(a.displayWord||a.answer).localeCompare(String(b.displayWord||b.answer),'ja'));
 
-  function prepareCards(){
-    document.querySelectorAll('#srs .srs-stat').forEach(card=>{
+    const titles={unlearned:'Belum Dipelajari',learning:'Belajar',mastered:'Dikuasai'};
+    modal.querySelector('#srsDetailTitle').textContent=`${titles[type]||'SRS'} (${filtered.length})`;
+    modal.querySelector('#srsDetailList').innerHTML=filtered.length ? filtered.map(item=>{
+      const record=state[item.key]||{};
+      const stage=stageOf(record);
+      return `<div class="srs-vocab-detail">
+        <div class="srs-vocab-word">${escapeHtml(item.displayWord||item.answer)}</div>
+        <div class="srs-vocab-meta">${escapeHtml(item.storyTitle)}・Progres <strong>${stage}/10</strong><br>Benar ${Number(record.correct||0)} kali・Salah ${Number(record.wrong||0)} kali</div>
+        <span class="srs-vocab-time">${dueText(record)}</span>
+      </div>`;
+    }).join('') : '<div class="empty">Tidak ada kosakata dalam kategori ini.</div>';
+
+    modal.classList.add('active');
+  };
+
+  window.updateSrsCountersOnly=function(){
+    const items=buildSrsItems();
+    const state=syncSrsState(items);
+    const unlearned=items.filter(item=>stageOf(state[item.key])===0).length;
+    const learning=items.filter(item=>{const stage=stageOf(state[item.key]);return stage>0&&stage<10}).length;
+    const mastered=items.filter(item=>stageOf(state[item.key])>=10).length;
+
+    const a=document.getElementById('srsDueCount');
+    const b=document.getElementById('srsLearningCount');
+    const c=document.getElementById('srsMasteredCount');
+    if(a) a.textContent=unlearned;
+    if(b) b.textContent=learning;
+    if(c) c.textContent=mastered;
+  };
+
+  function wireSrsStatButtons(){
+    const stats=[
+      ['srsDueCount','unlearned','Belum Dipelajari'],
+      ['srsLearningCount','learning','Belajar'],
+      ['srsMasteredCount','mastered','Dikuasai']
+    ];
+
+    stats.forEach(([id,type,label])=>{
+      const count=document.getElementById(id);
+      const card=count?.closest('.srs-stat');
+      if(!count||!card) return;
+      const span=card.querySelector('span');
+      if(span) span.textContent=label;
       card.setAttribute('role','button');
       card.setAttribute('tabindex','0');
-      card.style.pointerEvents='auto';
-      const count=card.querySelector('strong');
-      const label=card.querySelector('span');
-      if(count?.id==='srsDueCount' && label) label.textContent='Belum Dipelajari';
-      if(count?.id==='srsLearningCount' && label) label.textContent='Belajar';
-      if(count?.id==='srsMasteredCount' && label) label.textContent='Dikuasai';
+      card.onclick=()=>window.openSrsStatusDetail(type);
+      card.onkeydown=event=>{
+        if(event.key==='Enter'||event.key===' '){
+          event.preventDefault();
+          window.openSrsStatusDetail(type);
+        }
+      };
     });
   }
 
-  document.addEventListener('click',event=>{
-    const card=event.target.closest('#srs .srs-stat');
-    if(!card) return;
-    event.preventDefault();
-    openFromCard(card);
-  },true);
+  const previousRenderSrsPage=window.renderSrsPage;
+  window.renderSrsPage=function(){
+    if(typeof previousRenderSrsPage==='function'){
+      previousRenderSrsPage.apply(this,arguments);
+    }
+    window.setTimeout(()=>{
+      updateSrsCountersOnly();
+      wireSrsStatButtons();
+    },0);
+  };
 
-  document.addEventListener('keydown',event=>{
-    if(event.key!=='Enter' && event.key!==' ') return;
-    const card=event.target.closest?.('#srs .srs-stat');
-    if(!card) return;
-    event.preventDefault();
-    openFromCard(card);
-  },true);
-
-  const observer=new MutationObserver(()=>prepareCards());
-  window.addEventListener('load',()=>{
-    prepareCards();
-    ensureSrsDetailModalFinal();
-    const stats=document.querySelector('#srs .srs-stats');
-    if(stats) observer.observe(stats,{subtree:true,childList:true,characterData:true});
+  document.addEventListener('DOMContentLoaded',()=>{
+    ensureSrsDetailModal();
+    wireSrsStatButtons();
+    updateSrsCountersOnly();
   });
 
-  window.addEventListener('pageshow',prepareCards);
+  window.addEventListener('load',()=>{
+    window.setTimeout(()=>{
+      ensureSrsDetailModal();
+      wireSrsStatButtons();
+      updateSrsCountersOnly();
+    },100);
+  });
 })();
 </script>
 
 
-
-<!-- ===== FINAL FIX: satu kosakata hanya muncul sekali total di dashboard SRS ===== -->
-<script id="final-global-unique-vocab-fix">
+<!-- ===== PATCH PALING AKHIR: paksa tabel SRS benar-benar unik berdasarkan kosakata yang tampil ===== -->
+<script id="absolute-final-srs-visible-word-dedup">
 (function(){
-  function stageOfFinal(record){
-    return Math.max(0,Math.min(10,Number(record?.correctStage ?? record?.level ?? 0)||0));
+  function srsStage(record){
+    return Math.max(0, Math.min(10, Number(record?.correctStage ?? record?.level ?? 0) || 0));
   }
 
-  function visibleWordFinal(item){
-    const temp=document.createElement('div');
-    temp.innerHTML=item.correctSentenceHtml||item.questionHtml||'';
-    const target=temp.querySelector('.srs-correct-word, mark, strong');
-    if(!target) return String(item.answer||'Kosakata').trim();
-    const clone=target.cloneNode(true);
-    clone.querySelectorAll('rt,rp').forEach(node=>node.remove());
-    return (clone.textContent||item.answer||'Kosakata').trim();
+  function stripRubyAndGetText(html, fallback){
+    const temp = document.createElement('div');
+    temp.innerHTML = String(html || '');
+
+    const target =
+      temp.querySelector('.srs-correct-word') ||
+      temp.querySelector('.srs-question-target') ||
+      temp.querySelector('mark') ||
+      temp.querySelector('strong');
+
+    const node = target || temp;
+    const clone = node.cloneNode(true);
+    clone.querySelectorAll('rt,rp').forEach(n => n.remove());
+
+    return String(clone.textContent || fallback || '')
+      .replace(/＿＿＿＿/g, '')
+      .replace(/\s+/g, '')
+      .trim();
   }
 
-  function canonicalWordKey(text){
-    return String(text||'')
-      .normalize('NFKC')
-      .replace(/[\s　]+/g,'')
-      .replace(/[、。！？!?,.・「」『』（）()［］【】]/g,'')
-      .toLowerCase();
+  function getVisibleSrsWord(item){
+    return stripRubyAndGetText(
+      item.correctSentenceHtml || item.questionHtml || '',
+      item.displayWord || item.answer || 'Kosakata'
+    );
   }
 
-  function globalUniqueEntriesFinal(){
-    const items=buildSrsItems();
-    const state=syncSrsState(items);
-    const map=new Map();
+  function normalizeSrsVocabKey(word, answer){
+    const w = String(word || '')
+      .replace(/\s+/g, '')
+      .replace(/[。、，,.!?！？「」『』（）()【】\[\]・]/g, '')
+      .trim();
 
-    items.forEach(item=>{
-      const word=visibleWordFinal(item);
-      const key=canonicalWordKey(word) || normalizeKana(item.answer||'');
-      const record=state[item.key]||{};
-      const candidate={item,record,word,keys:[item.key]};
-      const existing=map.get(key);
+    // Prioritas utama: tulisan kosakata yang tampil di tabel.
+    // Kalau tulisan sama, cukup tampil 1 kali saja.
+    if(w) return 'word::' + w;
 
-      if(!existing){
-        map.set(key,candidate);
-        return;
-      }
+    return 'answer::' + normalizeKana(String(answer || '').trim());
+  }
 
-      existing.keys.push(item.key);
+  function bestEntry(oldEntry, newEntry){
+    if(!oldEntry) return newEntry;
 
-      /* Satu kata hanya punya satu status: pilih progres tertinggi.
-         Jika sama, pilih jadwal tes yang paling dekat. */
-      const oldStage=stageOfFinal(existing.record);
-      const newStage=stageOfFinal(record);
-      const oldDue=Number(existing.record?.due ?? Infinity);
-      const newDue=Number(record?.due ?? Infinity);
+    const oldStage = srsStage(oldEntry.record);
+    const newStage = srsStage(newEntry.record);
 
-      if(newStage>oldStage || (newStage===oldStage && newDue<oldDue)){
-        existing.item=item;
-        existing.record=record;
-        existing.word=word;
-      }
+    if(newStage > oldStage) return newEntry;
+    if(newStage < oldStage) return oldEntry;
+
+    const oldDue = Number(oldEntry.record?.due || Infinity);
+    const newDue = Number(newEntry.record?.due || Infinity);
+
+    if(newDue < oldDue) return newEntry;
+    return oldEntry;
+  }
+
+  function getUniqueSrsEntriesFinal(){
+    const items = buildSrsItems();
+    const state = syncSrsState(items);
+    const map = new Map();
+
+    items.forEach(item => {
+      const word = getVisibleSrsWord(item);
+      const uniqueKey = normalizeSrsVocabKey(word, item.answer);
+      const record = state[item.key] || {};
+      const entry = { item, record, word: word || item.answer || 'Kosakata' };
+
+      map.set(uniqueKey, bestEntry(map.get(uniqueKey), entry));
     });
 
     return [...map.values()];
   }
 
   function dueTextFinal(record){
-    const remaining=Number(record?.due||0)-Date.now();
-    return remaining<=0 ? 'Bisa dites sekarang' : `${formatSrsDuration(remaining)} lagi`;
+    const remaining = Number(record?.due || 0) - Date.now();
+    return remaining <= 0 ? 'Bisa dites sekarang' : `${formatSrsDuration(remaining)} lagi`;
   }
 
-  window.openSrsStatusDetail=function(type){
-    const modal=document.getElementById('srsDetailModal');
-    if(!modal) return;
+  window.openSrsStatusDetail = function(type){
+    let modal = document.getElementById('srsDetailModal');
 
-    const filtered=globalUniqueEntriesFinal().filter(entry=>{
-      const stage=stageOfFinal(entry.record);
-      if(type==='unlearned') return stage===0;
-      if(type==='learning') return stage>0&&stage<10;
-      return stage>=10;
-    }).sort((a,b)=>a.word.localeCompare(b.word,'ja',{numeric:true,sensitivity:'base'}));
-
-    const titles={unlearned:'Belum Dipelajari',learning:'Sedang Belajar',mastered:'Dikuasai'};
-    const title=modal.querySelector('#srsDetailTitle');
-    const list=modal.querySelector('#srsDetailList');
-    if(title) title.textContent=`${titles[type]} (${filtered.length})`;
-    if(list){
-      list.innerHTML=filtered.length ? filtered.map(entry=>{
-        const r=entry.record||{};
-        const stage=stageOfFinal(r);
-        return `<div class="srs-vocab-detail">
-          <div class="srs-vocab-word">${escapeHtml(entry.word)}</div>
-          <div class="srs-vocab-meta">${escapeHtml(entry.item.storyTitle)}・Progres <strong>${stage}/10</strong><br>Benar ${Number(r.correct||0)} kali・Salah ${Number(r.wrong||0)} kali</div>
-          <span class="srs-vocab-time">${dueTextFinal(r)}</span>
+    if(!modal){
+      modal = document.createElement('div');
+      modal.id = 'srsDetailModal';
+      modal.className = 'srs-detail-modal';
+      modal.innerHTML = `
+        <div class="srs-detail-card" role="dialog" aria-modal="true">
+          <div class="srs-detail-head">
+            <h2 id="srsDetailTitle">Daftar Kosakata</h2>
+            <button class="srs-detail-close" type="button" aria-label="Tutup">×</button>
+          </div>
+          <div id="srsDetailList"></div>
         </div>`;
-      }).join('') : '<div class="empty">Tidak ada kosakata dalam kategori ini.</div>';
+      document.body.appendChild(modal);
+      modal.addEventListener('click', event => {
+        if(event.target === modal) modal.classList.remove('active');
+      });
+      modal.querySelector('.srs-detail-close').addEventListener('click', () => {
+        modal.classList.remove('active');
+      });
     }
+
+    const filtered = getUniqueSrsEntriesFinal()
+      .filter(entry => {
+        const stage = srsStage(entry.record);
+        if(type === 'unlearned') return stage === 0;
+        if(type === 'learning') return stage > 0 && stage < 10;
+        return stage >= 10;
+      })
+      .sort((a,b) => String(a.word).localeCompare(String(b.word), 'ja'));
+
+    const titles = {
+      unlearned: 'Belum Dipelajari',
+      learning: 'Belajar',
+      mastered: 'Dikuasai'
+    };
+
+    modal.querySelector('#srsDetailTitle').textContent =
+      `${titles[type] || 'SRS'} (${filtered.length})`;
+
+    modal.querySelector('#srsDetailList').innerHTML = filtered.length
+      ? filtered.map(entry => {
+          const r = entry.record || {};
+          const stage = srsStage(r);
+
+          return `<div class="srs-vocab-detail">
+            <div class="srs-vocab-word">${escapeHtml(entry.word)}</div>
+            <div class="srs-vocab-meta">
+              ${escapeHtml(entry.item.storyTitle || 'Tanpa Judul')}・Progres <strong>${stage}/10</strong><br>
+              Benar ${Number(r.correct || 0)} kali・Salah ${Number(r.wrong || 0)} kali
+            </div>
+            <span class="srs-vocab-time">${dueTextFinal(r)}</span>
+          </div>`;
+        }).join('')
+      : '<div class="empty">Tidak ada kosakata dalam kategori ini.</div>';
 
     modal.classList.add('active');
   };
 
-  function refreshCountsFinal(){
-    const entries=globalUniqueEntriesFinal();
-    const counts={unlearned:0,learning:0,mastered:0};
-    entries.forEach(entry=>{
-      const stage=stageOfFinal(entry.record);
-      if(stage===0) counts.unlearned++;
-      else if(stage<10) counts.learning++;
-      else counts.mastered++;
+  window.updateSrsCountersOnly = function(){
+    const entries = getUniqueSrsEntriesFinal();
+
+    const unlearned = entries.filter(entry => srsStage(entry.record) === 0).length;
+    const learning = entries.filter(entry => {
+      const stage = srsStage(entry.record);
+      return stage > 0 && stage < 10;
+    }).length;
+    const mastered = entries.filter(entry => srsStage(entry.record) >= 10).length;
+
+    const due = document.getElementById('srsDueCount');
+    const learn = document.getElementById('srsLearningCount');
+    const master = document.getElementById('srsMasteredCount');
+
+    if(due) due.textContent = unlearned;
+    if(learn) learn.textContent = learning;
+    if(master) master.textContent = mastered;
+  };
+
+  function wireFinalSrsButtons(){
+    const configs = [
+      ['srsDueCount', 'unlearned', 'Belum Dipelajari'],
+      ['srsLearningCount', 'learning', 'Belajar'],
+      ['srsMasteredCount', 'mastered', 'Dikuasai']
+    ];
+
+    configs.forEach(([id, type, label]) => {
+      const count = document.getElementById(id);
+      const card = count?.closest('.srs-stat');
+      if(!card) return;
+
+      const span = card.querySelector('span');
+      if(span) span.textContent = label;
+
+      card.setAttribute('role', 'button');
+      card.setAttribute('tabindex', '0');
+      card.onclick = () => window.openSrsStatusDetail(type);
+      card.onkeydown = event => {
+        if(event.key === 'Enter' || event.key === ' '){
+          event.preventDefault();
+          window.openSrsStatusDetail(type);
+        }
+      };
     });
-    const due=document.getElementById('srsDueCount');
-    const learning=document.getElementById('srsLearningCount');
-    const mastered=document.getElementById('srsMasteredCount');
-    if(due) due.textContent=counts.unlearned;
-    if(learning) learning.textContent=counts.learning;
-    if(mastered) mastered.textContent=counts.mastered;
   }
 
-  const oldRender=window.renderSrsPage;
-  if(typeof oldRender==='function'){
-    window.renderSrsPage=function(){
-      const result=oldRender.apply(this,arguments);
-      setTimeout(refreshCountsFinal,0);
+  const previousRenderSrsPageFinal = window.renderSrsPage;
+  window.renderSrsPage = function(){
+    const result = typeof previousRenderSrsPageFinal === 'function'
+      ? previousRenderSrsPageFinal.apply(this, arguments)
+      : undefined;
+
+    setTimeout(() => {
+      wireFinalSrsButtons();
+      updateSrsCountersOnly();
+    }, 0);
+
+    return result;
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      wireFinalSrsButtons();
+      updateSrsCountersOnly();
+    }, 0);
+  });
+
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      wireFinalSrsButtons();
+      updateSrsCountersOnly();
+    }, 120);
+  });
+})();
+</script>
+
+
+
+<!-- ===== PATCH FINAL 2: SRS kosakata saja + kartu siap dites sejajar ===== -->
+<style id="absolute-final-srs-vocab-only-style-v2">
+  #srs .srs-stats{
+    grid-template-columns:repeat(4,1fr)!important;
+  }
+  #srs .srs-stat.srs-ready-stat{
+    background:linear-gradient(135deg,#174e86,#0f3b68)!important;
+    color:#fff!important;
+    border-color:rgba(255,255,255,.18)!important;
+    box-shadow:0 12px 28px rgba(15,59,104,.22);
+    cursor:default;
+  }
+  #srs .srs-stat.srs-ready-stat strong{
+    color:#fff!important;
+  }
+  #srs .srs-stat.srs-ready-stat span{
+    color:rgba(255,255,255,.86)!important;
+  }
+  .srs-vocab-only-card{
+    text-align:center;
+    padding:28px 10px 22px;
+  }
+  .srs-vocab-only-label{
+    color:var(--muted);
+    font-weight:900;
+    font-size:13px;
+    margin-bottom:12px;
+  }
+  .srs-vocab-only-word{
+    display:block;
+    margin:0 auto 14px;
+    font-size:clamp(48px,9vw,82px);
+    font-weight:900;
+    letter-spacing:.05em;
+    line-height:1.15;
+    color:#18324a;
+  }
+  .srs-vocab-only-word rt,
+  .srs-vocab-only-word rp{
+    display:none!important;
+  }
+  .srs-vocab-only-meaning{
+    display:inline-block;
+    max-width:100%;
+    padding:11px 17px;
+    border-radius:16px;
+    background:#eef6ff;
+    border:1px solid #c8def2;
+    color:#244f73;
+    font-size:clamp(18px,4vw,25px);
+    font-weight:900;
+    line-height:1.55;
+  }
+  #srsQuestion.srs-vocab-only-mode,
+  #srs .srs-question.srs-vocab-only-mode{
+    background:transparent!important;
+    border:0!important;
+    padding:0!important;
+    font-size:inherit!important;
+    line-height:inherit!important;
+  }
+  #srsQuestion.srs-vocab-only-mode.correct-answer,
+  #srsQuestion.srs-vocab-only-mode.wrong-answer,
+  #srs .srs-question.srs-vocab-only-mode.correct-answer,
+  #srs .srs-question.srs-vocab-only-mode.wrong-answer{
+    background:transparent!important;
+    border:0!important;
+  }
+  #srsQuestion.srs-vocab-only-mode .srs-inline-result,
+  #srs .srs-question.srs-vocab-only-mode .srs-inline-result{
+    margin-top:22px;
+    border-top:1px dashed var(--line);
+  }
+  @media(max-width:850px){
+    #srs .srs-stats{
+      grid-template-columns:repeat(2,1fr)!important;
+    }
+  }
+  @media(max-width:420px){
+    #srs .srs-stats{
+      grid-template-columns:1fr 1fr!important;
+      gap:8px!important;
+    }
+    #srs .srs-stat{
+      padding:11px 7px!important;
+    }
+    #srs .srs-stat strong{
+      font-size:21px!important;
+    }
+    #srs .srs-stat span{
+      font-size:11px!important;
+    }
+    .srs-vocab-only-word{
+      font-size:50px;
+    }
+  }
+</style>
+
+<script id="absolute-final-srs-vocab-only-ui">
+(function(){
+  function cleanText(v){
+    return String(v||'')
+      .replace(/\s+/g,'')
+      .replace(/[。、，,.!?！？「」『』（）()【】\[\]・]/g,'')
+      .trim();
+  }
+
+  function stripRubyNode(node){
+    if(!node) return null;
+    const c = node.cloneNode(true);
+    c.querySelectorAll('rt,rp').forEach(n => n.remove());
+    return c;
+  }
+
+  function escapeSafe(v){
+    return typeof escapeHtml === 'function'
+      ? escapeHtml(String(v ?? ''))
+      : String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function getTargetNodeFromItem(item){
+    const d = document.createElement('div');
+    d.innerHTML = String(item?.questionHtml || item?.correctSentenceHtml || '');
+    return d.querySelector('.srs-question-target') ||
+           d.querySelector('.srs-correct-word') ||
+           d.querySelector('mark') ||
+           d.querySelector('strong');
+  }
+
+  function vocabHtml(item){
+    const target = getTargetNodeFromItem(item);
+    if(target){
+      const clean = stripRubyNode(target);
+      const html = clean.innerHTML.trim();
+      if(html) return html;
+      const text = clean.textContent.trim();
+      if(text) return escapeSafe(text);
+    }
+    return escapeSafe(item?.answer || item?.displayWord || 'Kosakata');
+  }
+
+  function vocabText(item){
+    const d = document.createElement('div');
+    d.innerHTML = vocabHtml(item);
+    return String(d.textContent || item?.answer || 'Kosakata').replace(/\s+/g,'').trim();
+  }
+
+  function meaningOf(item){
+    const answer = cleanText(item?.answer || vocabText(item));
+    const d = document.createElement('div');
+    d.innerHTML = String(item?.translationHtml || item?.id || '');
+
+    // Arti target dari terjemahan biasanya ada di <strong>.
+    // Pilih strong yang bukan tulisan Jepang.
+    const strongs = [...d.querySelectorAll('strong')];
+    for(const s of strongs){
+      const t = String(s.textContent || '').trim();
+      if(!t) continue;
+      if(/[ぁ-んァ-ン一-龯]/.test(t) && cleanText(t) === answer) continue;
+      if(/[ぁ-んァ-ン一-龯]/.test(t) && t.length <= 12) continue;
+      return t;
+    }
+
+    // Kalau tidak ada strong arti, cari pola setelah kata target dalam terjemahan.
+    d.querySelectorAll('rt,rp').forEach(n => n.remove());
+    const plain = String(d.textContent || '').replace(/\s+/g,' ').trim();
+    if(plain){
+      // buang label panjang bila ada, tetap fallback agar tidak kosong
+      return plain;
+    }
+
+    return String(item?.meaning || item?.answer || 'Arti belum tersedia').trim();
+  }
+
+  function stageOfLocal(r){
+    return Math.max(0, Math.min(10, Number(r?.correctStage ?? r?.level ?? 0) || 0));
+  }
+
+  function isReady(record){
+    return stageOfLocal(record) < 10 && (!record?.due || Number(record.due) <= Date.now());
+  }
+
+  function allUniqueEntries(){
+    const raw = typeof buildSrsItems === 'function' ? buildSrsItems() : [];
+    const state = typeof syncSrsState === 'function' ? syncSrsState(raw) : {};
+    const map = new Map();
+
+    raw.forEach(item => {
+      const word = vocabText(item);
+      const key = cleanText(word) || cleanText(item.answer);
+      if(!key) return;
+
+      const entry = {
+        item,
+        record: state[item.key] || {},
+        word,
+        wordHtml: vocabHtml(item),
+        meaning: meaningOf(item)
+      };
+
+      const old = map.get(key);
+      if(!old){
+        map.set(key, entry);
+        return;
+      }
+
+      const oldStage = stageOfLocal(old.record);
+      const newStage = stageOfLocal(entry.record);
+      if(newStage > oldStage){
+        map.set(key, entry);
+        return;
+      }
+
+      if(newStage === oldStage){
+        const oldMeaningBad = !old.meaning || old.meaning === old.word;
+        const newMeaningGood = entry.meaning && entry.meaning !== entry.word;
+        if(oldMeaningBad && newMeaningGood) map.set(key, entry);
+      }
+    });
+
+    return [...map.values()];
+  }
+
+  function readyCount(){
+    return allUniqueEntries().filter(e => isReady(e.record)).length;
+  }
+
+  function ensureReadyStatCard(){
+    const stats = document.querySelector('#srs .srs-stats') || document.querySelector('.srs-stats');
+    if(!stats) return;
+
+    let card = document.getElementById('srsReadyStatCard');
+    if(!card){
+      card = document.createElement('div');
+      card.id = 'srsReadyStatCard';
+      card.className = 'srs-stat srs-ready-stat';
+      card.innerHTML = '<strong id="srsReadyNumber">0</strong><span>Siap dites</span>';
+      stats.appendChild(card);
+    }
+
+    const n = document.getElementById('srsReadyNumber');
+    if(n) n.textContent = readyCount();
+  }
+
+  function pickCurrentItem(){
+    const raw = typeof buildSrsItems === 'function' ? buildSrsItems() : [];
+
+    if(window.currentSrsItem) return window.currentSrsItem;
+    if(window.activeSrsItem) return window.activeSrsItem;
+    if(window.srsCurrentItem) return window.srsCurrentItem;
+
+    const q = document.getElementById('srsQuestion') || document.querySelector('#srs .srs-question');
+    const dataKey = q?.dataset?.key || q?.getAttribute('data-key');
+    if(dataKey){
+      const byKey = raw.find(x => String(x.key) === String(dataKey));
+      if(byKey) return byKey;
+    }
+
+    const answer =
+      document.getElementById('srsAnswer')?.dataset?.answer ||
+      document.querySelector('#srsAnswer')?.getAttribute('data-answer') ||
+      window.currentSrsAnswer ||
+      window.srsCurrentAnswer ||
+      '';
+
+    if(answer){
+      const norm = cleanText(answer);
+      const byAnswer = raw.find(x => cleanText(x.answer) === norm || cleanText(vocabText(x)) === norm);
+      if(byAnswer) return byAnswer;
+    }
+
+    // Fallback paling kuat: ambil teks target dari kalimat yang sedang muncul,
+    // lalu cocokkan dengan daftar kosakata.
+    if(q){
+      const temp = document.createElement('div');
+      temp.innerHTML = q.innerHTML;
+      const target = temp.querySelector('.srs-question-target') || temp.querySelector('strong') || temp.querySelector('.srs-correct-word');
+      if(target){
+        target.querySelectorAll('rt,rp').forEach(n => n.remove());
+        const visible = cleanText(target.textContent || '');
+        const byVisible = raw.find(x => cleanText(vocabText(x)) === visible || cleanText(x.answer) === visible);
+        if(byVisible) return byVisible;
+      }
+    }
+
+    return null;
+  }
+
+  function forceQuestionToVocabOnly(){
+    const q = document.getElementById('srsQuestion') || document.querySelector('#srs .srs-question');
+    if(!q) return;
+
+    const item = pickCurrentItem();
+    if(!item) return;
+
+    q.classList.add('srs-vocab-only-mode');
+    q.innerHTML =
+      '<div class="srs-vocab-only-card">' +
+        '<div class="srs-vocab-only-label">Kosakata</div>' +
+        '<div class="srs-vocab-only-word">' + vocabHtml(item) + '</div>' +
+        '<div class="srs-vocab-only-meaning">' + escapeSafe(meaningOf(item)) + '</div>' +
+      '</div>';
+  }
+
+  function refreshCounters(){
+    const e = allUniqueEntries();
+
+    const unlearned = e.filter(x => stageOfLocal(x.record) === 0).length;
+    const learning = e.filter(x => {
+      const st = stageOfLocal(x.record);
+      return st > 0 && st < 10;
+    }).length;
+    const mastered = e.filter(x => stageOfLocal(x.record) >= 10).length;
+
+    const a = document.getElementById('srsDueCount');
+    const b = document.getElementById('srsLearningCount');
+    const c = document.getElementById('srsMasteredCount');
+
+    if(a) a.textContent = unlearned;
+    if(b) b.textContent = learning;
+    if(c) c.textContent = mastered;
+
+    ensureReadyStatCard();
+  }
+
+  function refreshAll(){
+    ensureReadyStatCard();
+    forceQuestionToVocabOnly();
+    refreshCounters();
+  }
+
+  // Detail tabel tetap unik
+  window.openSrsStatusDetail = function(type){
+    const filtered = allUniqueEntries()
+      .filter(x => {
+        const st = stageOfLocal(x.record);
+        if(type === 'unlearned') return st === 0;
+        if(type === 'learning') return st > 0 && st < 10;
+        if(type === 'ready') return isReady(x.record);
+        return st >= 10;
+      })
+      .sort((a,b) => String(a.word).localeCompare(String(b.word), 'ja'));
+
+    let modal = document.getElementById('srsDetailModal');
+    if(!modal){
+      modal = document.createElement('div');
+      modal.id = 'srsDetailModal';
+      modal.className = 'srs-detail-modal';
+      modal.innerHTML =
+        '<div class="srs-detail-card" role="dialog" aria-modal="true">' +
+          '<div class="srs-detail-head">' +
+            '<h2 id="srsDetailTitle">Daftar Kosakata</h2>' +
+            '<button class="srs-detail-close" type="button" aria-label="Tutup">×</button>' +
+          '</div>' +
+          '<div id="srsDetailList"></div>' +
+        '</div>';
+      document.body.appendChild(modal);
+      modal.addEventListener('click', ev => {
+        if(ev.target === modal) modal.classList.remove('active');
+      });
+      modal.querySelector('.srs-detail-close').addEventListener('click', () => modal.classList.remove('active'));
+    }
+
+    const title = {
+      unlearned:'Belum Dipelajari',
+      learning:'Belajar',
+      mastered:'Dikuasai',
+      ready:'Siap dites'
+    }[type] || 'SRS';
+
+    modal.querySelector('#srsDetailTitle').textContent = title + ' (' + filtered.length + ')';
+    modal.querySelector('#srsDetailList').innerHTML = filtered.length
+      ? filtered.map(x =>
+          '<div class="srs-vocab-detail">' +
+            '<div class="srs-vocab-word">' + x.wordHtml + '</div>' +
+            '<div class="srs-vocab-meta">' +
+              'Arti: <strong>' + escapeSafe(x.meaning) + '</strong><br>' +
+              escapeSafe(x.item.storyTitle || 'Tanpa Judul') + '・Progres <strong>' + stageOfLocal(x.record) + '/10</strong>' +
+            '</div>' +
+          '</div>'
+        ).join('')
+      : '<div class="empty">Tidak ada kosakata dalam kategori ini.</div>';
+
+    modal.classList.add('active');
+  };
+
+  window.updateSrsCountersOnly = refreshCounters;
+
+  const oldRenderSrsPage = window.renderSrsPage;
+  window.renderSrsPage = function(){
+    const result = typeof oldRenderSrsPage === 'function'
+      ? oldRenderSrsPage.apply(this, arguments)
+      : undefined;
+    setTimeout(refreshAll, 0);
+    setTimeout(refreshAll, 80);
+    return result;
+  };
+
+  if(typeof window.renderSrsCard === 'function'){
+    const oldRenderSrsCard = window.renderSrsCard;
+    window.renderSrsCard = function(){
+      const result = oldRenderSrsCard.apply(this, arguments);
+      setTimeout(refreshAll, 0);
+      setTimeout(refreshAll, 80);
       return result;
     };
   }
 
-  const oldCounters=window.updateSrsCountersOnly;
-  if(typeof oldCounters==='function'){
-    window.updateSrsCountersOnly=function(){
-      const result=oldCounters.apply(this,arguments);
-      setTimeout(refreshCountsFinal,0);
+  if(typeof window.showSrsQuestion === 'function'){
+    const oldShowSrsQuestion = window.showSrsQuestion;
+    window.showSrsQuestion = function(){
+      const result = oldShowSrsQuestion.apply(this, arguments);
+      setTimeout(refreshAll, 0);
+      setTimeout(refreshAll, 80);
       return result;
     };
   }
 
-  window.addEventListener('load',()=>setTimeout(refreshCountsFinal,0));
-  window.addEventListener('pageshow',()=>setTimeout(refreshCountsFinal,0));
+  // Saat tombol cek/jawaban/next ditekan, tampilan lama sering muncul lagi.
+  // Karena itu dipaksa ulang setelah klik.
+  document.addEventListener('click', ev => {
+    if(ev.target.closest('#srs button, #srs .btn, #srsPracticeArea button')){
+      setTimeout(refreshAll, 60);
+      setTimeout(refreshAll, 180);
+    }
+  }, true);
+
+  document.addEventListener('input', ev => {
+    if(ev.target.closest('#srs')){
+      setTimeout(ensureReadyStatCard, 0);
+    }
+  }, true);
+
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(refreshAll, 120);
+    setTimeout(refreshAll, 450);
+  });
+
+  window.addEventListener('load', () => {
+    setTimeout(refreshAll, 250);
+    setTimeout(refreshAll, 700);
+  });
+
+  setInterval(() => {
+    if(document.getElementById('srs')?.classList.contains('active')) refreshAll();
+  }, 900);
+})();
+</script>
+
+
+<!-- ===== PATCH FINAL 3: feedback benar salah untuk SRS kosakata saja ===== -->
+<style id="absolute-final-srs-feedback-vocab-only-style">
+  #srsQuestion.srs-vocab-only-mode.srs-vocab-correct,
+  #srs .srs-question.srs-vocab-only-mode.srs-vocab-correct{
+    background:#eaf8ef!important;
+    border:1px solid #bce5cc!important;
+    border-radius:20px!important;
+    padding:18px!important;
+  }
+  #srsQuestion.srs-vocab-only-mode.srs-vocab-wrong,
+  #srs .srs-question.srs-vocab-only-mode.srs-vocab-wrong{
+    background:#fff1f1!important;
+    border:1px solid #f0c7c7!important;
+    border-radius:20px!important;
+    padding:18px!important;
+  }
+  .srs-vocab-result-box{
+    margin-top:18px;
+    padding:14px 16px;
+    border-radius:15px;
+    font-weight:800;
+    line-height:1.65;
+  }
+  .srs-vocab-result-box.correct{
+    background:#dff5e7;
+    border:1px solid #bce5cc;
+    color:#28704a;
+  }
+  .srs-vocab-result-box.wrong{
+    background:#ffe3e3;
+    border:1px solid #f0c7c7;
+    color:#8a3b3b;
+  }
+  .srs-vocab-correct-answer{
+    display:inline-block;
+    margin-top:7px;
+    padding:5px 9px;
+    border-radius:9px;
+    background:#fff;
+    color:#18324a;
+    font-size:20px;
+    font-weight:900;
+  }
+  .srs-vocab-correct-answer rt,
+  .srs-vocab-correct-answer rp{
+    display:none!important;
+  }
+</style>
+
+<script id="absolute-final-srs-feedback-vocab-only">
+(function(){
+  function esc(v){
+    return typeof escapeHtml === 'function'
+      ? escapeHtml(String(v ?? ''))
+      : String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function normalize(v){
+    const s = String(v || '').trim();
+    if(typeof normalizeKana === 'function') return normalizeKana(s).toLowerCase();
+    return s
+      .normalize('NFKC')
+      .toLowerCase()
+      .replace(/\s+/g,'')
+      .replace(/[。、，,.!?！？「」『』（）()【】\[\]・]/g,'');
+  }
+
+  function stripRubyHtml(html){
+    const d = document.createElement('div');
+    d.innerHTML = String(html || '');
+    d.querySelectorAll('rt,rp').forEach(n => n.remove());
+    return d.innerHTML.trim();
+  }
+
+  function getQuestion(){
+    return document.getElementById('srsQuestion') || document.querySelector('#srs .srs-question');
+  }
+
+  function getInput(){
+    return document.getElementById('srsAnswer') ||
+           document.querySelector('#srs input[type="text"]') ||
+           document.querySelector('#srs .srs-answer');
+  }
+
+  function getCurrentItem(){
+    const raw = typeof buildSrsItems === 'function' ? buildSrsItems() : [];
+
+    if(window.currentSrsItem) return window.currentSrsItem;
+    if(window.activeSrsItem) return window.activeSrsItem;
+    if(window.srsCurrentItem) return window.srsCurrentItem;
+
+    const input = getInput();
+    const dataAnswer =
+      input?.dataset?.answer ||
+      input?.getAttribute('data-answer') ||
+      window.currentSrsAnswer ||
+      window.srsCurrentAnswer ||
+      '';
+
+    if(dataAnswer){
+      const n = normalize(dataAnswer);
+      const found = raw.find(x => normalize(x.answer) === n);
+      if(found) return found;
+    }
+
+    const q = getQuestion();
+    const key = q?.dataset?.key || q?.getAttribute('data-key');
+    if(key){
+      const found = raw.find(x => String(x.key) === String(key));
+      if(found) return found;
+    }
+
+    const wordText = q?.querySelector('.srs-vocab-only-word')?.textContent || '';
+    if(wordText){
+      const n = normalize(wordText);
+      const found = raw.find(x => normalize(x.answer) === n);
+      if(found) return found;
+    }
+
+    return null;
+  }
+
+  function answerHtml(item){
+    if(!item) return '';
+    const d = document.createElement('div');
+    d.innerHTML = String(item.questionHtml || item.correctSentenceHtml || '');
+    const target = d.querySelector('.srs-question-target') ||
+                   d.querySelector('.srs-correct-word') ||
+                   d.querySelector('mark') ||
+                   d.querySelector('strong');
+    if(target){
+      return stripRubyHtml(target.outerHTML || target.innerHTML);
+    }
+    return esc(item.answer || '');
+  }
+
+  function answerText(item){
+    const d = document.createElement('div');
+    d.innerHTML = answerHtml(item);
+    return String(d.textContent || item?.answer || '').trim();
+  }
+
+  function clearResult(){
+    const q = getQuestion();
+    if(!q) return;
+    q.classList.remove('srs-vocab-correct','srs-vocab-wrong');
+    q.querySelectorAll('.srs-vocab-result-box').forEach(n => n.remove());
+  }
+
+  function showResult(isCorrect, item){
+    const q = getQuestion();
+    if(!q || !q.classList.contains('srs-vocab-only-mode')) return;
+
+    q.classList.remove('srs-vocab-correct','srs-vocab-wrong');
+    q.classList.add(isCorrect ? 'srs-vocab-correct' : 'srs-vocab-wrong');
+
+    q.querySelectorAll('.srs-vocab-result-box').forEach(n => n.remove());
+
+    const box = document.createElement('div');
+    box.className = 'srs-vocab-result-box ' + (isCorrect ? 'correct' : 'wrong');
+
+    if(isCorrect){
+      box.innerHTML = '✅ Benar!';
+    }else{
+      box.innerHTML =
+        '❌ Salah<br>' +
+        'Jawaban benar:<br>' +
+        '<span class="srs-vocab-correct-answer">' + answerHtml(item) + '</span>';
+    }
+
+    q.appendChild(box);
+  }
+
+  function judgeNow(){
+    const item = getCurrentItem();
+    const input = getInput();
+    if(!item || !input) return;
+
+    const userAnswer = input.value || '';
+    if(!String(userAnswer).trim()) return;
+
+    const correctText = answerText(item) || item.answer || '';
+    const ok = normalize(userAnswer) === normalize(correctText) ||
+               normalize(userAnswer) === normalize(item.answer);
+
+    setTimeout(() => showResult(ok, item), 40);
+    setTimeout(() => showResult(ok, item), 170);
+  }
+
+  // Tangkap tombol cek jawaban seperti model lama
+  document.addEventListener('click', ev => {
+    const btn = ev.target.closest('button,.btn');
+    if(!btn || !btn.closest('#srs')) return;
+
+    const label = String(btn.textContent || '').trim().toLowerCase();
+
+    if(
+      label.includes('cek') ||
+      label.includes('jawab') ||
+      label.includes('check') ||
+      label.includes('submit') ||
+      label.includes('確認')
+    ){
+      judgeNow();
+    }
+
+    if(
+      label.includes('next') ||
+      label.includes('lanjut') ||
+      label.includes('berikut') ||
+      label.includes('次')
+    ){
+      setTimeout(clearResult, 20);
+      setTimeout(() => {
+        if(typeof forceQuestionToVocabOnly === 'function') forceQuestionToVocabOnly();
+      }, 80);
+    }
+  }, true);
+
+  // Enter di input juga cek jawaban
+  document.addEventListener('keydown', ev => {
+    const input = getInput();
+    if(ev.key === 'Enter' && input && ev.target === input){
+      judgeNow();
+    }
+  }, true);
+
+  // Kalau script lama menambah class correct-answer/wrong-answer, sinkronkan warnanya
+  const observe = () => {
+    const q = getQuestion();
+    if(!q) return;
+
+    const mo = new MutationObserver(() => {
+      if(!q.classList.contains('srs-vocab-only-mode')) return;
+
+      const item = getCurrentItem();
+      if(q.classList.contains('correct-answer')){
+        showResult(true, item);
+      }else if(q.classList.contains('wrong-answer')){
+        showResult(false, item);
+      }
+    });
+
+    mo.observe(q, {attributes:true, attributeFilter:['class'], childList:false, subtree:false});
+  };
+
+  document.addEventListener('DOMContentLoaded', () => setTimeout(observe, 300));
+  window.addEventListener('load', () => setTimeout(observe, 500));
 })();
 </script>
 
