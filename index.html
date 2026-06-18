@@ -10019,5 +10019,215 @@ async function toggleUnderwaterAmbient(){
 })();
 </script>
 
+
+<!-- ===== MOBILE SRS FOCUS MODE: opens on answer tap, closes with keyboard ===== -->
+<style id="srs-mobile-immersive-focus-style">
+@media (max-width:700px){
+  body.srs-immersive-focus{
+    overflow:hidden!important;
+    background:#17152d!important;
+  }
+  body.srs-immersive-focus::before{
+    content:"";
+    position:fixed;
+    inset:-18%;
+    z-index:9000;
+    pointer-events:none;
+    background:
+      radial-gradient(circle at 18% 24%,rgba(73,154,255,.94),transparent 34%),
+      radial-gradient(circle at 82% 28%,rgba(136,82,255,.88),transparent 36%),
+      radial-gradient(circle at 55% 82%,rgba(48,105,230,.82),transparent 38%),
+      linear-gradient(135deg,#193e91,#6f3ead 52%,#172b78);
+    background-size:145% 145%,155% 155%,150% 150%,100% 100%;
+    filter:saturate(1.12);
+    animation:srsFocusGradient 9s ease-in-out infinite alternate;
+  }
+  body.srs-immersive-focus::after{
+    content:"";
+    position:fixed;
+    inset:0;
+    z-index:9001;
+    pointer-events:none;
+    background:rgba(18,22,54,.18);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+  }
+  @keyframes srsFocusGradient{
+    0%{transform:translate3d(-3%,-2%,0) scale(1.02);background-position:0% 20%,100% 10%,45% 100%,0 0}
+    50%{transform:translate3d(3%,1%,0) scale(1.08);background-position:30% 0%,75% 40%,65% 75%,0 0}
+    100%{transform:translate3d(-1%,3%,0) scale(1.04);background-position:10% 35%,100% 5%,35% 90%,0 0}
+  }
+
+  body.srs-immersive-focus .topbar,
+  body.srs-immersive-focus .sea-decor,
+  body.srs-immersive-focus footer,
+  body.srs-immersive-focus #ambientToggle,
+  body.srs-immersive-focus .achievement-bubble,
+  body.srs-immersive-focus .achievement-panel,
+  body.srs-immersive-focus #srs > .section-title,
+  body.srs-immersive-focus #srs > p,
+  body.srs-immersive-focus #srs > .srs-stats,
+  body.srs-immersive-focus #srs .srs-side,
+  body.srs-immersive-focus #srs .srs-overall-box,
+  body.srs-immersive-focus #srs .srs-progress,
+  body.srs-immersive-focus #srs .srs-source{
+    opacity:0!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+  }
+
+  body.srs-immersive-focus main{
+    position:fixed!important;
+    inset:0!important;
+    z-index:9002!important;
+    overflow:hidden!important;
+  }
+  body.srs-immersive-focus #srs.page.active{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    max-width:none!important;
+    padding:14px!important;
+    overflow:hidden!important;
+  }
+  body.srs-immersive-focus #srs .srs-layout{
+    display:block!important;
+    width:min(100%,560px)!important;
+  }
+  body.srs-immersive-focus #srs .srs-main{
+    width:100%!important;
+    padding:16px!important;
+    border:1px solid rgba(255,255,255,.42)!important;
+    border-radius:24px!important;
+    background:rgba(255,255,255,.88)!important;
+    box-shadow:0 24px 70px rgba(10,16,58,.34)!important;
+    backdrop-filter:blur(16px)!important;
+    -webkit-backdrop-filter:blur(16px)!important;
+  }
+  body.srs-immersive-focus #srsPracticeArea,
+  body.srs-immersive-focus #srsPracticeArea .srs-card{
+    width:100%!important;
+    min-height:0!important;
+    max-height:calc(var(--srs-focus-height,100dvh) - 30px)!important;
+    overflow:auto!important;
+  }
+  body.srs-immersive-focus #srs .srs-final-question,
+  body.srs-immersive-focus #srs .srs-question{
+    font-size:clamp(20px,5.7vw,28px)!important;
+    line-height:1.65!important;
+  }
+  body.srs-immersive-focus #srs #srsAnswerInput{
+    font-size:16px!important; /* prevents iOS auto zoom */
+    background:rgba(255,255,255,.96)!important;
+  }
+}
+@media (prefers-reduced-motion:reduce){
+  body.srs-immersive-focus::before{animation:none!important}
+}
+</style>
+<script id="srs-mobile-immersive-focus-controller">
+(function(){
+  'use strict';
+  const mobile=window.matchMedia('(max-width:700px)');
+  const root=document.documentElement;
+  const body=document.body;
+  const vv=window.visualViewport;
+  let baselineHeight=window.innerHeight;
+  let focusMode=false;
+  let userDismissed=false;
+  let closeTimer=0;
+
+  function onSrs(){
+    return mobile.matches && document.getElementById('srs')?.classList.contains('active');
+  }
+  function answerInput(){ return document.getElementById('srsAnswerInput'); }
+  function viewportHeight(){ return vv ? vv.height : window.innerHeight; }
+  function keyboardOpen(){
+    const loss=Math.max(0,baselineHeight-viewportHeight());
+    return loss>Math.max(110,baselineHeight*.16);
+  }
+  function setFocusHeight(){
+    body.style.setProperty('--srs-focus-height',Math.round(viewportHeight())+'px');
+  }
+  function enter(){
+    if(!onSrs()) return;
+    clearTimeout(closeTimer);
+    focusMode=true;
+    userDismissed=false;
+    baselineHeight=Math.max(baselineHeight,window.innerHeight,vv?.height||0);
+    setFocusHeight();
+    body.classList.add('srs-immersive-focus','srs-keyboard-active');
+    root.classList.add('srs-mobile-session');
+    window.srsKeyboardSessionActive=true;
+  }
+  function exit(){
+    clearTimeout(closeTimer);
+    focusMode=false;
+    userDismissed=true;
+    body.classList.remove('srs-immersive-focus','srs-keyboard-active','srs-keyboard-open','srs-mobile-focus');
+    root.classList.remove('srs-mobile-session','srs-ios-keyboard-open');
+    window.srsKeyboardSessionActive=false;
+    body.style.removeProperty('--srs-focus-height');
+  }
+  function checkViewport(){
+    if(!focusMode || !onSrs()) return;
+    setFocusHeight();
+    clearTimeout(closeTimer);
+    closeTimer=setTimeout(function(){
+      /* Keyboard dianggap ditutup ketika viewport kembali hampir setinggi awal. */
+      if(focusMode && !keyboardOpen()){
+        const el=answerInput();
+        try{ HTMLElement.prototype.blur.call(el); }catch(_){ }
+        exit();
+      }
+    },140);
+  }
+
+  document.addEventListener('pointerdown',function(e){
+    if(e.target?.id==='srsAnswerInput' && onSrs()) enter();
+  },true);
+  document.addEventListener('focusin',function(e){
+    if(e.target?.id==='srsAnswerInput' && onSrs() && !userDismissed) enter();
+  },true);
+
+  /* Setelah pengguna menutup keyboard, focusout menjadi jalan keluar tambahan. */
+  document.addEventListener('focusout',function(e){
+    if(e.target?.id!=='srsAnswerInput' || !focusMode) return;
+    clearTimeout(closeTimer);
+    closeTimer=setTimeout(function(){
+      if(!keyboardOpen()) exit();
+    },180);
+  },true);
+
+  vv?.addEventListener('resize',checkViewport);
+  vv?.addEventListener('scroll',checkViewport);
+  window.addEventListener('resize',function(){
+    if(!focusMode) baselineHeight=Math.max(baselineHeight,window.innerHeight);
+    checkViewport();
+  });
+
+  /* Mengalahkan controller lama yang menambahkan class fokus lagi setelah resize. */
+  vv?.addEventListener('resize',function(){
+    setTimeout(function(){
+      if(focusMode && !keyboardOpen()) exit();
+    },260);
+  });
+
+  const oldGo=window.go;
+  if(typeof oldGo==='function' && !oldGo.__immersiveFocusExit){
+    const wrapped=function(page){
+      if(page!=='srs') exit();
+      else userDismissed=false;
+      return oldGo.apply(this,arguments);
+    };
+    wrapped.__immersiveFocusExit=true;
+    window.go=wrapped;
+  }
+})();
+</script>
+
 </body>
 </html>
