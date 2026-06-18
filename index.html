@@ -9373,5 +9373,224 @@ async function toggleUnderwaterAmbient(){
 })();
 </script>
 
+
+
+<!-- ===== FINAL MOBILE BUGFIX: no zoom, reliable Enter, compact viewport, SRS time cards ===== -->
+<style id="srs-mobile-nozoom-enter-layout-final">
+@media (max-width:700px){
+  /* iOS tidak melakukan auto zoom jika input sekurangnya 16px. */
+  #srs.page.active #srsAnswerInput,
+  #srs.page.active .srs-answer,
+  #srs.page.active .srs-answer-input{
+    font-size:16px!important;
+    transform:none!important;
+    zoom:1!important;
+  }
+
+  #srs.page.active{
+    width:100%!important;
+    max-width:100vw!important;
+    overflow-x:hidden!important;
+    padding:8px!important;
+  }
+  #srs.page.active .srs-layout,
+  #srs.page.active .srs-main,
+  #srs.page.active #srsPracticeArea,
+  #srs.page.active .srs-card{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    overflow-x:hidden!important;
+  }
+  #srs.page.active .srs-main{
+    padding:9px!important;
+    border-radius:15px!important;
+  }
+  #srs.page.active .srs-card{
+    justify-content:flex-start!important;
+  }
+  #srs.page.active .srs-final-question{
+    padding:8px 8px!important;
+    margin:0 0 7px!important;
+    border-radius:12px!important;
+  }
+  #srs.page.active .srs-final-label{
+    margin-bottom:2px!important;
+    font-size:9px!important;
+  }
+  #srs.page.active .srs-final-word{
+    font-size:clamp(25px,9vw,35px)!important;
+    line-height:1.15!important;
+    margin-bottom:5px!important;
+    min-height:0!important;
+    overflow-wrap:anywhere!important;
+  }
+  #srs.page.active .srs-vocab-current-time{
+    max-width:100%!important;
+    margin:0 auto 5px!important;
+    padding:3px 7px!important;
+    font-size:9px!important;
+    white-space:normal!important;
+    text-align:center!important;
+  }
+  #srs.page.active .srs-final-meaning{
+    font-size:13px!important;
+    line-height:1.35!important;
+    overflow-wrap:anywhere!important;
+  }
+  #srs.page.active .srs-final-feedback{
+    margin-top:5px!important;
+    padding:6px 8px!important;
+    font-size:11px!important;
+    line-height:1.28!important;
+    max-height:28dvh!important;
+    overflow:auto!important;
+    overscroll-behavior:contain!important;
+  }
+  #srs.page.active .srs-answer-wrap,
+  #srs.page.active .srs-final-answer-wrap{
+    grid-template-columns:minmax(0,1fr) 64px!important;
+    gap:6px!important;
+    margin-top:6px!important;
+  }
+  #srs.page.active #srsAnswerInput{
+    height:42px!important;
+    min-height:42px!important;
+    padding:7px 9px!important;
+  }
+  #srs.page.active #srsSubmitBtn{
+    width:64px!important;
+    min-width:64px!important;
+    height:42px!important;
+    min-height:42px!important;
+    padding:6px!important;
+  }
+
+  /* Jangan mengubah skala halaman atau memaksa scroll saat keyboard berubah ukuran. */
+  html,body{max-width:100%;overflow-x:hidden}
+  body.srs-keyboard-active #srs.page.active{
+    min-height:auto!important;
+  }
+}
+
+/* Tampilan daftar kosakata: waktu SRS menjadi informasi utama pengganti DAY. */
+.srs-vocab-detail .srs-vocab-meta{
+  line-height:1.5;
+}
+.srs-vocab-detail .srs-vocab-schedule{
+  display:block;
+  margin-top:5px;
+  color:#315f86;
+  font-weight:900;
+  font-size:12px;
+}
+</style>
+<script id="srs-mobile-enter-and-card-time-final">
+(function(){
+  'use strict';
+  const mobile=window.matchMedia('(max-width:700px)');
+  let enterBusy=false;
+
+  function srsActive(){
+    return !!document.getElementById('srs')?.classList.contains('active');
+  }
+  function stripDay(text){
+    return String(text||'')
+      .replace(/\bDAY\s*\d+\b\s*[・|:\-]?\s*/ig,'')
+      .replace(/^\s*[・|:\-]\s*/,'')
+      .trim();
+  }
+  function recordTime(record){
+    const level=Math.max(0,Math.min(10,Number(record?.level ?? record?.correctStage ?? 0)||0));
+    const due=Number(record?.due||0);
+    if(level>=10) return `SRS ${level}/10 • Dikuasai`;
+    if(!due || due<=Date.now()) return `SRS ${level}/10 • Siap dipelajari sekarang`;
+    const diff=Math.max(0,due-Date.now());
+    const duration=typeof window.formatSrsDuration==='function'
+      ? window.formatSrsDuration(diff)
+      : `${Math.max(1,Math.ceil(diff/60000))} menit`;
+    return `SRS ${level}/10 • ${duration} lagi`;
+  }
+
+  /* Keydown lama pada beberapa browser mobile kadang tidak menyelesaikan submit.
+     Keyup menjadi fallback. Jika keydown sudah berhasil, srsLocked sudah true
+     sehingga tidak terjadi submit dua kali. */
+  document.addEventListener('keyup',function(event){
+    if(!mobile.matches || !srsActive() || event.key!=='Enter' || enterBusy) return;
+    const input=document.getElementById('srsAnswerInput');
+    if(!input || document.activeElement!==input) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    const feedback=document.getElementById('srsInlineFeedback');
+    const alreadyShown=!!(window.srsLocked || input.dataset.locked==='1' || feedback?.classList.contains('correct') || feedback?.classList.contains('wrong'));
+    if(alreadyShown) return;
+    if(!String(input.value||'').trim()) return;
+
+    enterBusy=true;
+    try{
+      if(typeof window.submitSrsAnswer==='function') window.submitSrsAnswer();
+    }finally{
+      setTimeout(()=>{enterBusy=false},120);
+    }
+  },true);
+
+  /* Tambahkan enterKeyHint tanpa mengganti node input agar keyboard tetap hidup. */
+  const observer=new MutationObserver(function(){
+    const input=document.getElementById('srsAnswerInput');
+    if(input){
+      input.setAttribute('enterkeyhint', input.dataset.locked==='1' ? 'next' : 'done');
+      input.setAttribute('inputmode','text');
+    }
+  });
+  observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['data-locked']});
+
+  /* Ganti isi modal Belum Dipelajari / Belajar / Dikuasai:
+     hapus DAY dan selalu tampilkan waktu SRS pada setiap kosakata. */
+  window.openSrsStatusDetail=function(type){
+    let modal=document.getElementById('srsDetailModal');
+    if(!modal && typeof window.ensureSrsDetailModal==='function') modal=window.ensureSrsDetailModal();
+    if(!modal){
+      modal=document.createElement('div');
+      modal.id='srsDetailModal';
+      modal.className='srs-detail-modal';
+      modal.innerHTML='<div class="srs-detail-card"><div class="srs-detail-head"><h2 id="srsDetailTitle">SRS</h2><button class="srs-detail-close" type="button">×</button></div><div id="srsDetailList"></div></div>';
+      document.body.appendChild(modal);
+      modal.addEventListener('click',e=>{if(e.target===modal) modal.classList.remove('active')});
+      modal.querySelector('.srs-detail-close')?.addEventListener('click',()=>modal.classList.remove('active'));
+    }
+
+    const items=typeof window.buildSrsItems==='function' ? window.buildSrsItems() : [];
+    const state=typeof window.syncSrsState==='function' ? window.syncSrsState(items) : (typeof window.getSrsState==='function'?window.getSrsState():{});
+    const stageOfSafe=record=>Math.max(0,Math.min(10,Number(record?.level ?? record?.correctStage ?? 0)||0));
+    const filtered=items.filter(item=>{
+      const stage=stageOfSafe(state[item.key]);
+      if(type==='unlearned') return stage===0;
+      if(type==='learning') return stage>0&&stage<10;
+      return stage>=10;
+    }).sort((a,b)=>String(a.displayWord||a.answer).localeCompare(String(b.displayWord||b.answer),'ja'));
+
+    const titles={unlearned:'Belum Dipelajari',learning:'Belajar',mastered:'Dikuasai'};
+    const titleEl=modal.querySelector('#srsDetailTitle');
+    const listEl=modal.querySelector('#srsDetailList');
+    if(titleEl) titleEl.textContent=`${titles[type]||'SRS'} (${filtered.length})`;
+    if(listEl){
+      listEl.innerHTML=filtered.length ? filtered.map(item=>{
+        const record=state[item.key]||{};
+        const stage=stageOfSafe(record);
+        const folder=stripDay(item.folder||'');
+        const safe=window.escapeHtml||window.safeEscape||function(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));};
+        return `<div class="srs-vocab-detail">
+          <div class="srs-vocab-word">${safe(item.displayWord||item.answer)}</div>
+          <div class="srs-vocab-meta">${folder?`${safe(folder)}・`:''}Progres <strong>${stage}/10</strong><br>Benar ${Number(record.correct||0)} kali・Salah ${Number(record.wrong||0)} kali
+            <span class="srs-vocab-schedule">${safe(recordTime(record))}</span>
+          </div>
+        </div>`;
+      }).join('') : '<div class="empty">Tidak ada kosakata dalam kategori ini.</div>';
+    }
+    modal.classList.add('active');
+  };
+})();
+</script>
 </body>
 </html>
