@@ -1079,6 +1079,69 @@ select:disabled{
   border-radius:5px!important;
 }
 
+
+
+/* ===== Perbaikan mobile: footer stabil, hasil ringkas, achievement satwa air ===== */
+@media (max-width:700px){
+  body.srs-keyboard-open footer,
+  body.srs-mobile-focus footer{
+    position:static!important;
+    transform:none!important;
+    margin-top:18px!important;
+    padding:18px 12px 24px!important;
+    line-height:1.4!important;
+    white-space:normal!important;
+    overflow-wrap:anywhere!important;
+  }
+
+  #srs .srs-question{
+    font-size:18px!important;
+    line-height:1.65!important;
+  }
+
+  #srs .srs-question.correct-answer,
+  #srs .srs-question.wrong-answer{
+    padding:12px!important;
+    border-radius:14px!important;
+  }
+
+  #srs .srs-correct-sentence{
+    font-size:17px!important;
+    line-height:1.6!important;
+    padding:11px!important;
+    margin-top:10px!important;
+  }
+
+  #srs .srs-inline-result{
+    font-size:14px!important;
+    line-height:1.55!important;
+    margin-top:10px!important;
+    padding-top:10px!important;
+  }
+
+  #srs .srs-translation-restored{
+    font-size:14px!important;
+    line-height:1.55!important;
+    padding:10px 12px!important;
+    margin:10px 0 12px!important;
+  }
+
+  #srs .srs-answer-row{
+    gap:10px!important;
+  }
+
+  #srs .srs-answer-input,
+  #srs .srs-answer{
+    font-size:16px!important;
+    min-height:46px!important;
+  }
+
+  #srs .srs-answer-row .btn{
+    min-height:46px!important;
+    padding:10px 15px!important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -3347,7 +3410,7 @@ function achievementFishFor(count){
   if(count>=2000) return ["🐠","Ikan Tropis"];
   if(count>=1000) return ["🐡","Ikan Buntal"];
   if(count>=500) return ["🐙","Penjelajah Laut"];
-  if(count>=200) return ["🐟","Ikan Kakap"];
+  if(count>=200) return ["🐟","Kepiting Karang"];
   if(count>=100) return ["🐠","Ikan Kecil"];
   return ["🥚","Telur Ikan"];
 }
@@ -3500,7 +3563,7 @@ const ACHIEVEMENT_MILESTONES=[
   {count:100, icon:"🐟", title:"Ikan Kecil"},
   {count:200, icon:"🐠", title:"Ikan Karang"},
   {count:350, icon:"🐡", title:"Ikan Buntal"},
-  {count:500, icon:"🐟", title:"Ikan Kakap"},
+  {count:500, icon:"🦀", title:"Kepiting Karang"},
   {count:750, icon:"🐙", title:"Penjelajah Laut"},
   {count:1000, icon:"🐬", title:"Lumba-lumba Muda"},
   {count:1500, icon:"🐢", title:"Penyu Tekun"},
@@ -5502,6 +5565,32 @@ romajiToHiragana=function(input){
       renderCurrentSrsCard();
     }
   };
+})();
+
+
+
+/* ===== Penyesuaian kelas saat keyboard mobile aktif ===== */
+(function(){
+  function syncMobileKeyboardClass(){
+    const isMobile=window.matchMedia('(max-width:700px)').matches;
+    if(!isMobile){
+      document.body.classList.remove('srs-keyboard-open','srs-mobile-focus');
+      return;
+    }
+
+    const active=document.activeElement;
+    const inSrs=!!document.getElementById('srs')?.classList.contains('active');
+    const typing=inSrs && !!active && active.id==='srsAnswerInput';
+    document.body.classList.toggle('srs-mobile-focus',inSrs);
+    document.body.classList.toggle('srs-keyboard-open',typing);
+  }
+
+  document.addEventListener('focusin',syncMobileKeyboardClass);
+  document.addEventListener('focusout',()=>setTimeout(syncMobileKeyboardClass,120));
+  window.addEventListener('resize',syncMobileKeyboardClass);
+  window.addEventListener('pageshow',syncMobileKeyboardClass);
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden) syncMobileKeyboardClass(); });
+  setTimeout(syncMobileKeyboardClass,0);
 })();
 
 </script>
