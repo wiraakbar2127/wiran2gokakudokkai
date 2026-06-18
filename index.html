@@ -6922,5 +6922,136 @@ async function toggleUnderwaterAmbient(){
   }
 })();
 </script>
+
+
+<style>
+/* ===== FINAL: input terkunci setelah submit + hasil stabil ===== */
+#srsAnswerInput[data-result-locked="1"]{
+  background:#e9eef3!important;
+  border-color:#c7d2dc!important;
+  color:#687988!important;
+  box-shadow:none!important;
+  cursor:not-allowed!important;
+  opacity:1!important;
+}
+
+/* Hasil tidak mengubah posisi bagian atas kartu secara mendadak di desktop. */
+@media(min-width:701px){
+  #srs.page.active .srs-card{
+    justify-content:flex-start!important;
+  }
+  #srs.page.active #srsQuestionText{
+    scroll-margin-top:110px;
+  }
+  #srs.page.active .srs-inline-result{
+    overflow-anchor:none;
+  }
+}
+
+/* HP: hapus tulisan status Benar/Salah dari kotak hasil. */
+@media(max-width:700px){
+  #srs.page.active .srs-inline-result .srs-result-title{
+    display:none!important;
+  }
+
+  #srs.page.active .srs-question.correct-answer,
+  #srs.page.active .srs-question.wrong-answer{
+    min-height:0!important;
+  }
+}
+</style>
+<script>
+/*
+  - Enter pertama tetap submit.
+  - Setelah submit, input terlihat abu-abu dan isinya dikunci tanpa menutup keyboard HP.
+  - Di desktop, posisi atas kartu dipertahankan saat hasil memanjang.
+*/
+(function(){
+  function lockResultInput(input){
+    if(!input) return;
+    input.dataset.resultLocked='1';
+    input.setAttribute('aria-disabled','true');
+    input.setAttribute('aria-readonly','true');
+  }
+
+  function unlockResultInput(input){
+    if(!input) return;
+    delete input.dataset.resultLocked;
+    input.removeAttribute('aria-disabled');
+    input.removeAttribute('aria-readonly');
+  }
+
+  /* Blok perubahan isi ketika hasil sedang tampil, tetapi pertahankan fokus/keyboard. */
+  document.addEventListener('beforeinput',event=>{
+    if(
+      window.srsResultWaiting &&
+      event.target?.id==='srsAnswerInput'
+    ){
+      event.preventDefault();
+    }
+  },true);
+
+  document.addEventListener('paste',event=>{
+    if(
+      window.srsResultWaiting &&
+      event.target?.id==='srsAnswerInput'
+    ){
+      event.preventDefault();
+    }
+  },true);
+
+  const previousSubmit=window.submitSrsAnswer;
+  if(typeof previousSubmit==='function'){
+    window.submitSrsAnswer=function(){
+      if(window.srsResultWaiting) return;
+
+      const question=document.getElementById('srsQuestionText');
+      const input=document.getElementById('srsAnswerInput');
+      const isDesktop=window.matchMedia('(min-width:701px)').matches;
+      const topBefore=question?.getBoundingClientRect().top ?? null;
+
+      previousSubmit();
+
+      if(window.srsResultWaiting){
+        lockResultInput(input);
+
+        /* Stabilkan posisi kartu pada desktop setelah tinggi hasil bertambah. */
+        if(isDesktop && question && topBefore!==null){
+          requestAnimationFrame(()=>{
+            const topAfter=question.getBoundingClientRect().top;
+            const delta=topAfter-topBefore;
+            if(Math.abs(delta)>1){
+              window.scrollBy({top:delta,left:0,behavior:'instant'});
+            }
+
+            /* Bila bagian bawah hasil belum terlihat, geser hanya secukupnya. */
+            const result=document.getElementById('srsInlineResult');
+            if(result){
+              const rect=result.getBoundingClientRect();
+              const bottomLimit=window.innerHeight-24;
+              if(rect.bottom>bottomLimit){
+                window.scrollBy({
+                  top:rect.bottom-bottomLimit,
+                  left:0,
+                  behavior:'smooth'
+                });
+              }
+            }
+          });
+        }
+      }
+    };
+  }
+
+  const previousRender=window.renderCurrentSrsCard;
+  if(typeof previousRender==='function'){
+    window.renderCurrentSrsCard=function(){
+      previousRender();
+      unlockResultInput(document.getElementById('srsAnswerInput'));
+    };
+  }
+})();
+</script>
+
 </body>
 </html>
