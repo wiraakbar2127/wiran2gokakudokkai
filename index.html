@@ -10173,5 +10173,325 @@ async function toggleUnderwaterAmbient(){
 }
 </style>
 
+
+
+<!-- PATCH WIRA: Tombol jumlah kosakata siap di SRS + daftar detail saat diklik -->
+<style id="wira-srs-ready-detail-patch-style">
+  #srsReadyStatCard{
+    cursor:pointer;
+    user-select:none;
+    transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
+    /* Warna dikembalikan ke style biru tua sebelumnya dari SRS FINAL V5 */
+  }
+  #srsReadyStatCard:hover,
+  #srsReadyStatCard:focus{
+    transform:translateY(-2px);
+    box-shadow:0 14px 34px rgba(47,111,174,.16);
+    outline:none;
+  }
+  #srsReadyStatCard span{
+    text-transform:none;
+  }
+  .wira-srs-ready-modal{
+    position:fixed;
+    inset:0;
+    z-index:10020;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    background:rgba(18,45,70,.42);
+    backdrop-filter:blur(5px);
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+    transition:opacity .25s ease, visibility .25s ease;
+  }
+  .wira-srs-ready-modal.active{
+    opacity:1;
+    visibility:visible;
+    pointer-events:auto;
+  }
+  .wira-srs-ready-card{
+    width:min(760px,100%);
+    max-height:min(78vh,720px);
+    overflow:auto;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:26px;
+    box-shadow:0 24px 70px rgba(22,61,95,.24);
+    padding:22px;
+  }
+  .wira-srs-ready-head{
+    position:sticky;
+    top:-22px;
+    z-index:5;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin:-22px -22px 14px;
+    padding:22px 22px 14px;
+    background:linear-gradient(180deg,#fff 72%,rgba(255,255,255,.92));
+    border-bottom:1px solid rgba(200,222,242,.65);
+    backdrop-filter:blur(8px);
+  }
+  .wira-srs-ready-head h2{
+    margin:0;
+    color:var(--brown);
+    font-size:24px;
+  }
+  .wira-srs-ready-close{
+    position:sticky;
+    top:0;
+    flex:0 0 auto;
+    width:36px;
+    height:36px;
+    border:0;
+    border-radius:50%;
+    background:var(--soft);
+    color:var(--brown);
+    cursor:pointer;
+    font-size:23px;
+    line-height:1;
+    box-shadow:0 6px 16px rgba(47,111,174,.14);
+  }
+  .wira-srs-ready-summary{
+    margin:0 0 14px;
+    color:var(--muted);
+    line-height:1.6;
+  }
+  .wira-srs-ready-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .wira-srs-ready-item{
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:13px 14px;
+    background:#f8fbff;
+  }
+  .wira-srs-ready-word{
+    font-size:22px;
+    font-weight:900;
+    color:#244f73;
+    margin-bottom:5px;
+  }
+  .wira-srs-ready-meta{
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.55;
+  }
+  .wira-srs-ready-meaning{
+    margin-top:7px;
+    color:#355b7d;
+    font-size:14px;
+    line-height:1.55;
+  }
+  @media(max-width:700px){
+    .wira-srs-ready-card{padding:18px;border-radius:22px;max-height:82vh}
+    .wira-srs-ready-head{top:-18px;margin:-18px -18px 12px;padding:18px 18px 12px}
+    .wira-srs-ready-head h2{font-size:20px}
+    .wira-srs-ready-word{font-size:20px}
+  }
+</style>
+<script id="wira-srs-ready-detail-patch-script">
+(function(){
+  'use strict';
+
+  function esc(value){
+    if(typeof escapeHtml === 'function') return escapeHtml(String(value ?? ''));
+    return String(value ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function plainFromHtml(html){
+    const temp=document.createElement('div');
+    temp.innerHTML=String(html || '');
+    temp.querySelectorAll('rt,rp').forEach(n=>n.remove());
+    return String(temp.textContent || '').replace(/\s+/g,' ').trim();
+  }
+
+  function wordOf(item){
+    return String(
+      item?.displayWord ||
+      plainFromHtml(item?.displayWordHtml) ||
+      plainFromHtml(item?.targetHtml) ||
+      plainFromHtml(item?.questionHtml) ||
+      item?.answer ||
+      'Kosakata'
+    ).replace(/\s+/g,'').trim();
+  }
+
+  function meaningOf(item){
+    return String(item?.meaning || plainFromHtml(item?.translationHtml) || 'Arti belum tersedia').trim();
+  }
+
+  function getState(){
+    if(typeof getSrsState === 'function') return getSrsState() || {};
+    try{return JSON.parse(localStorage.getItem('wiraSrsState') || '{}') || {}}catch(_){return {}}
+  }
+
+  function saveState(state){
+    if(typeof saveSrsState === 'function') return saveSrsState(state);
+    localStorage.setItem('wiraSrsState', JSON.stringify(state || {}));
+  }
+
+  function levelOf(record){
+    const max = (typeof maxLevel === 'function') ? maxLevel() : 10;
+    return Math.max(0, Math.min(max, Number(record?.level ?? record?.correctStage ?? 0) || 0));
+  }
+
+  function maxSrsLevel(){
+    return (typeof maxLevel === 'function') ? maxLevel() : 10;
+  }
+
+  function getItems(){
+    if(typeof buildSrsItems !== 'function') return [];
+    const items = buildSrsItems() || [];
+    if(typeof syncSrsState === 'function') syncSrsState(items);
+    else{
+      const state=getState();
+      const now=Date.now();
+      items.forEach(item=>{ if(item?.key && !state[item.key]) state[item.key]={level:0,due:now,correct:0,wrong:0,lastResult:null}; });
+      saveState(state);
+    }
+    return items;
+  }
+
+  function readyItems(){
+    const now=Date.now();
+    const max=maxSrsLevel();
+    const state=getState();
+    return getItems()
+      .filter(item => item?.key && (state[item.key]?.due || 0) <= now && levelOf(state[item.key]) < max)
+      .sort((a,b) => wordOf(a).localeCompare(wordOf(b),'ja'));
+  }
+
+  function ensureReadyCard(){
+    const stats=document.querySelector('#srs .srs-stats') || document.querySelector('.srs-stats');
+    if(!stats) return null;
+    let card=document.getElementById('srsReadyStatCard');
+    if(!card){
+      card=document.createElement('div');
+      card.id='srsReadyStatCard';
+      card.className='srs-stat';
+      stats.appendChild(card);
+    }
+    card.setAttribute('role','button');
+    card.setAttribute('tabindex','0');
+    card.setAttribute('aria-label','Lihat daftar kosakata yang siap di SRS');
+    if(!document.getElementById('srsReadyNumber') || !card.querySelector('span')){
+      card.innerHTML='<strong id="srsReadyNumber">0</strong><span>siap di SRS</span>';
+    }else{
+      const span=card.querySelector('span');
+      if(span) span.textContent='siap di SRS';
+    }
+    card.onclick=function(){ openReadyDetail(); };
+    card.onkeydown=function(event){
+      if(event.key==='Enter' || event.key===' '){
+        event.preventDefault();
+        openReadyDetail();
+      }
+    };
+    return card;
+  }
+
+  function ensureModal(){
+    let modal=document.getElementById('wiraSrsReadyModal');
+    if(modal) return modal;
+    modal=document.createElement('div');
+    modal.id='wiraSrsReadyModal';
+    modal.className='wira-srs-ready-modal';
+    modal.innerHTML=`
+      <div class="wira-srs-ready-card" role="dialog" aria-modal="true" aria-labelledby="wiraSrsReadyTitle">
+        <div class="wira-srs-ready-head">
+          <h2 id="wiraSrsReadyTitle">Kosakata siap di SRS</h2>
+          <button class="wira-srs-ready-close" type="button" aria-label="Tutup">×</button>
+        </div>
+        <p class="wira-srs-ready-summary" id="wiraSrsReadySummary"></p>
+        <div class="wira-srs-ready-list" id="wiraSrsReadyList"></div>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', event => { if(event.target === modal) modal.classList.remove('active'); });
+    modal.querySelector('.wira-srs-ready-close').addEventListener('click', () => modal.classList.remove('active'));
+    document.addEventListener('keydown', event => { if(event.key === 'Escape') modal.classList.remove('active'); });
+    return modal;
+  }
+
+  function openReadyDetail(){
+    const modal=ensureModal();
+    const list=readyItems();
+    const summary=modal.querySelector('#wiraSrsReadySummary');
+    const listEl=modal.querySelector('#wiraSrsReadyList');
+    const title=modal.querySelector('#wiraSrsReadyTitle');
+
+    if(title) title.textContent=`${list.length} siap di SRS`;
+    if(summary) summary.textContent=list.length
+      ? 'Ini daftar kosakata yang sudah waktunya dilatih sekarang.'
+      : 'Belum ada kosakata yang siap dilatih sekarang.';
+
+    listEl.innerHTML=list.length ? list.map(item=>{
+      const state=getState()[item.key] || {};
+      const level=levelOf(state);
+      const reading=item.readingAnswer || item.answer || '-';
+      return `<div class="wira-srs-ready-item">
+        <div class="wira-srs-ready-word">${esc(wordOf(item))}</div>
+        <div class="wira-srs-ready-meta">${esc(item.storyTitle || 'Tanpa Judul')}・${esc(item.folder || 'SRS')}・Progres <strong>${level}/10</strong>・Cara baca: <strong>${esc(reading)}</strong></div>
+        <div class="wira-srs-ready-meaning">${esc(meaningOf(item))}</div>
+      </div>`;
+    }).join('') : '<div class="empty">Belum ada kosakata yang siap di SRS.</div>';
+
+    modal.classList.add('active');
+  }
+
+  window.openSrsReadyDetail = openReadyDetail;
+
+  const previousOpenStatus = window.openSrsStatusDetail;
+  window.openSrsStatusDetail = function(type){
+    if(type === 'ready') return openReadyDetail();
+    if(typeof previousOpenStatus === 'function') return previousOpenStatus.apply(this, arguments);
+  };
+
+  window.refreshSrsReadyButton = function(){
+    const card=ensureReadyCard();
+    const ready=readyItems().length;
+    const number=document.getElementById('srsReadyNumber');
+    if(number) number.textContent=ready;
+    if(card) card.setAttribute('title', `${ready} kosakata siap di SRS`);
+  };
+
+  function wrap(name){
+    const old=window[name];
+    if(typeof old !== 'function' || old.__readyPatchWrapped) return;
+    const wrapped=function(){
+      const result=old.apply(this, arguments);
+      setTimeout(window.refreshSrsReadyButton, 0);
+      return result;
+    };
+    wrapped.__readyPatchWrapped=true;
+    window[name]=wrapped;
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    window.refreshSrsReadyButton();
+    wrap('renderSrsPage');
+    wrap('updateSrsCountersOnly');
+    wrap('renderCurrentSrsCard');
+    wrap('submitSrsAnswer');
+    wrap('nextSrsQuestion');
+  });
+
+  setTimeout(function(){
+    window.refreshSrsReadyButton();
+    wrap('renderSrsPage');
+    wrap('updateSrsCountersOnly');
+    wrap('renderCurrentSrsCard');
+    wrap('submitSrsAnswer');
+    wrap('nextSrsQuestion');
+  }, 0);
+})();
+</script>
+
 </body>
 </html>
