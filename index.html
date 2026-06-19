@@ -12076,5 +12076,272 @@ async function toggleUnderwaterAmbient(){
   }
 })();
 </script>
+
+
+<!-- ===== PATCH: SRS answer auto-scroll + DAY newest order in active story card ===== -->
+<style id="srs-answer-follow-card-bottom-patch">
+  #srs.page.active #srsPracticeArea,
+  #srs.page.active #srsPracticeArea .srs-card,
+  #srs.page.active .srs-main{
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  #srs.page.active .srs-final-feedback,
+  #srs.page.active .srs-inline-result,
+  #srs.page.active .srs-high-confirm-box{
+    scroll-margin-bottom:26px;
+  }
+</style>
+<script id="srs-scroll-and-story-order-final-patch">
+(function(){
+  'use strict';
+
+  const RETRY_AFTER_WRONG = 10 * 60 * 1000;
+
+  function isSrsActive(){
+    return !!document.getElementById('srs')?.classList.contains('active');
+  }
+
+  function getVisualBottom(){
+    const vv = window.visualViewport;
+    return vv ? (vv.offsetTop + vv.height) : window.innerHeight;
+  }
+
+  function srsCard(){
+    return document.querySelector('#srs.page.active #srsPracticeArea .srs-card');
+  }
+
+  function srsArea(){
+    return document.querySelector('#srs.page.active #srsPracticeArea');
+  }
+
+  function resultShown(){
+    const input = document.getElementById('srsAnswerInput');
+    const feedback = document.getElementById('srsInlineFeedback') || document.getElementById('srsInlineResult');
+    return !!(
+      window.srsLocked || window.srsResultWaiting || window.srsHighLevelConfirming ||
+      input?.dataset?.locked === '1' || input?.dataset?.resultLocked === '1' ||
+      feedback?.classList.contains('correct') || feedback?.classList.contains('wrong') ||
+      feedback?.classList.contains('srs-high-confirm-box')
+    );
+  }
+
+  function followCardBottom(behavior){
+    if(!isSrsActive()) return;
+    const card = srsCard();
+    if(!card) return;
+
+    const rect = card.getBoundingClientRect();
+    const topLimit = 10;
+    const bottomLimit = getVisualBottom() - 18;
+
+    // Jika hasil jawaban membuat kartu memanjang, layar otomatis turun
+    // sampai ujung bawah kartu terlihat. Jadi jawaban tidak kepotong.
+    if(rect.bottom > bottomLimit){
+      window.scrollBy({
+        top: Math.ceil(rect.bottom - bottomLimit),
+        behavior: behavior || 'smooth'
+      });
+      return;
+    }
+
+    // Jika setelah berpindah soal posisi layar terlalu turun, naikkan lagi
+    // secukupnya agar kartu soal pendek terasa fleksibel kembali.
+    if(rect.top < topLimit){
+      window.scrollBy({
+        top: Math.floor(rect.top - topLimit),
+        behavior: behavior || 'smooth'
+      });
+    }
+  }
+
+  function followSoon(behavior){
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => followCardBottom(behavior));
+    });
+    setTimeout(() => followCardBottom(behavior), 120);
+    setTimeout(() => followCardBottom('auto'), 320);
+  }
+
+  function restoreFlexiblePosition(){
+    if(!isSrsActive()) return;
+    const area = srsArea();
+    if(!area) return;
+
+    requestAnimationFrame(() => {
+      const rect = area.getBoundingClientRect();
+      const targetTop = window.scrollY + rect.top - 18;
+      const currentTop = window.scrollY;
+      // Hanya balikkan posisi kalau layar sebelumnya turun karena lembar jawaban panjang.
+      if(currentTop > targetTop + 30){
+        window.scrollTo({top: Math.max(0, targetTop), behavior:'smooth'});
+      }else{
+        followCardBottom('auto');
+      }
+    });
+  }
+
+  function extractDayNumber(value){
+    const text = String(value || '');
+    const match = text.match(/(?:day|DAY|ＤＡＹ)\s*[-#:：]?\s*(\d+)/i) || text.match(/\b(\d{1,4})\b/);
+    return match ? Number(match[1]) : -1;
+  }
+
+  function safeEsc(value){
+    if(typeof window.safeEscape === 'function') return window.safeEscape(value);
+    if(typeof window.escapeHtml === 'function') return window.escapeHtml(value);
+    return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function levelOf(record){
+    if(typeof window.srsLevel === 'function') return window.srsLevel(record);
+    return Math.max(0, Number(record?.level ?? record?.correctStage ?? 0) || 0);
+  }
+
+  function stateSafe(){
+    if(typeof window.getSrsState === 'function') return window.getSrsState() || {};
+    try{return JSON.parse(localStorage.getItem('wiraSrsState') || localStorage.getItem('srsState') || '{}') || {}}catch(_){return {}}
+  }
+
+  function syncState(items){
+    if(typeof window.syncStateWithItems === 'function') return window.syncStateWithItems(items);
+    if(typeof window.syncSrsState === 'function') return window.syncSrsState(items);
+    return stateSafe();
+  }
+
+  function maxLevelSafe(){
+    return typeof window.maxLevel === 'function' ? window.maxLevel() : 12;
+  }
+
+  function updateCountersSafe(){
+    try{ if(typeof window.updateSrsCountersOnly === 'function') window.updateSrsCountersOnly(); }catch(_){ }
+    try{ if(typeof window.updateSrsOverallProgress === 'function') window.updateSrsOverallProgress(); }catch(_){ }
+  }
+
+  function renderOrderedSrsStoryList(){
+    const list = document.getElementById('srsStoryList');
+    if(!list || typeof window.buildSrsItems !== 'function') return false;
+
+    const items = window.buildSrsItems();
+    const state = syncState(items);
+    const now = Date.now();
+    const max = maxLevelSafe();
+    const storyMap = new Map();
+
+    items.forEach(item => {
+      const id = String(item.storyId ?? item.storyTitle ?? '');
+      if(!storyMap.has(id)){
+        storyMap.set(id, {
+          id,
+          title: item.storyTitle || 'Tanpa Judul',
+          day: extractDayNumber(item.storyTitle || item.folder || id),
+          total: 0,
+          due: 0,
+          mastered: 0
+        });
+      }
+      const info = storyMap.get(id);
+      const record = state[item.key] || {};
+      info.total++;
+      if((record.due || 0) <= now && levelOf(record) < max) info.due++;
+      if(levelOf(record) >= max) info.mastered++;
+    });
+
+    const rows = [...storyMap.values()].sort((a,b) => {
+      // DAY terbaru paling atas, DAY 1 paling bawah. Cerita tanpa nomor DAY ditaruh terakhir.
+      if(b.day !== a.day) return b.day - a.day;
+      return String(b.title).localeCompare(String(a.title), 'id', {numeric:true, sensitivity:'base'});
+    });
+
+    list.innerHTML = rows.length ? rows.map(info => `
+      <div class="srs-story-row">
+        <div><strong>${safeEsc(info.title)}</strong><br><span>${info.mastered}/${info.total} dikuasai</span></div>
+        <span>${info.due} due</span>
+      </div>`).join('') : '<div class="empty">Belum ada cerita yang selesai dibaca.</div>';
+    return true;
+  }
+
+  // Override renderSrsPage paling akhir agar sidebar Cerita Aktif selalu urut DAY terbaru → DAY 1.
+  const previousRenderSrsPage = window.renderSrsPage;
+  window.renderSrsPage = function(){
+    let result;
+    if(typeof previousRenderSrsPage === 'function') result = previousRenderSrsPage.apply(this, arguments);
+    renderOrderedSrsStoryList();
+    updateCountersSafe();
+    return result;
+  };
+
+  // Kalau renderSrsPage lain menimpa list, observer ini langsung merapikan lagi.
+  const listObserver = new MutationObserver(() => {
+    if(!isSrsActive()) return;
+    if(window.__srsOrderingNow) return;
+    window.__srsOrderingNow = true;
+    try{ renderOrderedSrsStoryList(); }finally{ setTimeout(() => { window.__srsOrderingNow = false; }, 0); }
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const list = document.getElementById('srsStoryList');
+    if(list) listObserver.observe(list, {childList:true});
+    renderOrderedSrsStoryList();
+  });
+
+  const oldSubmit = window.submitSrsAnswer;
+  if(typeof oldSubmit === 'function'){
+    window.submitSrsAnswer = function(){
+      const beforeIndex = Number(window.srsCurrentIndex || 0);
+      const result = oldSubmit.apply(this, arguments);
+      if(resultShown() && Number(window.srsCurrentIndex || 0) === beforeIndex) followSoon('smooth');
+      renderOrderedSrsStoryList();
+      return result;
+    };
+  }
+
+  const oldConfirm = window.confirmHighLevelWrongSrs;
+  if(typeof oldConfirm === 'function'){
+    window.confirmHighLevelWrongSrs = function(){
+      const result = oldConfirm.apply(this, arguments);
+      followSoon('smooth');
+      renderOrderedSrsStoryList();
+      return result;
+    };
+  }
+
+  const oldEdit = window.editHighLevelWrongSrs;
+  if(typeof oldEdit === 'function'){
+    window.editHighLevelWrongSrs = function(){
+      const result = oldEdit.apply(this, arguments);
+      followSoon('smooth');
+      return result;
+    };
+  }
+
+  const oldNext = window.nextSrsQuestion;
+  if(typeof oldNext === 'function'){
+    window.nextSrsQuestion = function(){
+      const result = oldNext.apply(this, arguments);
+      restoreFlexiblePosition();
+      renderOrderedSrsStoryList();
+      return result;
+    };
+  }
+
+  // Mutation observer: saat feedback/konfirmasi muncul dan tinggi kartu berubah,
+  // layar otomatis mengejar ujung card.
+  const areaObserver = new MutationObserver(() => {
+    if(resultShown()) followSoon('smooth');
+  });
+  document.addEventListener('DOMContentLoaded', () => {
+    const area = document.getElementById('srsPracticeArea');
+    if(area) areaObserver.observe(area, {subtree:true, childList:true, attributes:true, attributeFilter:['class','style','data-locked','data-result-locked']});
+  });
+
+  window.addEventListener('resize', () => { if(resultShown()) followSoon('auto'); });
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize', () => { if(resultShown()) followSoon('auto'); });
+  }
+})();
+</script>
+
 </body>
 </html>
