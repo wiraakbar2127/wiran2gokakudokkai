@@ -2966,6 +2966,7 @@ function deleteStory(id){
 
 
 
+const SRS_WRONG_REVIEW_INTERVAL=10*60*1000; // Salah: ulang 10 menit
 const SRS_INTERVALS=[
   4*60*60*1000,        // Poin Baru: 4 jam
   8*60*60*1000,        // Ulang 2: 8 jam
@@ -3044,7 +3045,7 @@ function renderCurrentSrsCard(){const area=document.getElementById("srsPracticeA
         <div id="srsSentenceText">${item.questionHtml}</div>
         <div id="srsInlineResult" class="srs-inline-result"></div>
       </div><div class="srs-translation">${item.translationHtml}</div><div class="srs-answer-wrap"><input id="srsAnswerInput" class="srs-answer" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Ketik romaji atau hiragana"><button class="btn" onclick="submitSrsAnswer()">Jawab</button></div><div class="srs-romaji-note">Contoh: atsumaru otomatis menjadi あつまる.</div><div id="srsFeedback" class="srs-feedback"></div></div>`;const input=document.getElementById("srsAnswerInput");input.addEventListener("input",()=>{input.value=romajiToHiragana(input.value);input.setSelectionRange(input.value.length,input.value.length)});input.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submitSrsAnswer()}});setTimeout(()=>input.focus(),80)}
-function submitSrsAnswer(){if(srsLocked)return;const item=srsQueue[srsCurrentIndex],input=document.getElementById("srsAnswerInput"),fb=document.getElementById("srsFeedback");if(!item||!input||!fb)return;const ans=normalizeKana(input.value);if(!ans)return;srsLocked=true;const correct=ans===normalizeKana(item.answer),s=getSrsState(),r=s[item.key]||{level:0,due:Date.now(),correct:0,wrong:0},now=Date.now();if(correct){r.level=Math.min((r.level||0)+1,(typeof maxLevel==="function"?maxLevel():12));r.correct=(r.correct||0)+1;r.lastResult="correct";r.due=now+SRS_INTERVALS[Math.max(0,Math.min(SRS_INTERVALS.length-1,r.level-1))];fb.className="srs-feedback correct";fb.innerHTML=`<strong>Benar！</strong><br>Jawaban: <strong>${escapeHtml(item.answer)}</strong><div class="srs-next-time">Muncul lagi ${formatSrsDuration(SRS_INTERVALS[Math.max(0,Math.min(SRS_INTERVALS.length-1,r.level-1))])}.</div>`}else{r.level=0;r.wrong=(r.wrong||0)+1;r.lastResult="wrong";r.due=now+SRS_INTERVALS[0];fb.className="srs-feedback wrong";fb.innerHTML=`<strong>Belum tepat.</strong><br>Jawaban benar: <strong>${escapeHtml(item.answer)}</strong><div class="srs-next-time">Diulang sekitar ${formatSrsDuration(SRS_INTERVALS[0])}.</div>`}s[item.key]=r;saveSrsState(s);input.dataset.resultLocked='1';setTimeout(()=>{srsCurrentIndex++;srsLocked=false;renderCurrentSrsCard();updateSrsCountersOnly()},correct?700:1500)}
+function submitSrsAnswer(){if(srsLocked)return;const item=srsQueue[srsCurrentIndex],input=document.getElementById("srsAnswerInput"),fb=document.getElementById("srsFeedback");if(!item||!input||!fb)return;const ans=normalizeKana(input.value);if(!ans)return;srsLocked=true;const correct=ans===normalizeKana(item.answer),s=getSrsState(),r=s[item.key]||{level:0,due:Date.now(),correct:0,wrong:0},now=Date.now();if(correct){r.level=Math.min((r.level||0)+1,(typeof maxLevel==="function"?maxLevel():12));r.correct=(r.correct||0)+1;r.lastResult="correct";r.due=now+SRS_INTERVALS[Math.max(0,Math.min(SRS_INTERVALS.length-1,r.level-1))];fb.className="srs-feedback correct";fb.innerHTML=`<strong>Benar！</strong><br>Jawaban: <strong>${escapeHtml(item.answer)}</strong><div class="srs-next-time">Muncul lagi ${formatSrsDuration(SRS_INTERVALS[Math.max(0,Math.min(SRS_INTERVALS.length-1,r.level-1))])}.</div>`}else{r.wrong=(r.wrong||0)+1;r.lastResult="wrong";r.due=now+SRS_WRONG_REVIEW_INTERVAL;fb.className="srs-feedback wrong";fb.innerHTML=`<strong>Belum tepat.</strong><br>Jawaban benar: <strong>${escapeHtml(item.answer)}</strong><div class="srs-next-time">Diulang sekitar ${formatSrsDuration(SRS_WRONG_REVIEW_INTERVAL)}.</div>`}s[item.key]=r;saveSrsState(s);input.dataset.resultLocked='1';setTimeout(()=>{srsCurrentIndex++;srsLocked=false;renderCurrentSrsCard();updateSrsCountersOnly()},correct?700:1500)}
 function updateSrsCountersOnly(){const items=buildSrsItems(),s=syncSrsState(items),now=Date.now();document.getElementById("srsDueCount").textContent=items.filter(i=>(s[i.key]?.due||0)<=now).length;document.getElementById("srsLearningCount").textContent=items.filter(i=>{const l=s[i.key]?.level||0;return l>0&&l<(typeof maxLevel==="function"?maxLevel():12)}).length;document.getElementById("srsMasteredCount").textContent=items.filter(i=>(s[i.key]?.level||0)>=(typeof maxLevel==="function"?maxLevel():12)).length}
 function formatSrsDuration(ms){
   const minutes=Math.max(1,Math.round(ms/60000));
@@ -3586,16 +3587,15 @@ function submitSrsAnswer(){
       Muncul lagi ${formatSrsDuration(SRS_INTERVALS[Math.max(0,Math.min(SRS_INTERVALS.length-1,record.level-1))])}.
     `;
   }else{
-    record.level=0;
     record.wrong=(record.wrong||0)+1;
     record.lastResult="wrong";
-    record.due=now+SRS_INTERVALS[0];
+    record.due=now+SRS_WRONG_REVIEW_INTERVAL;
 
     inlineResult.innerHTML=`
       <strong>Belum tepat.</strong><br>
       Jawaban benar: <strong>${escapeHtml(item.answer)}</strong><br>
       Perhatikan kalimat yang sudah diperbaiki di atas.<br>
-      Soal ini akan diulang sekitar ${formatSrsDuration(SRS_INTERVALS[0])}.
+      Soal ini akan diulang sekitar ${formatSrsDuration(SRS_WRONG_REVIEW_INTERVAL)}.
     `;
   }
 
@@ -8970,7 +8970,7 @@ async function toggleUnderwaterAmbient(){
     const record = state[item?.key] || {};
     const level = srsLevel(record);
     const progress = `${level}/12`;
-    if(level >= 10) return `SRS ${progress} • Dikuasai`;
+    if(level >= maxLevel()) return `SRS ${progress} • Dikuasai`;
     const due = Number(record.due || 0);
     if(!due || due <= Date.now()) return `SRS ${progress} • Siap dipelajari sekarang`;
     const diff = Math.max(0, due - Date.now());
@@ -11757,6 +11757,147 @@ async function toggleUnderwaterAmbient(){
 })();
 </script>
 
+
+
+<script id="srs-wrong-10-minute-final-safety">
+(function(){
+  'use strict';
+
+  const WRONG_REVIEW_INTERVAL = 10 * 60 * 1000;
+  window.SRS_WRONG_REVIEW_INTERVAL = WRONG_REVIEW_INTERVAL;
+
+  function escapeLocal(value){
+    return String(value ?? '').replace(/[&<>"']/g, c => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    }[c]));
+  }
+
+  function kataToHira(value){
+    return String(value || '').replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0)-0x60));
+  }
+
+  function normalizeLocal(value){
+    const base = (typeof romajiToHiragana === 'function') ? romajiToHiragana(value) : value;
+    return kataToHira(base).trim().replace(/\s+/g,'');
+  }
+
+  function maxLevelLocal(){
+    return (typeof window.maxLevel === 'function') ? window.maxLevel() : 12;
+  }
+
+  function correctInterval(level){
+    const intervals = Array.isArray(window.SRS_INTERVALS) ? window.SRS_INTERVALS : [
+      4*60*60*1000,
+      8*60*60*1000,
+      24*60*60*1000,
+      2*24*60*60*1000,
+      4*24*60*60*1000,
+      8*24*60*60*1000,
+      14*24*60*60*1000,
+      30*24*60*60*1000,
+      60*24*60*60*1000,
+      120*24*60*60*1000,
+      180*24*60*60*1000
+    ];
+    const stage = Math.max(1, Math.min(intervals.length, Number(level) || 1));
+    return intervals[stage - 1];
+  }
+
+  function durationLabel(ms){
+    if(typeof formatSrsDuration === 'function') return formatSrsDuration(ms);
+    const minutes = Math.max(1, Math.round(ms / 60000));
+    if(minutes < 60) return minutes + ' menit';
+    const hours = Math.round(minutes / 60);
+    if(hours < 24) return hours + ' jam';
+    const days = Math.round(hours / 24);
+    if(days < 30) return days + ' hari';
+    return Math.round(days / 30) + ' bulan';
+  }
+
+  function saveRecord(item, record){
+    const state = (typeof getSrsState === 'function') ? getSrsState() : JSON.parse(localStorage.getItem('wiraSrsState') || '{}');
+    state[item.key] = record;
+    if(typeof saveSrsState === 'function') saveSrsState(state);
+    else localStorage.setItem('wiraSrsState', JSON.stringify(state));
+  }
+
+  function getRecord(item){
+    const state = (typeof getSrsState === 'function') ? getSrsState() : JSON.parse(localStorage.getItem('wiraSrsState') || '{}');
+    return state[item.key] || {level:0,due:Date.now(),correct:0,wrong:0,lastResult:null};
+  }
+
+  window.submitSrsAnswer = function(){
+    if(window.srsLocked) return;
+
+    const item = window.srsQueue?.[window.srsCurrentIndex];
+    const input = document.getElementById('srsAnswerInput');
+    const feedback = document.getElementById('srsInlineFeedback');
+    const question = document.getElementById('srsQuestionText');
+    const submitBtn = document.getElementById('srsSubmitBtn');
+
+    if(!item || !input || !feedback || !question) return;
+
+    const userAnswer = normalizeLocal(input.value);
+    if(!userAnswer) return;
+
+    const correctReading = item.readingAnswer || item.answer || '';
+    const correct = userAnswer === normalizeLocal(correctReading);
+    const record = getRecord(item);
+    const now = Date.now();
+
+    window.srsLocked = true;
+    question.classList.remove('correct','wrong');
+    feedback.className = 'srs-final-feedback';
+
+    if(correct){
+      record.level = Math.min((record.level || 0) + 1, maxLevelLocal());
+      record.correct = (record.correct || 0) + 1;
+      record.lastResult = 'correct';
+      record.due = now + correctInterval(record.level);
+
+      question.classList.add('correct');
+      feedback.classList.add('correct');
+      feedback.innerHTML =
+        `<div>Jawaban: <span class="srs-final-answer-pill">${escapeLocal(correctReading)}</span></div>` +
+        `<div class="srs-final-meaning-line">Arti: <strong>${escapeLocal(item.meaning)}</strong></div>` +
+        (record.level >= maxLevelLocal()
+          ? `<div class="srs-next-time">Mastered! Kosakata ini sudah dikuasai.</div>`
+          : `<div class="srs-next-time">Dipelajari lagi ${escapeLocal(durationLabel(correctInterval(record.level)))}.</div>`);
+    }else{
+      // Salah tidak menaikkan dan tidak mereset level. Cukup ulang cepat 10 menit lagi.
+      record.level = Math.max(0, Math.min(maxLevelLocal(), Number(record.level || 0)));
+      record.wrong = (record.wrong || 0) + 1;
+      record.lastResult = 'wrong';
+      record.due = now + WRONG_REVIEW_INTERVAL;
+
+      question.classList.add('wrong');
+      feedback.classList.add('wrong');
+      feedback.innerHTML =
+        `<div>Jawaban: <span class="srs-final-answer-pill">${escapeLocal(correctReading)}</span></div>` +
+        `<div class="srs-final-meaning-line">Arti: <strong>${escapeLocal(item.meaning)}</strong></div>` +
+        `<div class="srs-next-time">Salah tidak menaikkan level. Diulang lagi sekitar ${escapeLocal(durationLabel(WRONG_REVIEW_INTERVAL))}.</div>`;
+    }
+
+    saveRecord(item, record);
+
+    input.dataset.locked = '1';
+    input.readOnly = false;
+
+    if(submitBtn){
+      submitBtn.textContent = 'Next';
+      submitBtn.classList.add('secondary','next-mode');
+      submitBtn.disabled = false;
+      submitBtn.onclick = window.submitOrNextSrs;
+    }
+
+    try{ input.focus({preventScroll:true}); }catch(_){ input.focus(); }
+
+    if(typeof window.updateSrsCountersOnly === 'function') window.updateSrsCountersOnly();
+    if(typeof updateSrsOverallProgress === 'function') updateSrsOverallProgress();
+    if(typeof renderAchievementPanel === 'function') renderAchievementPanel();
+  };
+})();
+</script>
 
 <script id="srs-12-level-final-safety">
 (function(){
