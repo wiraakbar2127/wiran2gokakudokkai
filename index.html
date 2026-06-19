@@ -1473,7 +1473,7 @@ footer{
 <div class="brand" onclick="go('home')">𓆝 ウィラN2合格読解</div>
 <div class="navlinks">
 <button aria-label="Beranda" class="navbtn active" data-page="home" onclick="go('home')" title="Beranda"><span class="nav-icon"><svg fill="none" viewbox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M5.5 10.5V20h13v-9.5" stroke-linejoin="round" stroke-width="2"></path><path d="M9.5 20v-5h5v5" stroke-linejoin="round" stroke-width="2"></path></svg></span><span class="nav-label">Beranda</span></button>
-<button aria-label="Kumpulan Cerita" class="navbtn" data-page="stories" onclick="go('stories')" title="Kumpulan Cerita"><span class="nav-icon"><svg fill="none" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.8 7.4c0-.9.7-1.6 1.6-1.6h4.3c.5 0 .9.2 1.2.6l1 1.2h6.7c.9 0 1.6.7 1.6 1.6v7.4c0 .9-.7 1.6-1.6 1.6H5.4c-.9 0-1.6-.7-1.6-1.6V7.4Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.9"></path><path d="M4.2 9.2h15.6" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"></path></svg></span><span class="nav-label">Kumpulan Cerita</span></button>
+<button aria-label="Kumpulan Cerita" class="navbtn" data-page="stories" onclick="go('stories')" title="Kumpulan Cerita"><span class="nav-icon"><svg data-wira-minimalist-fish="1" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.1 12c2.15-3.05 6.55-4.25 10.05-2.55 1.05.5 2.05 1.05 3.25 1.2-1.2.15-2.2.7-3.25 1.2C12.65 13.55 8.25 15.05 6.1 12Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85"></path><path d="M6.1 12 2.9 9.45v5.1L6.1 12Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85"></path><circle cx="14.55" cy="10.9" r=".85" fill="currentColor" stroke="none"></circle><path d="M9.1 10.2c1.15.8 1.35 2.35.55 3.35" stroke="currentColor" stroke-linecap="round" stroke-width="1.45"></path></svg></span><span class="nav-label">Kumpulan Cerita</span></button>
 <button aria-label="Import dari File" class="navbtn" data-page="generator" onclick="go('generator')" title="Import dari File"><span class="nav-icon"><svg fill="none" viewbox="0 0 24 24"><path d="M12 3v12" stroke-linecap="round" stroke-width="2"></path><path d="m7.5 10.5 4.5 4.5 4.5-4.5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M4 20h16" stroke-linecap="round" stroke-width="2"></path></svg></span><span class="nav-label">Import dari File</span></button>
 <button aria-label="Kelola Cerita" class="navbtn" data-page="manage" onclick="go('manage')" title="Kelola Cerita"><span class="nav-icon"><svg fill="none" viewbox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" stroke-linecap="round" stroke-width="2"></path><path d="m16 17 2 2 3-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></span><span class="nav-label">Kelola Cerita</span></button>
 <button aria-label="SRS" class="navbtn" data-page="srs" onclick="go('srs')" title="SRS"><span class="nav-icon"><svg fill="none" viewbox="0 0 24 24"><path d="M7 7h10a4 4 0 0 1 4 4v2a4 4 0 0 1-4 4H9l-4 3v-3a4 4 0 0 1-2-3.5V11a4 4 0 0 1 4-4Z" stroke-linejoin="round" stroke-width="2"></path><path d="M8 12h8" stroke-linecap="round" stroke-width="2"></path></svg></span><span class="nav-label">SRS</span></button>
@@ -9136,7 +9136,6 @@ async function toggleUnderwaterAmbient(){
             '<div class="srs-vocab-detail">' +
               '<div class="srs-vocab-word">' + (item.displayWordHtml || safeEscape(item.displayWord)) + '</div>' +
               '<div class="srs-vocab-meta">' +
-                'Cara baca: <strong>' + safeEscape(item.readingAnswer || item.answer) + '</strong><br>' +
                 'Arti: <strong>' + safeEscape(item.meaning) + '</strong><br>' +
                 safeEscape(item.storyTitle || "Tanpa Judul") + '・Progres <strong>' + srsLevel(record) + '/' + max + '</strong>' +
               '</div>' +
@@ -10661,10 +10660,9 @@ async function toggleUnderwaterAmbient(){
     listEl.innerHTML=list.length ? list.map(item=>{
       const state=getState()[item.key] || {};
       const level=levelOf(state);
-      const reading=item.readingAnswer || item.answer || '-';
       return `<div class="wira-srs-ready-item">
         <div class="wira-srs-ready-word">${esc(wordOf(item))}</div>
-        <div class="wira-srs-ready-meta">${esc(item.storyTitle || 'Tanpa Judul')}・${esc(item.folder || 'SRS')}・Progres <strong>${level}/10</strong>・Cara baca: <strong>${esc(reading)}</strong></div>
+        <div class="wira-srs-ready-meta">${esc(item.storyTitle || 'Tanpa Judul')}・${esc(item.folder || 'SRS')}・Progres <strong>${level}/10</strong></div>
         <div class="wira-srs-ready-meaning">${esc(meaningOf(item))}</div>
       </div>`;
     }).join('') : '<div class="empty">Belum ada kosakata yang siap di SRS.</div>';
@@ -11039,9 +11037,9 @@ async function toggleUnderwaterAmbient(){
 
 
 
-<!-- PATCH WIRA: Navbar buku simetris + furigana pada daftar kosakata SRS -->
-<style id="wira-nav-book-and-srs-furigana-style">
-  /* Icon buku navigasi dibuat simetris dan sedikit lebih rapi */
+<!-- PATCH WIRA: Navbar ikan minimalist + daftar kosakata SRS tanpa cara baca terpisah -->
+<style id="wira-nav-fish-and-srs-furigana-style">
+  /* Icon ikan minimalist untuk navigasi Kumpulan Cerita */
   .navbtn[data-page="stories"] .nav-icon svg{
     width:22px!important;
     height:22px!important;
@@ -11072,11 +11070,11 @@ async function toggleUnderwaterAmbient(){
     line-height:1.9!important;
   }
 </style>
-<script id="wira-nav-book-and-srs-furigana-script">
+<script id="wira-nav-fish-and-srs-furigana-script">
 (function(){
   'use strict';
 
-  const BOOK_ICON = '<svg fill="none" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.2h5.9c1.2 0 2.1.45 2.1 1.45V19.2c0-1-1-1.55-2.1-1.55H5V5.2Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.9"></path><path d="M19 5.2h-5.9c-1.2 0-2.1.45-2.1 1.45V19.2c0-1 1-1.55 2.1-1.55H19V5.2Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.9"></path><path d="M12 6.7v12.4" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"></path><path d="M7.2 8.2h3.1M7.2 11h3.1M13.7 8.2h3.1M13.7 11h3.1" stroke="currentColor" stroke-linecap="round" stroke-width="1.45"></path></svg>';
+  const FISH_ICON = '<svg fill="none" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.1 12c2.15-3.05 6.55-4.25 10.05-2.55 1.05.5 2.05 1.05 3.25 1.2-1.2.15-2.2.7-3.25 1.2C12.65 13.55 8.25 15.05 6.1 12Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85"></path><path d="M6.1 12 2.9 9.45v5.1L6.1 12Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85"></path><circle cx="14.55" cy="10.9" r=".85" fill="currentColor" stroke="none"></circle><path d="M9.1 10.2c1.15.8 1.35 2.35.55 3.35" stroke="currentColor" stroke-linecap="round" stroke-width="1.45"></path></svg>';
 
   function esc(value){
     if(typeof window.escapeHtml === 'function') return window.escapeHtml(String(value ?? ''));
@@ -11217,8 +11215,7 @@ async function toggleUnderwaterAmbient(){
         const level=levelOf(record);
         return '<div class="srs-vocab-detail">' +
           '<div class="srs-vocab-word">' + wordWithFurigana(item) + '</div>' +
-          '<div class="srs-vocab-meta">Cara baca: <strong>' + esc(cleanReading(item) || '-') + '</strong><br>' +
-          'Arti: <strong>' + esc(meaningOf(item)) + '</strong><br>' +
+          '<div class="srs-vocab-meta">Arti: <strong>' + esc(meaningOf(item)) + '</strong><br>' +
           esc(item.storyTitle || 'Tanpa Judul') + '・Progres <strong>' + level + '/' + max + '</strong><br>' +
           '<span class="srs-vocab-schedule">' + esc(timeText(record)) + '</span></div>' +
         '</div>';
@@ -11243,8 +11240,7 @@ async function toggleUnderwaterAmbient(){
         const level=levelOf(record);
         return '<div class="wira-srs-ready-item">' +
           '<div class="wira-srs-ready-word">' + wordWithFurigana(item) + '</div>' +
-          '<div class="wira-srs-ready-meta">Cara baca: <strong>' + esc(cleanReading(item) || '-') + '</strong><br>' +
-          esc(item.storyTitle || 'Tanpa Judul') + '・Progres <strong>' + level + '/' + max + '</strong></div>' +
+          '<div class="wira-srs-ready-meta">' + esc(item.storyTitle || 'Tanpa Judul') + '・Progres <strong>' + level + '/' + max + '</strong></div>' +
           '<div class="wira-srs-ready-meaning">' + esc(meaningOf(item)) + '</div>' +
         '</div>';
       }).join('') : '<div class="empty">Belum ada kosakata yang siap di SRS.</div>';
@@ -11262,10 +11258,18 @@ async function toggleUnderwaterAmbient(){
     }
   }
 
-  function installBookIcon(){
-    const holder=document.querySelector('.navbtn[data-page="stories"] .nav-icon');
-    if(holder && !holder.querySelector('svg[data-wira-symmetric-book="1"]')){
-      holder.innerHTML=BOOK_ICON.replace('<svg ','<svg data-wira-symmetric-book="1" ');
+  function installFishIcon(){
+    const btn=document.querySelector('.navbtn[data-page="stories"]');
+    if(!btn) return;
+    let holder=btn.querySelector('.nav-icon');
+    if(!holder){
+      holder=document.createElement('span');
+      holder.className='nav-icon';
+      const label=btn.querySelector('.nav-label');
+      btn.insertBefore(holder,label || btn.firstChild);
+    }
+    if(!holder.querySelector('svg[data-wira-minimalist-fish="1"]')){
+      holder.innerHTML=FISH_ICON.replace('<svg ','<svg data-wira-minimalist-fish="1" ');
     }
   }
 
@@ -11283,10 +11287,10 @@ async function toggleUnderwaterAmbient(){
   };
 
   document.addEventListener('DOMContentLoaded', function(){
-    installBookIcon();
+    installFishIcon();
     refreshReady();
   });
-  setTimeout(installBookIcon, 0);
+  setTimeout(installFishIcon, 0);
   setTimeout(refreshReady, 0);
 })();
 </script>
