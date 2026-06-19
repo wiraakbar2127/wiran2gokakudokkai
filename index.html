@@ -11925,5 +11925,135 @@ async function toggleUnderwaterAmbient(){
   };
 })();
 </script>
+
+
+<!-- PATCH WIRA: bugfix auto-scroll SRS feedback + urutan Cerita Aktif DAY lama ke terbaru -->
+<style id="wira-srs-feedback-autofit-and-active-day-order-style">
+  #srs.page.active #srsPracticeArea,
+  #srs.page.active #srsPracticeArea .srs-card,
+  #srs.page.active .srs-final-question,
+  #srs.page.active .srs-final-feedback{
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  #srs.page.active .srs-final-feedback{
+    scroll-margin-bottom:22px;
+  }
+</style>
+<script id="wira-srs-feedback-autofit-and-active-day-order-script">
+(function(){
+  'use strict';
+
+  function getDayNumberSafe(story){
+    if(typeof window.extractDayNumber === 'function') return window.extractDayNumber(story);
+    const source=[story && story.day, story && story.id, story && story.title, story && story.description].filter(Boolean).join(' ');
+    const match=String(source).match(/(?:DAY|day)[\s_-]*(\d+)/i);
+    return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
+  }
+
+  function sortStoriesByDayOldToNew(list){
+    return Array.from(list || []).sort(function(a,b){
+      const dayA=getDayNumberSafe(a);
+      const dayB=getDayNumberSafe(b);
+      if(dayA!==dayB) return dayA-dayB;
+      return String((a && a.title) || '').localeCompare(String((b && b.title) || ''),'ja',{numeric:true,sensitivity:'base'});
+    });
+  }
+
+  // Cerita Aktif di beranda: urutkan dari DAY terkecil ke DAY terbesar, bukan DAY terbaru dulu.
+  window.chooseStableHomeStories=function(stories){
+    const all=Array.from(stories || []);
+    const active=all.filter(function(story){
+      if(typeof window.getStorySrsProgress !== 'function') return false;
+      const progress=window.getStorySrsProgress(story.id);
+      return progress && progress.percent>0 && progress.percent<120;
+    });
+
+    const selected=[];
+    function add(story){
+      if(story && !selected.some(function(item){return String(item.id)===String(story.id);})){
+        selected.push(story);
+      }
+    }
+
+    sortStoriesByDayOldToNew(active).forEach(add);
+
+    // Kalau cerita aktif kurang dari 3, isi dari DAY lama ke terbaru juga.
+    sortStoriesByDayOldToNew(all).forEach(add);
+
+    const finalStories=selected.slice(0,3);
+    if(typeof window.saveHomeFeaturedIds === 'function'){
+      window.saveHomeFeaturedIds(finalStories.map(function(story){return story.id;}));
+    }
+    return finalStories;
+  };
+
+  function adjustSrsScreenToFeedback(){
+    if(!document.getElementById('srs')?.classList.contains('active')) return;
+
+    const feedback=document.getElementById('srsInlineFeedback') || document.getElementById('srsInlineResult');
+    const card=document.querySelector('#srsPracticeArea .srs-card');
+    const area=document.getElementById('srsPracticeArea');
+    const target=feedback || card || area;
+    if(!target) return;
+
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        const visualBottom=window.visualViewport
+          ? window.visualViewport.offsetTop + window.visualViewport.height
+          : window.innerHeight;
+        const rect=target.getBoundingClientRect();
+        const absoluteBottom=rect.bottom + window.scrollY;
+        const currentBottom=window.scrollY + visualBottom - 18;
+
+        if(absoluteBottom > currentBottom){
+          window.scrollBy({
+            top: absoluteBottom - currentBottom,
+            left: 0,
+            behavior: 'smooth'
+          });
+          return;
+        }
+
+        const areaRect=(area || target).getBoundingClientRect();
+        const topLimit=(window.visualViewport ? window.visualViewport.offsetTop : 0) + 12;
+        if(areaRect.top < topLimit){
+          window.scrollBy({
+            top: areaRect.top - topLimit,
+            left: 0,
+            behavior: 'smooth'
+          });
+        }
+      });
+    });
+  }
+
+  function installSrsAutoFit(){
+    if(typeof window.submitSrsAnswer === 'function' && !window.submitSrsAnswer.__wiraAutoFitFeedback){
+      const original=window.submitSrsAnswer;
+      const wrapped=function(){
+        const beforeIndex=Number(window.srsCurrentIndex || 0);
+        const result=original.apply(this,arguments);
+        setTimeout(function(){
+          if(Number(window.srsCurrentIndex || 0)===beforeIndex){
+            adjustSrsScreenToFeedback();
+          }
+        },30);
+        return result;
+      };
+      wrapped.__wiraAutoFitFeedback=true;
+      window.submitSrsAnswer=wrapped;
+    }
+  }
+
+  installSrsAutoFit();
+  window.addEventListener('load',function(){
+    installSrsAutoFit();
+    if(typeof window.renderHome === 'function') window.renderHome();
+  });
+})();
+</script>
+
 </body>
 </html>
