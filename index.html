@@ -12201,5 +12201,383 @@ async function toggleUnderwaterAmbient(){
 }
 </style>
 
+
+<script id="wira-srs-active-engine-fix-20260619-v2">
+(function(){
+  'use strict';
+
+  const WRONG_REVIEW_DELAY = 10 * 60 * 1000;
+
+  function esc(text){
+    if(typeof safeEscape === 'function') return safeEscape(text);
+    if(typeof escapeHtml === 'function') return escapeHtml(text);
+    return String(text ?? '').replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+  }
+
+  function stateSafe(){
+    if(typeof getStateSafe === 'function') return getStateSafe();
+    if(typeof getSrsState === 'function') return getSrsState();
+    try{ return JSON.parse(localStorage.getItem('wiraSrsState') || '{}') || {}; }catch(_){ return {}; }
+  }
+
+  function saveState(state){
+    if(typeof saveStateSafe === 'function') return saveStateSafe(state);
+    if(typeof saveSrsState === 'function') return saveSrsState(state);
+    localStorage.setItem('wiraSrsState', JSON.stringify(state || {}));
+  }
+
+  function levelOf(record){
+    const n = Number(record?.level ?? record?.correctStage ?? 0) || 0;
+    return Math.max(0, Math.min(12, n));
+  }
+
+  function setLevel(record, level){
+    const n = Math.max(0, Math.min(12, Number(level) || 0));
+    record.level = n;
+    record.correctStage = n;
+  }
+
+  function maxStage(){
+    return typeof maxLevel === 'function' ? maxLevel() : 12;
+  }
+
+  function intervalForLevel(level){
+    if(typeof srsInterval === 'function') return srsInterval(level);
+    const intervals = window.SRS_INTERVALS || [];
+    const index = Math.max(0, Math.min(intervals.length - 1, Number(level || 1) - 1));
+    return intervals[index] || 4 * 60 * 60 * 1000;
+  }
+
+  function duration(ms){
+    if(typeof formatSrsDuration === 'function') return formatSrsDuration(ms);
+    const minutes = Math.max(1, Math.ceil(ms / 60000));
+    if(minutes < 60) return minutes + ' menit';
+    const hours = Math.ceil(minutes / 60);
+    if(hours < 24) return hours + ' jam';
+    return Math.ceil(hours / 24) + ' hari';
+  }
+
+  function normalize(value){
+    if(typeof normalizeAnswer === 'function') return normalizeAnswer(value);
+    if(typeof normalizeKana === 'function') return normalizeKana(value);
+    return String(value || '').trim().toLowerCase();
+  }
+
+  function convertInput(value){
+    let text = String(value || '').trim();
+    if(typeof romajiToHiragana === 'function') text = romajiToHiragana(text);
+    if(/n$/i.test(text)) text = text.replace(/n$/i, 'ん');
+    return text;
+  }
+
+  function dayNumber(title){
+    const text = String(title || '');
+    const match = text.match(/day\s*(\d+)/i) || text.match(/第\s*(\d+)\s*日/i) || text.match(/(\d+)/);
+    return match ? Number(match[1]) : -1;
+  }
+
+  function itemAnswer(item){
+    return item?.readingAnswer || item?.answer || '';
+  }
+
+  function itemMeaning(item){
+    return item?.meaning || item?.translationText || item?.translationHtml || '';
+  }
+
+  function syncItems(items){
+    if(typeof syncSrsState === 'function') return syncSrsState(items);
+    const state = stateSafe();
+    const now = Date.now();
+    (items || []).forEach(item => {
+      if(!state[item.key]) state[item.key] = {level:0,correctStage:0,due:now,correct:0,wrong:0,lastResult:null};
+    });
+    saveState(state);
+    return state;
+  }
+
+  window.getDueSrsItems = function(){
+    const items = (typeof window.buildSrsItems === 'function' ? window.buildSrsItems() : []);
+    const state = syncItems(items);
+    const now = Date.now();
+    return items
+      .filter(item => {
+        const record = state[item.key] || {};
+        return levelOf(record) < maxStage() && Number(record.due || 0) <= now;
+      })
+      .sort((a,b) => Number((state[a.key] || {}).due || 0) - Number((state[b.key] || {}).due || 0));
+  };
+
+  window.updateSrsCountersOnly = function(){
+    const items = (typeof window.buildSrsItems === 'function' ? window.buildSrsItems() : []);
+    const state = syncItems(items);
+    const now = Date.now();
+    const max = maxStage();
+
+    const unlearned = items.filter(item => levelOf(state[item.key]) === 0).length;
+    const learning = items.filter(item => {
+      const level = levelOf(state[item.key]);
+      return level > 0 && level < max;
+    }).length;
+    const mastered = items.filter(item => levelOf(state[item.key]) >= max).length;
+    const ready = items.filter(item => levelOf(state[item.key]) < max && Number((state[item.key] || {}).due || 0) <= now).length;
+
+    const dueEl = document.getElementById('srsDueCount');
+    const learningEl = document.getElementById('srsLearningCount');
+    const masteredEl = document.getElementById('srsMasteredCount');
+    const readyEl = document.getElementById('srsReadyNumber');
+
+    if(dueEl) dueEl.textContent = unlearned;
+    if(learningEl) learningEl.textContent = learning;
+    if(masteredEl) masteredEl.textContent = mastered;
+    if(readyEl) readyEl.textContent = ready;
+
+    const learned = items.filter(item => levelOf(state[item.key]) > 0).length;
+    const total = items.length;
+    const percent = total ? Math.round((learned / total) * 100) : 0;
+    const text = document.getElementById('srsLearnedText');
+    const bar = document.getElementById('srsLearnedBar');
+    const fish = document.getElementById('srsProgressFish');
+    if(text) text.textContent = `${learned} / ${total} (${percent}%)`;
+    if(bar) bar.style.width = `${percent}%`;
+    if(fish) fish.style.display = total ? 'inline-block' : 'none';
+  };
+
+  window.renderSrsPage = function(){
+    const items = (typeof window.buildSrsItems === 'function' ? window.buildSrsItems() : []);
+    const state = syncItems(items);
+    const now = Date.now();
+    const max = maxStage();
+
+    window.updateSrsCountersOnly();
+
+    const storyMap = new Map();
+    items.forEach(item => {
+      if(!storyMap.has(item.storyId)){
+        storyMap.set(item.storyId, {id:item.storyId, title:item.storyTitle || 'Tanpa Judul', total:0, due:0, mastered:0});
+      }
+      const info = storyMap.get(item.storyId);
+      const record = state[item.key] || {};
+      info.total++;
+      if(levelOf(record) < max && Number(record.due || 0) <= now) info.due++;
+      if(levelOf(record) >= max) info.mastered++;
+    });
+
+    const list = document.getElementById('srsStoryList');
+    if(list){
+      const stories = [...storyMap.values()].sort((a,b) => {
+        const diff = dayNumber(b.title) - dayNumber(a.title);
+        if(diff) return diff;
+        return String(b.id).localeCompare(String(a.id));
+      });
+      list.innerHTML = stories.length
+        ? stories.map(info => `
+          <div class="srs-story-row">
+            <div><strong>${esc(info.title)}</strong><br><span>${info.mastered}/${info.total} dikuasai</span></div>
+            <span>${info.due} due</span>
+          </div>`).join('')
+        : '<div class="empty">Belum ada cerita yang selesai dibaca.</div>';
+    }
+
+    window.srsQueue = window.getDueSrsItems();
+    window.srsCurrentIndex = 0;
+    window.srsLocked = false;
+    window.srsResultWaiting = false;
+    if(typeof window.renderCurrentSrsCard === 'function') window.renderCurrentSrsCard();
+  };
+
+  window.submitSrsAnswer = function(){
+    if(window.srsLocked) return;
+
+    const item = (window.srsQueue || [])[Number(window.srsCurrentIndex || 0)];
+    const input = document.getElementById('srsAnswerInput');
+    const feedback = document.getElementById('srsInlineFeedback');
+    const question = document.getElementById('srsQuestionText');
+    const submitBtn = document.getElementById('srsSubmitBtn');
+
+    if(!item || !input || !feedback || !question) return;
+
+    const converted = convertInput(input.value);
+    if(!converted) return;
+    input.value = converted;
+
+    if(input.dataset.confirmHighLevelWrong === '1'){
+      commitWrong(item, input, feedback, question, submitBtn);
+      return;
+    }
+
+    const correctReading = itemAnswer(item);
+    const correct = normalize(converted) === normalize(correctReading);
+    const state = stateSafe();
+    const record = state[item.key] || {level:0,correctStage:0,due:Date.now(),correct:0,wrong:0,lastResult:null};
+    const currentLevel = levelOf(record);
+
+    if(!correct && currentLevel >= 11 && input.dataset.highLevelWrongEdited !== '1'){
+      input.dataset.confirmHighLevelWrong = '1';
+      input.dataset.confirmTyped = converted;
+      question.classList.remove('correct','wrong');
+      feedback.className = 'srs-final-feedback wrong';
+      feedback.innerHTML =
+        `<div class="srs-high-warning">⚠️ Hati-hati, kosakata ini sudah tahap <strong>${currentLevel}/12</strong>.</div>` +
+        `<div>Jawabanmu: <span class="srs-final-answer-pill">${esc(converted)}</span></div>` +
+        `<div>Kalau tetap salah, levelnya turun 1 dan review ulang 10 menit lagi.</div>` +
+        `<div class="srs-result-actions">` +
+          `<button type="button" class="btn danger" onclick="confirmHighLevelWrongSrs()">Iya, lanjutkan</button> ` +
+          `<button type="button" class="btn light" onclick="editHighLevelWrongSrs()">Ubah jawaban</button>` +
+        `</div>`;
+      try{ input.focus({preventScroll:true}); }catch(_){ input.focus(); }
+      return;
+    }
+
+    if(correct) commitCorrect(item, input, feedback, question, submitBtn);
+    else commitWrong(item, input, feedback, question, submitBtn);
+  };
+
+  function commitCorrect(item, input, feedback, question, submitBtn){
+    const state = stateSafe();
+    const record = state[item.key] || {level:0,correctStage:0,due:Date.now(),correct:0,wrong:0,lastResult:null};
+    const now = Date.now();
+    const nextLevel = Math.min(levelOf(record) + 1, maxStage());
+    const mastered = nextLevel >= maxStage();
+    const nextDelay = mastered ? 0 : intervalForLevel(nextLevel);
+
+    setLevel(record, nextLevel);
+    record.correct = (record.correct || 0) + 1;
+    record.lastResult = 'correct';
+    record.lastReviewed = now;
+    record.due = mastered ? 0 : now + nextDelay;
+    state[item.key] = record;
+    saveState(state);
+
+    window.srsLocked = true;
+    input.dataset.locked = '1';
+    delete input.dataset.confirmHighLevelWrong;
+    delete input.dataset.highLevelWrongEdited;
+
+    question.classList.remove('wrong');
+    question.classList.add('correct');
+    feedback.className = 'srs-final-feedback correct';
+    feedback.innerHTML =
+      `<div>Jawaban: <span class="srs-final-answer-pill">${esc(itemAnswer(item))}</span></div>` +
+      `<div class="srs-final-meaning-line">Arti: <strong>${esc(itemMeaning(item))}</strong></div>` +
+      `<div>Progres: <strong>${nextLevel}/12</strong></div>` +
+      `<div class="srs-next-time">${mastered ? 'Mastered 🎉' : 'Dipelajari lagi ' + duration(nextDelay) + ' lagi.'}</div>`;
+
+    makeNextButton(submitBtn);
+    window.updateSrsCountersOnly();
+  }
+
+  function commitWrong(item, input, feedback, question, submitBtn){
+    const state = stateSafe();
+    const record = state[item.key] || {level:0,correctStage:0,due:Date.now(),correct:0,wrong:0,lastResult:null};
+    const now = Date.now();
+    const nextLevel = Math.max(0, levelOf(record) - 1);
+
+    setLevel(record, nextLevel);
+    record.wrong = (record.wrong || 0) + 1;
+    record.lastResult = 'wrong';
+    record.lastReviewed = now;
+    record.due = now + WRONG_REVIEW_DELAY;
+    state[item.key] = record;
+    saveState(state);
+
+    window.srsLocked = true;
+    input.dataset.locked = '1';
+    delete input.dataset.confirmHighLevelWrong;
+    delete input.dataset.highLevelWrongEdited;
+
+    question.classList.remove('correct');
+    question.classList.add('wrong');
+    feedback.className = 'srs-final-feedback wrong';
+    feedback.innerHTML =
+      `<div>Jawaban: <span class="srs-final-answer-pill">${esc(itemAnswer(item))}</span></div>` +
+      `<div class="srs-final-meaning-line">Arti: <strong>${esc(itemMeaning(item))}</strong></div>` +
+      `<div>Progres turun jadi: <strong>${nextLevel}/12</strong></div>` +
+      `<div class="srs-next-time">Diulang sekitar <strong>10 menit</strong> lagi.</div>`;
+
+    makeNextButton(submitBtn);
+    window.updateSrsCountersOnly();
+  }
+
+  function makeNextButton(button){
+    if(!button) return;
+    button.textContent = 'Next';
+    button.classList.add('secondary','next-mode');
+    button.disabled = false;
+    button.onclick = window.submitOrNextSrs || window.nextSrsQuestion;
+  }
+
+  window.confirmHighLevelWrongSrs = function(){
+    const item = (window.srsQueue || [])[Number(window.srsCurrentIndex || 0)];
+    const input = document.getElementById('srsAnswerInput');
+    const feedback = document.getElementById('srsInlineFeedback');
+    const question = document.getElementById('srsQuestionText');
+    const submitBtn = document.getElementById('srsSubmitBtn');
+    if(!item || !input || !feedback || !question) return;
+    commitWrong(item, input, feedback, question, submitBtn);
+  };
+
+  window.editHighLevelWrongSrs = function(){
+    const input = document.getElementById('srsAnswerInput');
+    const feedback = document.getElementById('srsInlineFeedback');
+    if(!input) return;
+    delete input.dataset.confirmHighLevelWrong;
+    input.dataset.highLevelWrongEdited = '1';
+    if(feedback){
+      feedback.className = 'srs-final-feedback';
+      feedback.innerHTML = '';
+    }
+    window.srsLocked = false;
+    try{ input.focus({preventScroll:true}); }catch(_){ input.focus(); }
+    try{ input.select(); }catch(_){ }
+  };
+
+  window.submitOrNextSrs = function(){
+    const input = document.getElementById('srsAnswerInput');
+    if(input && input.dataset.confirmHighLevelWrong === '1'){
+      window.confirmHighLevelWrongSrs();
+      return;
+    }
+    if(window.srsLocked || input?.dataset?.locked === '1'){
+      if(typeof window.nextSrsQuestion === 'function') window.nextSrsQuestion();
+      return;
+    }
+    window.submitSrsAnswer();
+  };
+})();
+</script>
+
+<style id="wira-srs-active-mobile-compact-20260619-v2">
+@media(max-width:700px){
+  #srs .srs-final-feedback,
+  #srs #srsInlineFeedback{
+    font-size:12px!important;
+    line-height:1.38!important;
+    padding:8px 9px!important;
+    margin-top:8px!important;
+  }
+  #srs .srs-final-feedback div{
+    margin-bottom:3px!important;
+  }
+  #srs .srs-final-meaning-line,
+  #srs .srs-next-time,
+  #srs .srs-high-warning{
+    font-size:12px!important;
+    line-height:1.38!important;
+  }
+  #srs .srs-final-answer-pill{
+    font-size:12px!important;
+    padding:1px 5px!important;
+  }
+  #srs .srs-result-actions{
+    margin-top:6px!important;
+  }
+  #srs .srs-result-actions .btn{
+    font-size:11.5px!important;
+    min-height:32px!important;
+    padding:6px 9px!important;
+  }
+}
+</style>
+
 </body>
 </html>
