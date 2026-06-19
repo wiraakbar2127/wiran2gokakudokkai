@@ -3160,8 +3160,7 @@ function extractDayNumber(story){
 function sortByTitle(items,order="day"){
   return [...items].sort((a,b)=>{
     if(order==="day"){
-      // DAY terbaru tampil di atas, lalu turun sampai DAY 1.
-      const dayDifference=extractDayNumber(b)-extractDayNumber(a);
+      const dayDifference=extractDayNumber(a)-extractDayNumber(b);
       if(dayDifference!==0) return dayDifference;
     }
 
@@ -4682,19 +4681,10 @@ function getStoryActivityScore(story){
 
   const day=extractDayNumber(story);
   if(Number.isFinite(day) && day!==Number.MAX_SAFE_INTEGER){
-    // Cerita aktif dengan DAY lebih baru diprioritaskan di atas.
-    score+=day;
+    score+=Math.max(0,100-day);
   }
 
   return score;
-}
-
-function sortStoriesByLatestDayThenActivity(stories){
-  return [...stories].sort((a,b)=>{
-    const dayDiff=extractDayNumber(b)-extractDayNumber(a);
-    if(dayDiff!==0) return dayDiff;
-    return getStoryActivityScore(b)-getStoryActivityScore(a);
-  });
 }
 
 function chooseStableHomeStories(stories){
@@ -4703,12 +4693,12 @@ function chooseStableHomeStories(stories){
     stories.map(story=>[String(story.id),story])
   );
 
-  const active=sortStoriesByLatestDayThenActivity(
-    stories.filter(story=>{
+  const active=stories
+    .filter(story=>{
       const progress=getStorySrsProgress(story.id);
       return progress.percent>0 && progress.percent<120;
     })
-  );
+    .sort((a,b)=>getStoryActivityScore(b)-getStoryActivityScore(a));
 
   const selected=[];
 
@@ -4726,7 +4716,8 @@ function chooseStableHomeStories(stories){
   active.forEach(addStory);
   savedIds.map(id=>existing.get(id)).forEach(addStory);
 
-  sortStoriesByLatestDayThenActivity(stories)
+  [...stories]
+    .sort((a,b)=>getStoryActivityScore(b)-getStoryActivityScore(a))
     .forEach(addStory);
 
   const finalStories=selected.slice(0,3);
@@ -5832,20 +5823,20 @@ romajiToHiragana=function(input){
           <div class="srs-skip-note">Atau tekan Enter / Spasi.</div>
         </div>`;
     }else{
-      /* Salah hanya dijadwalkan ulang 10 menit. Level tidak turun dan tidak naik. */
-      const stage=masteryCount(record);
-      const retryInterval=10*60*1000;
+      /* Salah tidak menghapus seluruh progres, tetapi mundur satu tahap agar tidak terlalu menghukum. */
+      const stage=Math.max(0,masteryCount(record)-1);
       setMasteryCount(record,stage);
       record.wrong=(record.wrong||0)+1;
       record.lastResult='wrong';
       record.lastReviewed=now;
-      record.due=now+retryInterval;
+      record.due=now;
+      insertWrongItemAgain(item);
 
       inlineResult.innerHTML=`
         <div class="srs-result-title">✕ Belum tepat.</div>
         <div>Jawaban benar: <strong>${escapeHtml(item.answer)}</strong></div>
-        <div>Progres penguasaan tetap: <strong>${stage}/12</strong></div>
-        <div>Salah tidak reset level. Kosakata ini dijadwalkan ulang <strong>10 menit</strong> lagi.</div>
+        <div>Progres penguasaan: <strong>${stage}/12</strong></div>
+        <div>Soal ini akan muncul lagi dalam sesi ini sampai dijawab benar.</div>
         <div class="srs-result-actions">
           <button type="button" class="btn srs-next-question-btn" onclick="window.advanceSrsResult()">Soal Selanjutnya →</button>
           <div class="srs-skip-note">Atau tekan Enter / Spasi.</div>
@@ -11793,5 +11784,422 @@ async function toggleUnderwaterAmbient(){
   };
 })();
 </script>
+
+
+<script id="wira-srs-requested-bugfix-20260619">
+(function(){
+  'use strict';
+
+  const WRONG_REVIEW_DELAY = 10 * 60 * 1000;
+  const RESULT_DELAY = 8000;
+  let reviewTimer = null;
+  let waitingResult = false;
+
+  function masteryCount(record){
+    return Math.max(0, Math.min(12, Number(record?.correctStage ?? record?.level ?? 0) || 0));
+  }
+
+  function setMasteryCount(record, count){
+    const safe = Math.max(0, Math.min(12, Number(count) || 0));
+    record.correctStage = safe;
+    record.level = safe;
+  }
+
+  function srsIntervalForStage(stage){
+    const intervals = window.SRS_INTERVALS || [];
+    const index = Math.max(0, Math.min(intervals.length - 1, stage - 1));
+    return intervals[index] || (4 * 60 * 60 * 1000);
+  }
+
+  function formatDueDate(timestamp){
+    const date = new Date(timestamp);
+    return date.toLocaleString('id-ID', {
+      day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'
+    });
+  }
+
+  function revealEverySrsFurigana(){
+    document.querySelectorAll('#srsQuestionText ruby').forEach(ruby=>{
+      ruby.classList.add('show');
+      ruby.querySelectorAll('rt').forEach(rt=>{
+        rt.style.setProperty('display','ruby-text','important');
+        rt.style.setProperty('color','#0f4f86','important');
+        rt.style.setProperty('text-shadow','none','important');
+        rt.style.setProperty('user-select','text','important');
+      });
+    });
+  }
+
+  function clearReviewTimer(){
+    if(reviewTimer){
+      clearTimeout(reviewTimer);
+      reviewTimer = null;
+    }
+  }
+
+  function nextScheduledItems(limit=5){
+    const state = getSrsState();
+    return buildSrsItems()
+      .map(item => ({item, record: state[item.key]}))
+      .filter(entry => entry.record && Number(entry.record.due) > Date.now() && masteryCount(entry.record) < 12)
+      .sort((a,b) => Number(a.record.due) - Number(b.record.due))
+      .slice(0, limit);
+  }
+
+  function renderSessionFinished(){
+    const area = document.getElementById('srsPracticeArea');
+    if(!area) return;
+    const upcoming = nextScheduledItems();
+    const scheduleHtml = upcoming.length
+      ? `<div class="srs-next-review-list" style="margin-top:18px;text-align:left">
+          <h3 style="color:var(--brown);margin-bottom:10px">Jadwal review berikutnya</h3>
+          ${upcoming.map(({item,record})=>{
+            const stage = masteryCount(record);
+            return `<div style="padding:10px 0;border-bottom:1px dashed var(--line)">
+              <strong>${escapeHtml(item.storyTitle)}</strong><br>
+              <span style="color:var(--muted)">Tahap ${stage}/12・${formatDueDate(record.due)} (${formatSrsDuration(Math.max(0, record.due - Date.now()))} lagi)</span>
+            </div>`;
+          }).join('')}
+        </div>`
+      : '<p style="color:var(--muted)">Belum ada jadwal review berikutnya.</p>';
+
+    area.innerHTML = `
+      <div class="srs-empty-card srs-empty">
+        <h2>復習完了！🎉</h2>
+        <p>Semua soal yang jatuh tempo sekarang sudah selesai.</p>
+        ${scheduleHtml}
+        <button class="btn" style="margin-top:18px" onclick="renderSrsPage()">Periksa Lagi</button>
+      </div>`;
+  }
+
+  function advanceAfterResult(){
+    if(!waitingResult) return;
+    waitingResult = false;
+    window.srsResultWaiting = false;
+    clearReviewTimer();
+    srsCurrentIndex++;
+    srsLocked = false;
+
+    if(srsCurrentIndex >= srsQueue.length){
+      renderSessionFinished();
+      updateSrsCountersOnly();
+      if(typeof updateSrsOverallProgress === 'function') updateSrsOverallProgress();
+      return;
+    }
+
+    renderCurrentSrsCard();
+    updateSrsCountersOnly();
+    if(typeof updateSrsOverallProgress === 'function') updateSrsOverallProgress();
+  }
+
+  function showHighLevelWrongConfirm(item, typed, stage){
+    const input = document.getElementById('srsAnswerInput');
+    const question = document.getElementById('srsQuestionText');
+    const inlineResult = document.getElementById('srsInlineResult');
+    if(!input || !question || !inlineResult) return;
+
+    input.dataset.confirmHighLevelWrong = '1';
+    input.dataset.confirmTyped = typed;
+    input.dataset.confirmKey = item.key;
+    window.srsLocked = false;
+    srsLocked = false;
+
+    question.classList.remove('correct-answer','wrong-answer');
+    inlineResult.innerHTML = `
+      <div class="srs-result-title">⚠️ Hati-hati, kosakata ini sudah tahap ${stage}/12.</div>
+      <div>Jawabanmu: <strong>${escapeHtml(typed)}</strong></div>
+      <div>Kalau tetap dianggap salah, levelnya akan turun 1 dan review ulang 10 menit lagi.</div>
+      <div class="srs-result-actions">
+        <button type="button" class="btn danger" onclick="window.confirmHighLevelWrongSrs()">Iya, lanjutkan</button>
+        <button type="button" class="btn light" onclick="window.editHighLevelWrongSrs()">Ubah jawaban</button>
+        <div class="srs-skip-note">Enter = Iya, lanjutkan</div>
+      </div>`;
+    inlineResult.style.setProperty('display','block','important');
+    inlineResult.style.setProperty('visibility','visible','important');
+    inlineResult.style.setProperty('opacity','1','important');
+  }
+
+  function commitSrsResult({correct, item, typed, record, state, now}){
+    const input = document.getElementById('srsAnswerInput');
+    const question = document.getElementById('srsQuestionText');
+    const sentence = document.getElementById('srsSentenceText');
+    const inlineResult = document.getElementById('srsInlineResult');
+    if(!input || !question || !sentence || !inlineResult) return;
+
+    waitingResult = true;
+    window.srsResultWaiting = true;
+    srsLocked = true;
+    window.srsLocked = true;
+
+    delete input.dataset.confirmHighLevelWrong;
+    delete input.dataset.confirmTyped;
+    delete input.dataset.confirmKey;
+    delete input.dataset.highLevelWrongEdited;
+
+    sentence.innerHTML = item.correctSentenceHtml || item.questionHtml || '';
+    question.classList.remove('correct-answer','wrong-answer');
+    question.classList.add(correct ? 'correct-answer' : 'wrong-answer');
+
+    if(correct){
+      const stage = Math.min(12, masteryCount(record) + 1);
+      const mastered = stage >= 12;
+      const interval = mastered ? 0 : srsIntervalForStage(stage);
+      setMasteryCount(record, stage);
+      record.correct = (record.correct || 0) + 1;
+      record.lastResult = 'correct';
+      record.lastReviewed = now;
+      record.due = mastered ? 0 : now + interval;
+
+      inlineResult.innerHTML = `
+        <div class="srs-result-title">✓ Benar！</div>
+        <div>Jawaban: <strong>${escapeHtml(item.answer)}</strong></div>
+        <div>Progres penguasaan: <strong>${stage}/12</strong></div>
+        <div>${mastered ? 'Kosakata ini sudah dianggap dikuasai / Mastered.' : 'Review berikutnya: <strong>' + formatSrsDuration(interval) + '</strong> lagi.'}</div>
+        <div class="srs-result-actions">
+          <button type="button" class="btn srs-next-question-btn" onclick="window.advanceSrsResult()">Soal Selanjutnya →</button>
+          <div class="srs-skip-note">Atau tekan Enter / Spasi.</div>
+        </div>`;
+    }else{
+      const stage = Math.max(0, masteryCount(record) - 1);
+      setMasteryCount(record, stage);
+      record.wrong = (record.wrong || 0) + 1;
+      record.lastResult = 'wrong';
+      record.lastReviewed = now;
+      record.due = now + WRONG_REVIEW_DELAY;
+
+      inlineResult.innerHTML = `
+        <div class="srs-result-title">✕ Belum tepat.</div>
+        <div>Jawaban benar: <strong>${escapeHtml(item.answer)}</strong></div>
+        <div>Progres penguasaan: <strong>${stage}/12</strong></div>
+        <div>Soal ini dijadwalkan ulang <strong>10 menit lagi</strong> dan tidak muncul lagi di sesi yang sama.</div>
+        <div class="srs-result-actions">
+          <button type="button" class="btn srs-next-question-btn" onclick="window.advanceSrsResult()">Soal Selanjutnya →</button>
+          <div class="srs-skip-note">Atau tekan Enter / Spasi.</div>
+        </div>`;
+    }
+
+    inlineResult.style.setProperty('display','block','important');
+    inlineResult.style.setProperty('visibility','visible','important');
+    inlineResult.style.setProperty('opacity','1','important');
+
+    state[item.key] = record;
+    saveSrsState(state);
+    input.dataset.resultLocked = '1';
+    revealEverySrsFurigana();
+    if(typeof updateDailyLearningRewards === 'function') updateDailyLearningRewards();
+    if(typeof renderAchievementPanel === 'function') renderAchievementPanel();
+    if(typeof renderHome === 'function') renderHome();
+    if(typeof updateSrsOverallProgress === 'function') updateSrsOverallProgress();
+    updateSrsCountersOnly();
+
+    clearReviewTimer();
+    reviewTimer = window.setTimeout(advanceAfterResult, RESULT_DELAY);
+  }
+
+  window.confirmHighLevelWrongSrs = function(){
+    const item = srsQueue[srsCurrentIndex];
+    const input = document.getElementById('srsAnswerInput');
+    if(!item || !input || input.dataset.confirmHighLevelWrong !== '1') return;
+
+    const state = getSrsState();
+    const record = state[item.key] || {level:0, correctStage:0, due:Date.now(), correct:0, wrong:0, lastResult:null};
+    commitSrsResult({
+      correct:false,
+      item,
+      typed:input.dataset.confirmTyped || input.value,
+      record,
+      state,
+      now:Date.now()
+    });
+  };
+
+  window.editHighLevelWrongSrs = function(){
+    const input = document.getElementById('srsAnswerInput');
+    const inlineResult = document.getElementById('srsInlineResult');
+    if(!input) return;
+    delete input.dataset.confirmHighLevelWrong;
+    delete input.dataset.confirmTyped;
+    delete input.dataset.confirmKey;
+    input.dataset.highLevelWrongEdited = '1';
+    if(inlineResult){
+      inlineResult.innerHTML = '';
+      inlineResult.style.setProperty('display','none','important');
+    }
+    srsLocked = false;
+    window.srsLocked = false;
+    try{ input.focus({preventScroll:true}); }catch(_){ input.focus(); }
+    try{ input.select(); }catch(_){ }
+  };
+
+  window.submitSrsAnswer = function(){
+    const item = srsQueue[srsCurrentIndex];
+    const input = document.getElementById('srsAnswerInput');
+    const question = document.getElementById('srsQuestionText');
+    const sentence = document.getElementById('srsSentenceText');
+    const inlineResult = document.getElementById('srsInlineResult');
+    if(!item || !input || !question || !sentence || !inlineResult) return;
+
+    if(input.dataset.confirmHighLevelWrong === '1'){
+      window.confirmHighLevelWrongSrs();
+      return;
+    }
+    if(waitingResult || srsLocked) return;
+
+    let typed = String(input.value || '').trim();
+    if(!typed) return;
+    typed = romajiToHiragana(typed);
+    if(/n$/i.test(typed)) typed = typed.replace(/n$/i,'ん');
+    input.value = typed;
+
+    const correct = normalizeKana(typed) === normalizeKana(item.answer);
+    const state = getSrsState();
+    const record = state[item.key] || {level:0, correctStage:0, due:Date.now(), correct:0, wrong:0, lastResult:null};
+    const stageBefore = masteryCount(record);
+    const alreadyEdited = input.dataset.highLevelWrongEdited === '1';
+
+    if(!correct && stageBefore >= 11 && !alreadyEdited){
+      showHighLevelWrongConfirm(item, typed, stageBefore);
+      return;
+    }
+
+    commitSrsResult({correct, item, typed, record, state, now:Date.now()});
+  };
+
+  window.advanceSrsResult = advanceAfterResult;
+
+  document.addEventListener('keydown', function(event){
+    const srsActive = !!document.getElementById('srs')?.classList.contains('active');
+    if(!srsActive) return;
+
+    const input = document.getElementById('srsAnswerInput');
+    if(input && input.dataset.confirmHighLevelWrong === '1' && event.key === 'Enter'){
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      window.confirmHighLevelWrongSrs();
+      return;
+    }
+
+    if(!waitingResult) return;
+    if(event.key !== 'Enter' && event.code !== 'Space') return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    advanceAfterResult();
+  }, true);
+
+  window.updateSrsCountersOnly = function(){
+    const items = buildSrsItems();
+    const state = syncSrsState(items);
+    const now = Date.now();
+    const due = items.filter(item => {
+      const record = state[item.key];
+      return masteryCount(record) < 12 && (record?.due || 0) <= now;
+    }).length;
+    const learning = items.filter(item => {
+      const stage = masteryCount(state[item.key]);
+      return stage > 0 && stage < 12;
+    }).length;
+    const mastered = items.filter(item => masteryCount(state[item.key]) >= 12).length;
+
+    const dueEl = document.getElementById('srsDueCount');
+    const learningEl = document.getElementById('srsLearningCount');
+    const masteredEl = document.getElementById('srsMasteredCount');
+    if(dueEl) dueEl.textContent = due;
+    if(learningEl) learningEl.textContent = learning;
+    if(masteredEl) masteredEl.textContent = mastered;
+    if(typeof updateSrsOverallProgress === 'function') updateSrsOverallProgress();
+  };
+
+  function dayNumberFromTitle(title){
+    const match = String(title || '').match(/day\s*(\d+)/i) || String(title || '').match(/第\s*(\d+)\s*日/i);
+    return match ? Number(match[1]) : -1;
+  }
+
+  window.renderSrsPage = function(){
+    const items = buildSrsItems();
+    const state = syncSrsState(items);
+    const now = Date.now();
+
+    updateSrsCountersOnly();
+    if(typeof updateSrsOverallProgress === 'function') updateSrsOverallProgress();
+
+    const storyMap = new Map();
+    items.forEach(item=>{
+      if(!storyMap.has(item.storyId)){
+        storyMap.set(item.storyId, {id:item.storyId, title:item.storyTitle, total:0, due:0, mastered:0});
+      }
+      const info = storyMap.get(item.storyId);
+      const record = state[item.key];
+      info.total++;
+      if(masteryCount(record) < 12 && (record?.due || 0) <= now) info.due++;
+      if(masteryCount(record) >= 12) info.mastered++;
+    });
+
+    const list = document.getElementById('srsStoryList');
+    if(list){
+      const stories = [...storyMap.values()].sort((a,b)=>{
+        const dayDiff = dayNumberFromTitle(b.title) - dayNumberFromTitle(a.title);
+        if(dayDiff) return dayDiff;
+        return String(b.id).localeCompare(String(a.id));
+      });
+      list.innerHTML = stories.length ? stories.map(info=>`
+        <div class="srs-story-row">
+          <div><strong>${escapeHtml(info.title)}</strong><br><span>${info.mastered}/${info.total} dikuasai</span></div>
+          <span>${info.due} due</span>
+        </div>`).join('') : '<div class="empty">Belum ada cerita yang selesai dibaca.</div>';
+    }
+
+    srsQueue = getDueSrsItems();
+    srsCurrentIndex = 0;
+    srsLocked = false;
+    waitingResult = false;
+    window.srsLocked = false;
+    window.srsResultWaiting = false;
+    clearReviewTimer();
+
+    if(!srsQueue.length){
+      renderSessionFinished();
+    }else{
+      renderCurrentSrsCard();
+    }
+  };
+})();
+</script>
+
+<style id="wira-srs-mobile-answer-compact-20260619">
+@media (max-width:700px){
+  #srsQuestionText.correct-answer #srsInlineResult,
+  #srsQuestionText.wrong-answer #srsInlineResult,
+  #srsQuestionText #srsInlineResult{
+    font-size:12.5px!important;
+    line-height:1.42!important;
+    padding:9px 10px!important;
+    margin-top:8px!important;
+  }
+  #srs .srs-result-title{
+    font-size:14px!important;
+    line-height:1.35!important;
+    margin-bottom:4px!important;
+  }
+  #srs .srs-result-actions{
+    margin-top:6px!important;
+  }
+  #srs .srs-result-actions .btn{
+    font-size:12px!important;
+    min-height:34px!important;
+    padding:7px 10px!important;
+  }
+  #srs .srs-skip-note{
+    font-size:11px!important;
+    line-height:1.35!important;
+    margin-top:5px!important;
+  }
+  #srs .srs-correct-sentence,
+  #srs .srs-translation-restored{
+    font-size:12.5px!important;
+    line-height:1.42!important;
+  }
+}
+</style>
+
 </body>
 </html>
