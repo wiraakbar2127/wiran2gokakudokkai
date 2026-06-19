@@ -1665,8 +1665,8 @@ footer{
 </div>
 <div class="sync-file-box">
   <h3>2. Masukkan save dari perangkat lain</h3>
-  <p>Pilih file <b>.sync</b> yang kamu kirim lewat WA/Drive/AirDrop.</p>
-  <input accept=".sync,.json,application/json" id="wiraSyncFileInput" type="file" onchange="importWiraSyncFile(this.files && this.files[0])" />
+  <p>Pilih file <b>.sync</b> dari Export Save. Kalau tidak sengaja dibuka di halaman Import Cerita, file ini tetap akan diarahkan ke sync.</p>
+  <input accept=".sync,.json,.txt,application/json,text/plain,application/octet-stream" id="wiraSyncFileInput" type="file" onchange="importWiraSyncFile(this.files && this.files[0])" />
   <button class="btn srs-action-btn" type="button" onclick="document.getElementById('wiraSyncFileInput').click()">Import Save</button>
 </div>
 <div class="notice sync-code-note" id="wiraSyncNotice" style="display:none;margin-top:14px"></div>
@@ -2672,6 +2672,21 @@ async function importStoryFiles(){
   const input=document.getElementById("storyFile");
   const box=document.getElementById("importResult");
   const files=[...input.files];
+
+  // Kalau pengguna tidak sengaja memilih file save .sync di halaman Import Cerita,
+  // arahkan ke sistem sync supaya tidak diperlakukan sebagai JSON cerita.
+  if(files.length===1 && typeof window.importWiraSyncText==='function'){
+    const maybeSyncFile=files[0];
+    const maybeSyncName=String(maybeSyncFile && maybeSyncFile.name || '').toLowerCase();
+    if(maybeSyncName.endsWith('.sync')){
+      try{
+        const syncText=await maybeSyncFile.text();
+        window.importWiraSyncText(syncText,{fileName:maybeSyncFile.name});
+        input.value='';
+        return;
+      }catch(_){ }
+    }
+  }
 
   if(!files.length){
     box.style.display="block";
@@ -11553,11 +11568,71 @@ async function toggleUnderwaterAmbient(){
 
   function collectPayload(){
     const entries=collectEntries();
-    return {app:'Wira N2 Dokkai',type:'file-sync',version:4,createdAt:new Date().toISOString(),data:entries};
+    return {app:'Wira N2 Dokkai',type:'file-sync',version:6,createdAt:new Date().toISOString(),data:entries};
+  }
+
+  function toBase64Unicode(text){
+    const bytes=new TextEncoder().encode(text);
+    let binary='';
+    bytes.forEach(byte=>binary+=String.fromCharCode(byte));
+    return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  }
+
+  function fromBase64Unicode(text){
+    let normalized=String(text||'').trim().replace(/-/g,'+').replace(/_/g,'/');
+    while(normalized.length%4) normalized+='=';
+    const binary=atob(normalized);
+    const bytes=new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+
+  function makeSyncFileText(payload){
+    // Format V6 sengaja bukan JSON mentah, supaya file .sync tidak terbaca sebagai file cerita JSON.
+    return 'WIRA_N2_SYNC_FILE_V6::' + toBase64Unicode(JSON.stringify(payload));
+  }
+
+  function parseSyncFileText(text){
+    let raw=String(text||'').replace(/^\uFEFF/,'').trim();
+    if(!raw) throw new Error('File kosong.');
+
+    // Kalau file pernah tersimpan sebagai string JSON berisi teks sync, buka dulu lapisan stringnya.
+    if((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))){
+      try{ raw=JSON.parse(raw); }catch(_){ raw=raw.slice(1,-1); }
+      raw=String(raw||'').trim();
+    }
+
+    // Format .sync V6: satu baris, bukan JSON mentah.
+    if(raw.startsWith('WIRA_N2_SYNC_FILE_V6::')){
+      const encoded=raw.slice('WIRA_N2_SYNC_FILE_V6::'.length).replace(/\s+/g,'');
+      if(!encoded) throw new Error('Isi file sync kosong.');
+      return JSON.parse(fromBase64Unicode(encoded));
+    }
+
+    // Format .sync V5: dua baris.
+    if(raw.startsWith('WIRA_N2_SAVE_V5')){
+      const encoded=raw.split(/\r?\n/).slice(1).join('').replace(/\s+/g,'');
+      if(!encoded) throw new Error('Isi file sync kosong.');
+      return JSON.parse(fromBase64Unicode(encoded));
+    }
+
+    // Format lama: JSON sync mentah. Ini tetap diterima, tapi hanya kalau bentuknya memang payload sync.
+    if(raw.startsWith('{') || raw.startsWith('[')){
+      const parsed=JSON.parse(raw);
+      if(parsed && (parsed.type==='file-sync' || parsed.version===1 || parsed.v===3 || Array.isArray(parsed.data) || Array.isArray(parsed.d))){
+        return parsed;
+      }
+      throw new Error('File ini terlihat seperti JSON cerita, bukan file save sync.');
+    }
+
+    // Dukungan cadangan: base64 payload tanpa header.
+    try{ return JSON.parse(fromBase64Unicode(raw.replace(/\s+/g,''))); }catch(_){ }
+
+    throw new Error('Format file sync tidak cocok.');
   }
 
   function savePayloadData(payload){
-    if(payload && payload.version===4 && Array.isArray(payload.data)){
+    if(payload && (payload.version===6 || payload.version===5 || payload.version===4) && Array.isArray(payload.data)){
       payload.data.forEach(([shortKey,value])=>{
         const key=ALIAS_KEY[shortKey] || shortKey;
         if(key && (key.startsWith('wira') || key==='srsState')) localStorage.setItem(key, stringifyForStorage(value));
@@ -11591,8 +11666,8 @@ async function toggleUnderwaterAmbient(){
     try{
       hideNotice();
       const payload=collectPayload();
-      const json=JSON.stringify(payload);
-      const blob=new Blob([json],{type:'application/json;charset=utf-8'});
+      const fileText=makeSyncFileText(payload);
+      const blob=new Blob([fileText],{type:'application/x-wira-n2-sync;charset=utf-8'});
       const url=URL.createObjectURL(blob);
       const a=document.createElement('a');
       a.href=url;
@@ -11609,24 +11684,27 @@ async function toggleUnderwaterAmbient(){
     }
   };
 
+  window.importWiraSyncText=function(text,meta){
+    const payload=parseSyncFileText(text);
+    const entries=payload && (payload.data || payload.d);
+    const sum=Array.isArray(entries) ? getSyncSummary(entries) : {storyCount:0,readCount:0,folderCount:0,srsCount:0};
+    const ok=confirm(`Import save ini akan mengganti progress di perangkat ini.\n\nFile: ${(meta && meta.fileName) || 'save sync'}\nIsi file: ${sum.storyCount} cerita, ${sum.readCount} cerita selesai dibaca, ${sum.folderCount} folder, ${sum.srsCount} data SRS.\n\nLanjutkan?`);
+    if(!ok) return false;
+    savePayloadData(payload);
+    notice('Save berhasil diimport. Halaman akan dimuat ulang.');
+    setTimeout(()=>location.reload(),700);
+    return true;
+  };
+
   window.importWiraSyncFile=function(file){
     const input=document.getElementById('wiraSyncFileInput');
     if(!file){ return; }
     const reader=new FileReader();
     reader.onload=function(){
       try{
-        const text=String(reader.result || '').trim();
-        if(!text) throw new Error('File kosong.');
-        const payload=JSON.parse(text);
-        const entries=payload && (payload.data || payload.d);
-        const sum=Array.isArray(entries) ? getSyncSummary(entries) : {storyCount:0,readCount:0,folderCount:0,srsCount:0};
-        const ok=confirm(`Import save ini akan mengganti progress di perangkat ini.\n\nIsi file: ${sum.storyCount} cerita, ${sum.readCount} cerita selesai dibaca, ${sum.folderCount} folder, ${sum.srsCount} data SRS.\n\nLanjutkan?`);
-        if(!ok) return;
-        savePayloadData(payload);
-        notice('Save berhasil diimport. Halaman akan dimuat ulang.');
-        setTimeout(()=>location.reload(),700);
+        window.importWiraSyncText(String(reader.result || ''),{fileName:file.name});
       }catch(err){
-        notice('File sync tidak bisa dibaca. Pastikan file yang dipilih adalah file .sync dari aplikasi ini. Detail: ' + (err && err.message ? err.message : err),'error');
+        notice('File sync tidak bisa dibaca. Pastikan yang dipilih adalah file .sync dari tombol Export Save, bukan file cerita JSON. Detail: ' + (err && err.message ? err.message : err),'error');
       }finally{
         if(input) input.value='';
       }
