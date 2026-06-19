@@ -1657,7 +1657,7 @@ footer{
 <aside aria-label="Panel sync progress" class="sync-code-panel" id="syncCodePanel">
 <button aria-label="Tutup sync progress" class="sync-code-close" onclick="closeWiraSyncPanel()" type="button">×</button>
 <h2>Sync Progress</h2>
-<p class="sync-code-desc">Buat kode untuk memindahkan data terbaru antar HP dan PC.</p>
+<p class="sync-code-desc">Buat kode sync yang aman untuk lanjut belajar di HP atau PC.</p>
 <div class="sync-code-actions">
 <button class="btn sync-generate-btn" id="wiraSyncGenerateBtn" type="button" onclick="generateWiraSyncCode()">Buat Kode</button>
 </div>
@@ -11433,6 +11433,7 @@ async function toggleUnderwaterAmbient(){
 
   const SYNC_PREFIX='WIRA-N2-SYNC:';
   const SYNC_PREFIX_V2='WIRA-N2-SYNC2:';
+  const SYNC_PREFIX_V3='WIRA-N2-SYNC3:';
   const KEY_ALIAS={
     wiraStories:'st',
     wiraCompletedStories:'rd',
@@ -11446,6 +11447,94 @@ async function toggleUnderwaterAmbient(){
     wiraLastOpenedStory:'lo'
   };
   const ALIAS_KEY=Object.fromEntries(Object.entries(KEY_ALIAS).map(([k,v])=>[v,k]));
+
+  // Kompresi stabil lintas browser. Tidak bergantung pada CompressionStream,
+  // jadi kode dari PC bisa dibaca lagi di HP.
+  const LZString=(function(){
+    const f=String.fromCharCode;
+    const keyStrUri='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$';
+    const baseReverseDic={};
+    function getBaseValue(alphabet,character){
+      if(!baseReverseDic[alphabet]){
+        baseReverseDic[alphabet]={};
+        for(let i=0;i<alphabet.length;i++) baseReverseDic[alphabet][alphabet.charAt(i)]=i;
+      }
+      return baseReverseDic[alphabet][character];
+    }
+    function compressToEncodedURIComponent(input){
+      if(input==null) return '';
+      return _compress(input,6,function(a){return keyStrUri.charAt(a);});
+    }
+    function decompressFromEncodedURIComponent(input){
+      if(input==null) return '';
+      if(input==='') return null;
+      input=input.replace(/ /g,'+').replace(/\s+/g,'');
+      return _decompress(input.length,32,function(index){return getBaseValue(keyStrUri,input.charAt(index));});
+    }
+    function _compress(uncompressed,bitsPerChar,getCharFromInt){
+      if(uncompressed==null) return '';
+      let i,value,context_dictionary={},context_dictionaryToCreate={},context_c='',context_wc='',context_w='',context_enlargeIn=2,context_dictSize=3,context_numBits=2,context_data=[],context_data_val=0,context_data_position=0,ii;
+      function writeBit(value){context_data_val=(context_data_val<<1)|value;if(context_data_position==bitsPerChar-1){context_data_position=0;context_data.push(getCharFromInt(context_data_val));context_data_val=0;}else context_data_position++;}
+      function writeBits(numBits,value){for(let j=0;j<numBits;j++){writeBit(value&1);value>>=1;}}
+      for(ii=0;ii<uncompressed.length;ii+=1){
+        context_c=uncompressed.charAt(ii);
+        if(!Object.prototype.hasOwnProperty.call(context_dictionary,context_c)){context_dictionary[context_c]=context_dictSize++;context_dictionaryToCreate[context_c]=true;}
+        context_wc=context_w+context_c;
+        if(Object.prototype.hasOwnProperty.call(context_dictionary,context_wc)){context_w=context_wc;}
+        else{
+          if(Object.prototype.hasOwnProperty.call(context_dictionaryToCreate,context_w)){
+            if(context_w.charCodeAt(0)<256){writeBits(context_numBits,0);writeBits(8,context_w.charCodeAt(0));}
+            else{writeBits(context_numBits,1);writeBits(16,context_w.charCodeAt(0));}
+            context_enlargeIn--;if(context_enlargeIn===0){context_enlargeIn=Math.pow(2,context_numBits);context_numBits++;}
+            delete context_dictionaryToCreate[context_w];
+          }else{
+            value=context_dictionary[context_w];writeBits(context_numBits,value);
+          }
+          context_enlargeIn--;if(context_enlargeIn===0){context_enlargeIn=Math.pow(2,context_numBits);context_numBits++;}
+          context_dictionary[context_wc]=context_dictSize++;context_w=String(context_c);
+        }
+      }
+      if(context_w!==''){
+        if(Object.prototype.hasOwnProperty.call(context_dictionaryToCreate,context_w)){
+          if(context_w.charCodeAt(0)<256){writeBits(context_numBits,0);writeBits(8,context_w.charCodeAt(0));}
+          else{writeBits(context_numBits,1);writeBits(16,context_w.charCodeAt(0));}
+          context_enlargeIn--;if(context_enlargeIn===0){context_enlargeIn=Math.pow(2,context_numBits);context_numBits++;}
+          delete context_dictionaryToCreate[context_w];
+        }else{value=context_dictionary[context_w];writeBits(context_numBits,value);}
+        context_enlargeIn--;if(context_enlargeIn===0){context_enlargeIn=Math.pow(2,context_numBits);context_numBits++;}
+      }
+      value=2;writeBits(context_numBits,value);
+      while(true){context_data_val=(context_data_val<<1);if(context_data_position==bitsPerChar-1){context_data.push(getCharFromInt(context_data_val));break;}else context_data_position++;}
+      return context_data.join('');
+    }
+    function _decompress(length,resetValue,getNextValue){
+      const dictionary=[];let next,enlargeIn=4,dictSize=4,numBits=3,entry='',result=[],i,w,bits,resb,maxpower,power,c;
+      const data={val:getNextValue(0),position:resetValue,index:1};
+      for(i=0;i<3;i+=1) dictionary[i]=i;
+      bits=0;maxpower=Math.pow(2,2);power=1;
+      while(power!==maxpower){resb=data.val & data.position;data.position>>=1;if(data.position===0){data.position=resetValue;data.val=getNextValue(data.index++);}bits|=(resb>0?1:0)*power;power<<=1;}
+      switch(next=bits){case 0:bits=0;maxpower=Math.pow(2,8);power=1;while(power!==maxpower){resb=data.val & data.position;data.position>>=1;if(data.position===0){data.position=resetValue;data.val=getNextValue(data.index++);}bits|=(resb>0?1:0)*power;power<<=1;}c=f(bits);break;case 1:bits=0;maxpower=Math.pow(2,16);power=1;while(power!==maxpower){resb=data.val & data.position;data.position>>=1;if(data.position===0){data.position=resetValue;data.val=getNextValue(data.index++);}bits|=(resb>0?1:0)*power;power<<=1;}c=f(bits);break;case 2:return '';}
+      dictionary[3]=c;w=c;result.push(c);
+      while(true){
+        if(data.index>length) return '';
+        bits=0;maxpower=Math.pow(2,numBits);power=1;
+        while(power!==maxpower){resb=data.val & data.position;data.position>>=1;if(data.position===0){data.position=resetValue;data.val=getNextValue(data.index++);}bits|=(resb>0?1:0)*power;power<<=1;}
+        switch(c=bits){
+          case 0:bits=0;maxpower=Math.pow(2,8);power=1;while(power!==maxpower){resb=data.val & data.position;data.position>>=1;if(data.position===0){data.position=resetValue;data.val=getNextValue(data.index++);}bits|=(resb>0?1:0)*power;power<<=1;}dictionary[dictSize++]=f(bits);c=dictSize-1;enlargeIn--;break;
+          case 1:bits=0;maxpower=Math.pow(2,16);power=1;while(power!==maxpower){resb=data.val & data.position;data.position>>=1;if(data.position===0){data.position=resetValue;data.val=getNextValue(data.index++);}bits|=(resb>0?1:0)*power;power<<=1;}dictionary[dictSize++]=f(bits);c=dictSize-1;enlargeIn--;break;
+          case 2:return result.join('');
+        }
+        if(enlargeIn===0){enlargeIn=Math.pow(2,numBits);numBits++;}
+        if(dictionary[c]) entry=dictionary[c];
+        else{if(c===dictSize) entry=w+w.charAt(0); else return null;}
+        result.push(entry);
+        dictionary[dictSize++]=w+entry.charAt(0);enlargeIn--;
+        w=entry;
+        if(enlargeIn===0){enlargeIn=Math.pow(2,numBits);numBits++;}
+      }
+    }
+    return {compressToEncodedURIComponent,decompressFromEncodedURIComponent};
+  })();
 
   window.toggleWiraSyncPanel=function(){
     const panel=document.getElementById('syncCodePanel');
@@ -11498,23 +11587,14 @@ async function toggleUnderwaterAmbient(){
   }
 
   async function copyText(text){
-    try{
-      await navigator.clipboard.writeText(text);
-      return true;
-    }catch(_){
+    try{ await navigator.clipboard.writeText(text); return true; }
+    catch(_){
       try{
         const temp=document.createElement('textarea');
-        temp.value=text;
-        temp.setAttribute('readonly','');
-        temp.style.position='fixed';
-        temp.style.left='-9999px';
-        temp.style.top='0';
-        document.body.appendChild(temp);
-        temp.focus();
-        temp.select();
-        const ok=document.execCommand('copy');
-        temp.remove();
-        return !!ok;
+        temp.value=text; temp.setAttribute('readonly','');
+        temp.style.position='fixed'; temp.style.left='-9999px'; temp.style.top='0';
+        document.body.appendChild(temp); temp.focus(); temp.select();
+        const ok=document.execCommand('copy'); temp.remove(); return !!ok;
       }catch(__){ return false; }
     }
   }
@@ -11531,26 +11611,40 @@ async function toggleUnderwaterAmbient(){
     return Array.from(keys).sort();
   }
 
+  function reviveValue(value){
+    if(value===null || value===undefined) return value;
+    try{return JSON.parse(value)}catch(_){return String(value)}
+  }
+
+  function stringifyForStorage(value){
+    if(typeof value==='string') return value;
+    return JSON.stringify(value);
+  }
+
   function collectEntries(){
     const entries=[];
     getSyncKeys().forEach(key=>{
       const value=localStorage.getItem(key);
-      if(value!==null) entries.push([KEY_ALIAS[key] || key,value]);
+      if(value!==null) entries.push([KEY_ALIAS[key] || key, reviveValue(value)]);
     });
     return entries;
   }
 
-  function safeJson(value,fallback){
-    try{return JSON.parse(value)}catch(_){return fallback}
+  function safeValue(value,fallback){
+    if(value===undefined || value===null) return fallback;
+    if(typeof value==='string'){
+      try{return JSON.parse(value)}catch(_){return fallback}
+    }
+    return value;
   }
 
   function getSyncSummary(entries){
     const byKey={};
     entries.forEach(([k,v])=>{ byKey[ALIAS_KEY[k] || k]=v; });
-    const stories=safeJson(byKey.wiraStories,'[]');
-    const read=safeJson(byKey.wiraCompletedStories,'[]');
-    const folders=safeJson(byKey.wiraFolders,'[]');
-    const srs=safeJson(byKey.wiraSrsState || byKey.srsState,'{}');
+    const stories=safeValue(byKey.wiraStories,[]);
+    const read=safeValue(byKey.wiraCompletedStories,[]);
+    const folders=safeValue(byKey.wiraFolders,[]);
+    const srs=safeValue(byKey.wiraSrsState || byKey.srsState,{});
     const storyCount=Array.isArray(stories) ? stories.length : Object.keys(stories||{}).length;
     const readCount=Array.isArray(read) ? read.length : Object.keys(read||{}).length;
     const folderCount=Array.isArray(folders) ? folders.length : Object.keys(folders||{}).length;
@@ -11560,50 +11654,45 @@ async function toggleUnderwaterAmbient(){
 
   function collectPayload(){
     const entries=collectEntries();
-    return {a:'Wira N2 Dokkai',t:'sync',v:2,at:new Date().toISOString(),d:entries};
+    return {a:'Wira N2 Dokkai',t:'sync',v:3,at:new Date().toISOString(),d:entries};
   }
 
-  function toBase64UrlFromBytes(bytes){
-    let binary='';
-    const chunk=0x8000;
-    for(let i=0;i<bytes.length;i+=chunk){
-      binary+=String.fromCharCode.apply(null, bytes.subarray(i,i+chunk));
-    }
+  function toBase64Url(str){
+    const bytes=new TextEncoder().encode(str);
+    let binary=''; const chunk=0x8000;
+    for(let i=0;i<bytes.length;i+=chunk){binary+=String.fromCharCode.apply(null,bytes.subarray(i,i+chunk));}
     return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
   }
 
-  function bytesFromBase64Url(code){
+  function fromBase64Url(code){
     let b64=String(code||'').trim().replace(/^WIRA-N2-SYNC2:/,'').replace(/^WIRA-N2-SYNC:/,'').replace(/\s+/g,'').replace(/-/g,'+').replace(/_/g,'/');
     while(b64.length%4) b64+='=';
     const binary=atob(b64);
     const bytes=new Uint8Array(binary.length);
     for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
-    return bytes;
+    return new TextDecoder().decode(bytes);
   }
 
-  function toBase64Url(str){
-    return toBase64UrlFromBytes(new TextEncoder().encode(str));
-  }
-
-  function fromBase64Url(code){
-    return new TextDecoder().decode(bytesFromBase64Url(code));
-  }
-
-  async function gzipText(text){
-    if(!('CompressionStream' in window)) return null;
-    const stream=new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'));
-    const buffer=await new Response(stream).arrayBuffer();
-    return new Uint8Array(buffer);
-  }
-
-  async function gunzipText(bytes){
-    if(!('DecompressionStream' in window)) throw new Error('Browser ini belum mendukung kode pendek. Coba update browser.');
+  async function gunzipV2Text(raw){
+    if(!('DecompressionStream' in window)) throw new Error('Kode lama SYNC2 tidak didukung di browser ini. Buat ulang kode memakai file terbaru.');
+    let b64=String(raw||'').trim().replace(/^WIRA-N2-SYNC2:/,'').replace(/\s+/g,'').replace(/-/g,'+').replace(/_/g,'/');
+    while(b64.length%4) b64+='=';
+    const binary=atob(b64);
+    const bytes=new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
     const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
     const buffer=await new Response(stream).arrayBuffer();
     return new TextDecoder().decode(buffer);
   }
 
   function savePayloadData(payload){
+    if(payload && payload.v===3 && Array.isArray(payload.d)){
+      payload.d.forEach(([shortKey,value])=>{
+        const key=ALIAS_KEY[shortKey] || shortKey;
+        if(key && (key.startsWith('wira') || key==='srsState')) localStorage.setItem(key, stringifyForStorage(value));
+      });
+      return;
+    }
     if(payload && payload.v===2 && Array.isArray(payload.d)){
       payload.d.forEach(([shortKey,value])=>{
         const key=ALIAS_KEY[shortKey] || shortKey;
@@ -11620,29 +11709,24 @@ async function toggleUnderwaterAmbient(){
     throw new Error('Format kode tidak cocok.');
   }
 
-  window.generateWiraSyncCode=async function(){
+  window.generateWiraSyncCode=function(){
     try{
-      hideNotice();
-      setGenerateButton('ready');
+      hideNotice(); setGenerateButton('ready');
       const payload=collectPayload();
       const json=JSON.stringify(payload);
-      let code;
-      const gz=await gzipText(json);
-      if(gz){
-        code=SYNC_PREFIX_V2 + toBase64UrlFromBytes(gz);
-      }else{
-        code=SYNC_PREFIX + toBase64Url(json);
-      }
+      const compressed=LZString.compressToEncodedURIComponent(json);
+      const code=SYNC_PREFIX_V3 + compressed;
       const out=document.getElementById('wiraSyncOutput');
       if(out) out.value=code;
-      const copied=await copyText(code);
-      if(copied){
-        const sum=getSyncSummary(payload.d);
-        setGenerateButton('copied');
-        notice(`Kode berhasil dibuat dan otomatis dicopy. Data berisi ${sum.storyCount} cerita, ${sum.readCount} cerita selesai dibaca, ${sum.folderCount} folder, ${sum.srsCount} data SRS, achievement harian, dan navigasi terakhir.`);
-      }else{
-        notice('Browser tidak mengizinkan copy otomatis. Coba klik Buat Kode sekali lagi.','error');
-      }
+      copyText(code).then(function(copied){
+        if(copied){
+          const sum=getSyncSummary(payload.d);
+          setGenerateButton('copied');
+          notice(`Kode berhasil dibuat dan otomatis dicopy. Data berisi ${sum.storyCount} cerita, ${sum.readCount} cerita selesai dibaca, ${sum.folderCount} folder, ${sum.srsCount} data SRS, achievement harian, dan navigasi terakhir. Kode sudah dipendekkan otomatis, tetapi kalau isi ceritanya banyak, kode tetap tidak bisa sangat pendek tanpa server/cloud.`);
+        }else{
+          notice('Browser tidak mengizinkan copy otomatis. Coba klik Buat Kode sekali lagi.','error');
+        }
+      });
     }catch(err){
       notice('Gagal membuat kode: ' + (err && err.message ? err.message : err),'error');
     }
@@ -11650,10 +11734,7 @@ async function toggleUnderwaterAmbient(){
 
   window.copyWiraSyncCode=async function(){
     const out=document.getElementById('wiraSyncOutput');
-    if(!out || !out.value.trim()){
-      notice('Belum ada kode. Klik Buat Kode dulu.','error');
-      return;
-    }
+    if(!out || !out.value.trim()){ notice('Belum ada kode. Klik Buat Kode dulu.','error'); return; }
     const copied=await copyText(out.value.trim());
     if(copied){ setGenerateButton('copied'); notice('Kode berhasil dicopy ulang.'); }
     else notice('Tidak bisa copy otomatis. Coba klik Buat Kode sekali lagi.','error');
@@ -11661,12 +11742,16 @@ async function toggleUnderwaterAmbient(){
 
   window.applyWiraSyncCode=async function(){
     const input=document.getElementById('wiraSyncInput');
-    const raw=input ? input.value.trim() : '';
+    const raw=input ? input.value.trim().replace(/\s+/g,'') : '';
     if(!raw){ notice('Masukkan kode progress dulu.','error'); return; }
     try{
       let text;
-      if(raw.startsWith(SYNC_PREFIX_V2)){
-        text=await gunzipText(bytesFromBase64Url(raw));
+      if(raw.startsWith(SYNC_PREFIX_V3)){
+        const packed=raw.slice(SYNC_PREFIX_V3.length);
+        text=LZString.decompressFromEncodedURIComponent(packed);
+        if(!text) throw new Error('Kode kosong atau terpotong.');
+      }else if(raw.startsWith(SYNC_PREFIX_V2)){
+        text=await gunzipV2Text(raw);
       }else{
         text=fromBase64Url(raw);
       }
