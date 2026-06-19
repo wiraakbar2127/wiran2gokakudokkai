@@ -1473,7 +1473,7 @@ footer{
 <div class="brand" onclick="go('home')">𓆝 ウィラN2合格読解</div>
 <div class="navlinks">
 <button aria-label="Beranda" class="navbtn active" data-page="home" onclick="go('home')" title="Beranda"><span class="nav-icon"><svg fill="none" viewbox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M5.5 10.5V20h13v-9.5" stroke-linejoin="round" stroke-width="2"></path><path d="M9.5 20v-5h5v5" stroke-linejoin="round" stroke-width="2"></path></svg></span><span class="nav-label">Beranda</span></button>
-<button aria-label="Kumpulan Cerita" class="navbtn" data-page="stories" onclick="go('stories')" title="Kumpulan Cerita"><span class="nav-icon"><svg data-wira-minimalist-fish="1" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.1 12c2.15-3.05 6.55-4.25 10.05-2.55 1.05.5 2.05 1.05 3.25 1.2-1.2.15-2.2.7-3.25 1.2C12.65 13.55 8.25 15.05 6.1 12Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85"></path><path d="M6.1 12 2.9 9.45v5.1L6.1 12Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85"></path><circle cx="14.55" cy="10.9" r=".85" fill="currentColor" stroke="none"></circle><path d="M9.1 10.2c1.15.8 1.35 2.35.55 3.35" stroke="currentColor" stroke-linecap="round" stroke-width="1.45"></path></svg></span><span class="nav-label">Kumpulan Cerita</span></button>
+<button aria-label="Kumpulan Cerita" class="navbtn" data-page="stories" onclick="go('stories')" title="Kumpulan Cerita"><span class="nav-icon"><svg data-wira-minimalist-book="1" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6.25C5 5.56 5.56 5 6.25 5H9.9c.95 0 1.87.35 2.6.98V18.3a3.86 3.86 0 0 0-2.1-.62H6.25A1.25 1.25 0 0 0 5 18.93V6.25Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path><path d="M19 6.25C19 5.56 18.44 5 17.75 5H14.1c-.95 0-1.87.35-2.6.98V18.3c.63-.4 1.36-.62 2.1-.62h4.15c.69 0 1.25.56 1.25 1.25V6.25Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path><path d="M12 6v12" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"></path></svg></span><span class="nav-label">Kumpulan Cerita</span></button>
 <button aria-label="Import dari File" class="navbtn" data-page="generator" onclick="go('generator')" title="Import dari File"><span class="nav-icon"><svg fill="none" viewbox="0 0 24 24"><path d="M12 3v12" stroke-linecap="round" stroke-width="2"></path><path d="m7.5 10.5 4.5 4.5 4.5-4.5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M4 20h16" stroke-linecap="round" stroke-width="2"></path></svg></span><span class="nav-label">Import dari File</span></button>
 <button aria-label="Kelola Cerita" class="navbtn" data-page="manage" onclick="go('manage')" title="Kelola Cerita"><span class="nav-icon"><svg fill="none" viewbox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" stroke-linecap="round" stroke-width="2"></path><path d="m16 17 2 2 3-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></span><span class="nav-label">Kelola Cerita</span></button>
 <button aria-label="SRS" class="navbtn" data-page="srs" onclick="go('srs')" title="SRS"><span class="nav-icon"><svg fill="none" viewbox="0 0 24 24"><path d="M7 7h10a4 4 0 0 1 4 4v2a4 4 0 0 1-4 4H9l-4 3v-3a4 4 0 0 1-2-3.5V11a4 4 0 0 1 4-4Z" stroke-linejoin="round" stroke-width="2"></path><path d="M8 12h8" stroke-linecap="round" stroke-width="2"></path></svg></span><span class="nav-label">SRS</span></button>
@@ -11037,9 +11037,9 @@ async function toggleUnderwaterAmbient(){
 
 
 
-<!-- PATCH WIRA: Navbar ikan minimalist + daftar kosakata SRS tanpa cara baca terpisah -->
-<style id="wira-nav-fish-and-srs-furigana-style">
-  /* Icon ikan minimalist untuk navigasi Kumpulan Cerita */
+<!-- PATCH WIRA: Navbar buku minimalis + daftar kosakata SRS tanpa cara baca terpisah -->
+<style id="wira-nav-book-and-srs-furigana-style">
+  /* Icon buku terbuka minimalis untuk navigasi Kumpulan Cerita */
   .navbtn[data-page="stories"] .nav-icon svg{
     width:22px!important;
     height:22px!important;
@@ -11070,11 +11070,11 @@ async function toggleUnderwaterAmbient(){
     line-height:1.9!important;
   }
 </style>
-<script id="wira-nav-fish-and-srs-furigana-script">
+<script id="wira-nav-book-and-srs-furigana-script">
 (function(){
   'use strict';
 
-  const FISH_ICON = '<svg fill="none" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.1 12c2.15-3.05 6.55-4.25 10.05-2.55 1.05.5 2.05 1.05 3.25 1.2-1.2.15-2.2.7-3.25 1.2C12.65 13.55 8.25 15.05 6.1 12Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85"></path><path d="M6.1 12 2.9 9.45v5.1L6.1 12Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85"></path><circle cx="14.55" cy="10.9" r=".85" fill="currentColor" stroke="none"></circle><path d="M9.1 10.2c1.15.8 1.35 2.35.55 3.35" stroke="currentColor" stroke-linecap="round" stroke-width="1.45"></path></svg>';
+  const BOOK_ICON = '<svg fill="none" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6.25C5 5.56 5.56 5 6.25 5H9.9c.95 0 1.87.35 2.6.98V18.3a3.86 3.86 0 0 0-2.1-.62H6.25A1.25 1.25 0 0 0 5 18.93V6.25Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path><path d="M19 6.25C19 5.56 18.44 5 17.75 5H14.1c-.95 0-1.87.35-2.6.98V18.3c.63-.4 1.36-.62 2.1-.62h4.15c.69 0 1.25.56 1.25 1.25V6.25Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path><path d="M12 6v12" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"></path></svg>';
 
   function esc(value){
     if(typeof window.escapeHtml === 'function') return window.escapeHtml(String(value ?? ''));
@@ -11258,7 +11258,7 @@ async function toggleUnderwaterAmbient(){
     }
   }
 
-  function installFishIcon(){
+  function installBookIcon(){
     const btn=document.querySelector('.navbtn[data-page="stories"]');
     if(!btn) return;
     let holder=btn.querySelector('.nav-icon');
@@ -11268,8 +11268,8 @@ async function toggleUnderwaterAmbient(){
       const label=btn.querySelector('.nav-label');
       btn.insertBefore(holder,label || btn.firstChild);
     }
-    if(!holder.querySelector('svg[data-wira-minimalist-fish="1"]')){
-      holder.innerHTML=FISH_ICON.replace('<svg ','<svg data-wira-minimalist-fish="1" ');
+    if(!holder.querySelector('svg[data-wira-minimalist-book="1"]')){
+      holder.innerHTML=BOOK_ICON.replace('<svg ','<svg data-wira-minimalist-book="1" ');
     }
   }
 
@@ -11287,10 +11287,10 @@ async function toggleUnderwaterAmbient(){
   };
 
   document.addEventListener('DOMContentLoaded', function(){
-    installFishIcon();
+    installBookIcon();
     refreshReady();
   });
-  setTimeout(installFishIcon, 0);
+  setTimeout(installBookIcon, 0);
   setTimeout(refreshReady, 0);
 })();
 </script>
