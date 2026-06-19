@@ -2966,7 +2966,19 @@ function deleteStory(id){
 
 
 
-const SRS_INTERVALS=[10*60*1000,4*60*60*1000,24*60*60*1000,3*24*60*60*1000,7*24*60*60*1000,14*24*60*60*1000,30*24*60*60*1000];
+const SRS_INTERVALS=[
+  4*60*60*1000,        // Poin Baru: 4 jam
+  8*60*60*1000,        // Ulang 2: 8 jam
+  24*60*60*1000,       // Ulang 3: 24 jam
+  2*24*60*60*1000,     // Ulang 4: 2 hari
+  4*24*60*60*1000,     // Ulang 5: 4 hari
+  8*24*60*60*1000,     // Ulang 6: 8 hari
+  14*24*60*60*1000,    // Ulang 7: 2 minggu
+  30*24*60*60*1000,    // Ulang 8: 1 bulan
+  60*24*60*60*1000,    // Ulang 9: 2 bulan
+  120*24*60*60*1000,   // Ulang 10: 4 bulan
+  180*24*60*60*1000    // Ulang 11: 6 bulan (benar lagi => Mastered)
+];
 let srsQueue=[],srsCurrentIndex=0,srsLocked=false;
 function getSrsState(){try{const d=JSON.parse(localStorage.getItem("wiraSrsState")||"{}");return d&&typeof d==="object"?d:{}}catch(e){return {}}}
 function saveSrsState(s){localStorage.setItem("wiraSrsState",JSON.stringify(s))}
@@ -3026,15 +3038,32 @@ function getStrongTargets(jp){
 function buildSrsItems(){const done=new Set(getCompletedStories().map(String));const items=[];getStories().filter(s=>done.has(String(s.id))).forEach(story=>{(story.content||[]).forEach((pair,si)=>{const jp=Array.isArray(pair)?pair[0]:pair?.japanese||pair?.jp||"";const idn=Array.isArray(pair)?pair[1]:pair?.indonesian||pair?.id||"";getStrongTargets(jp).forEach((t,ti)=>items.push({key:`${story.id}::${si}::${ti}`,storyId:String(story.id),storyTitle:story.title||"Tanpa Judul",folder:story.level||"N2",questionHtml:t.questionHtml,translationHtml:String(idn||""),answer:t.answer}))})});return items}
 function syncSrsState(items){const s=getSrsState(),now=Date.now();items.forEach(i=>{if(!s[i.key])s[i.key]={level:0,due:now,correct:0,wrong:0,lastResult:null}});saveSrsState(s);return s}
 function getDueSrsItems(){const items=buildSrsItems(),s=syncSrsState(items),now=Date.now();return items.filter(i=>(s[i.key]?.due||0)<=now).sort((a,b)=>(s[a.key]?.due||0)-(s[b.key]?.due||0))}
-function renderSrsPage(){const items=buildSrsItems(),s=syncSrsState(items),now=Date.now();document.getElementById("srsDueCount").textContent=items.filter(i=>(s[i.key]?.due||0)<=now).length;document.getElementById("srsLearningCount").textContent=items.filter(i=>{const l=s[i.key]?.level||0;return l>0&&l<SRS_INTERVALS.length-1}).length;document.getElementById("srsMasteredCount").textContent=items.filter(i=>(s[i.key]?.level||0)>=SRS_INTERVALS.length-1).length;const map=new Map();items.forEach(i=>{if(!map.has(i.storyId))map.set(i.storyId,{title:i.storyTitle,total:0,due:0});const info=map.get(i.storyId);info.total++;if((s[i.key]?.due||0)<=now)info.due++});document.getElementById("srsStoryList").innerHTML=map.size?[...map.values()].map(x=>`<div class="srs-story-row"><div><strong>${escapeHtml(x.title)}</strong></div><span>${x.due}/${x.total} due</span></div>`).join(""):'<div class="empty">Belum ada cerita yang selesai dibaca.</div>';startSrsSession()}
+function renderSrsPage(){const items=buildSrsItems(),s=syncSrsState(items),now=Date.now();document.getElementById("srsDueCount").textContent=items.filter(i=>(s[i.key]?.due||0)<=now).length;document.getElementById("srsLearningCount").textContent=items.filter(i=>{const l=s[i.key]?.level||0;return l>0&&l<(typeof maxLevel==="function"?maxLevel():12)}).length;document.getElementById("srsMasteredCount").textContent=items.filter(i=>(s[i.key]?.level||0)>=(typeof maxLevel==="function"?maxLevel():12)).length;const map=new Map();items.forEach(i=>{if(!map.has(i.storyId))map.set(i.storyId,{title:i.storyTitle,total:0,due:0});const info=map.get(i.storyId);info.total++;if((s[i.key]?.due||0)<=now)info.due++});document.getElementById("srsStoryList").innerHTML=map.size?[...map.values()].map(x=>`<div class="srs-story-row"><div><strong>${escapeHtml(x.title)}</strong></div><span>${x.due}/${x.total} due</span></div>`).join(""):'<div class="empty">Belum ada cerita yang selesai dibaca.</div>';startSrsSession()}
 function startSrsSession(){srsQueue=getDueSrsItems();srsCurrentIndex=0;srsLocked=false;renderCurrentSrsCard()}
 function renderCurrentSrsCard(){const area=document.getElementById("srsPracticeArea"),bar=document.querySelector("#srsProgress>div");if(!area)return;if(!srsQueue.length||srsCurrentIndex>=srsQueue.length){if(bar)bar.style.width="100%";area.innerHTML='<div class="srs-empty"><h2>復習完了！</h2><p>Tidak ada latihan yang jatuh tempo sekarang.</p><button class="btn" onclick="renderSrsPage()">Periksa Lagi</button></div>';return}const item=srsQueue[srsCurrentIndex];if(bar)bar.style.width=`${(srsCurrentIndex/srsQueue.length)*100}%`;area.innerHTML=`<div class="srs-card"><div class="srs-source">${escapeHtml(item.storyTitle)}・${escapeHtml(item.folder)}</div><div id="srsQuestionText" class="srs-question">
         <div id="srsSentenceText">${item.questionHtml}</div>
         <div id="srsInlineResult" class="srs-inline-result"></div>
       </div><div class="srs-translation">${item.translationHtml}</div><div class="srs-answer-wrap"><input id="srsAnswerInput" class="srs-answer" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Ketik romaji atau hiragana"><button class="btn" onclick="submitSrsAnswer()">Jawab</button></div><div class="srs-romaji-note">Contoh: atsumaru otomatis menjadi あつまる.</div><div id="srsFeedback" class="srs-feedback"></div></div>`;const input=document.getElementById("srsAnswerInput");input.addEventListener("input",()=>{input.value=romajiToHiragana(input.value);input.setSelectionRange(input.value.length,input.value.length)});input.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submitSrsAnswer()}});setTimeout(()=>input.focus(),80)}
-function submitSrsAnswer(){if(srsLocked)return;const item=srsQueue[srsCurrentIndex],input=document.getElementById("srsAnswerInput"),fb=document.getElementById("srsFeedback");if(!item||!input||!fb)return;const ans=normalizeKana(input.value);if(!ans)return;srsLocked=true;const correct=ans===normalizeKana(item.answer),s=getSrsState(),r=s[item.key]||{level:0,due:Date.now(),correct:0,wrong:0},now=Date.now();if(correct){r.level=Math.min((r.level||0)+1,SRS_INTERVALS.length-1);r.correct=(r.correct||0)+1;r.lastResult="correct";r.due=now+SRS_INTERVALS[r.level];fb.className="srs-feedback correct";fb.innerHTML=`<strong>Benar！</strong><br>Jawaban: <strong>${escapeHtml(item.answer)}</strong><div class="srs-next-time">Muncul lagi ${formatSrsDuration(SRS_INTERVALS[r.level])}.</div>`}else{r.level=0;r.wrong=(r.wrong||0)+1;r.lastResult="wrong";r.due=now+SRS_INTERVALS[0];fb.className="srs-feedback wrong";fb.innerHTML=`<strong>Belum tepat.</strong><br>Jawaban benar: <strong>${escapeHtml(item.answer)}</strong><div class="srs-next-time">Diulang sekitar ${formatSrsDuration(SRS_INTERVALS[0])}.</div>`}s[item.key]=r;saveSrsState(s);input.dataset.resultLocked='1';setTimeout(()=>{srsCurrentIndex++;srsLocked=false;renderCurrentSrsCard();updateSrsCountersOnly()},correct?700:1500)}
-function updateSrsCountersOnly(){const items=buildSrsItems(),s=syncSrsState(items),now=Date.now();document.getElementById("srsDueCount").textContent=items.filter(i=>(s[i.key]?.due||0)<=now).length;document.getElementById("srsLearningCount").textContent=items.filter(i=>{const l=s[i.key]?.level||0;return l>0&&l<SRS_INTERVALS.length-1}).length;document.getElementById("srsMasteredCount").textContent=items.filter(i=>(s[i.key]?.level||0)>=SRS_INTERVALS.length-1).length}
-function formatSrsDuration(ms){const m=Math.round(ms/60000);if(m<60)return `${m} menit`;const h=Math.round(m/60);if(h<24)return `${h} jam`;return `${Math.round(h/24)} hari`}
+function submitSrsAnswer(){if(srsLocked)return;const item=srsQueue[srsCurrentIndex],input=document.getElementById("srsAnswerInput"),fb=document.getElementById("srsFeedback");if(!item||!input||!fb)return;const ans=normalizeKana(input.value);if(!ans)return;srsLocked=true;const correct=ans===normalizeKana(item.answer),s=getSrsState(),r=s[item.key]||{level:0,due:Date.now(),correct:0,wrong:0},now=Date.now();if(correct){r.level=Math.min((r.level||0)+1,(typeof maxLevel==="function"?maxLevel():12));r.correct=(r.correct||0)+1;r.lastResult="correct";r.due=now+SRS_INTERVALS[Math.max(0,Math.min(SRS_INTERVALS.length-1,r.level-1))];fb.className="srs-feedback correct";fb.innerHTML=`<strong>Benar！</strong><br>Jawaban: <strong>${escapeHtml(item.answer)}</strong><div class="srs-next-time">Muncul lagi ${formatSrsDuration(SRS_INTERVALS[Math.max(0,Math.min(SRS_INTERVALS.length-1,r.level-1))])}.</div>`}else{r.level=0;r.wrong=(r.wrong||0)+1;r.lastResult="wrong";r.due=now+SRS_INTERVALS[0];fb.className="srs-feedback wrong";fb.innerHTML=`<strong>Belum tepat.</strong><br>Jawaban benar: <strong>${escapeHtml(item.answer)}</strong><div class="srs-next-time">Diulang sekitar ${formatSrsDuration(SRS_INTERVALS[0])}.</div>`}s[item.key]=r;saveSrsState(s);input.dataset.resultLocked='1';setTimeout(()=>{srsCurrentIndex++;srsLocked=false;renderCurrentSrsCard();updateSrsCountersOnly()},correct?700:1500)}
+function updateSrsCountersOnly(){const items=buildSrsItems(),s=syncSrsState(items),now=Date.now();document.getElementById("srsDueCount").textContent=items.filter(i=>(s[i.key]?.due||0)<=now).length;document.getElementById("srsLearningCount").textContent=items.filter(i=>{const l=s[i.key]?.level||0;return l>0&&l<(typeof maxLevel==="function"?maxLevel():12)}).length;document.getElementById("srsMasteredCount").textContent=items.filter(i=>(s[i.key]?.level||0)>=(typeof maxLevel==="function"?maxLevel():12)).length}
+function formatSrsDuration(ms){
+  const minutes=Math.max(1,Math.round(ms/60000));
+  if(minutes<60) return `${minutes} menit`;
+  const hours=Math.round(minutes/60);
+  if(hours<24) return `${hours} jam`;
+  const days=Math.round(hours/24);
+  if(days<14) return `${days} hari`;
+  if(days===14) return `2 minggu`;
+  if(days>=28){
+    const months=Math.round(days/30);
+    if(months===1) return `1 bulan`;
+    if(months===2) return `2 bulan`;
+    if(months===4) return `4 bulan`;
+    if(months===6) return `6 bulan`;
+    return `${months} bulan`;
+  }
+  return `${days} hari`;
+}
 function romajiToHiragana(input){let text=String(input||"").toLowerCase();if(/[ぁ-ん]/.test(text)&&!/[a-z]/.test(text))return text;const map={kya:"きゃ",kyu:"きゅ",kyo:"きょ",sha:"しゃ",shu:"しゅ",sho:"しょ",cha:"ちゃ",chu:"ちゅ",cho:"ちょ",nya:"にゃ",nyu:"にゅ",nyo:"にょ",hya:"ひゃ",hyu:"ひゅ",hyo:"ひょ",mya:"みゃ",myu:"みゅ",myo:"みょ",rya:"りゃ",ryu:"りゅ",ryo:"りょ",gya:"ぎゃ",gyu:"ぎゅ",gyo:"ぎょ",ja:"じゃ",ju:"じゅ",jo:"じょ",bya:"びゃ",byu:"びゅ",byo:"びょ",pya:"ぴゃ",pyu:"ぴゅ",pyo:"ぴょ",shi:"し",chi:"ち",tsu:"つ",fu:"ふ",ka:"か",ki:"き",ku:"く",ke:"け",ko:"こ",sa:"さ",si:"し",su:"す",se:"せ",so:"そ",ta:"た",ti:"ち",tu:"つ",te:"て",to:"と",na:"な",ni:"に",nu:"ぬ",ne:"ね",no:"の",ha:"は",hi:"ひ",hu:"ふ",he:"へ",ho:"ほ",ma:"ま",mi:"み",mu:"む",me:"め",mo:"も",ya:"や",yu:"ゆ",yo:"よ",ra:"ら",ri:"り",ru:"る",re:"れ",ro:"ろ",wa:"わ",wo:"を",ga:"が",gi:"ぎ",gu:"ぐ",ge:"げ",go:"ご",za:"ざ",ji:"じ",zu:"ず",ze:"ぜ",zo:"ぞ",da:"だ",di:"ぢ",du:"づ",de:"で",do:"ど",ba:"ば",bi:"び",bu:"ぶ",be:"べ",bo:"ぼ",pa:"ぱ",pi:"ぴ",pu:"ぷ",pe:"ぺ",po:"ぽ",a:"あ",i:"い",u:"う",e:"え",o:"お",n:"ん"};let out="",i=0;while(i<text.length){const ch=text[i];if(/[ぁ-ん]/.test(ch)){out+=ch;i++;continue}if(i+1<text.length&&text[i]===text[i+1]&&/[bcdfghjklmpqrstvwxyz]/.test(text[i])&&text[i]!=="n"){out+="っ";i++;continue}let matched=false;for(const len of [3,2,1]){const part=text.slice(i,i+len);if(map[part]){if(part==="n"&&i+1<text.length&&/[aiueoy]/.test(text[i+1]))continue;out+=map[part];i+=len;matched=true;break}}if(!matched){out+=ch;i++}}return out}
 function resetSrsProgress(){if(!confirm("Yakin ingin menghapus seluruh progres SRS?"))return;localStorage.removeItem("wiraSrsState");renderSrsPage()}
 
@@ -3247,8 +3276,9 @@ function getStorySrsProgress(storyId){
   }
 
   const learned=items.filter(item=>(state[item.key]?.level||0)>0).length;
+  const max=(typeof maxLevel==="function"?maxLevel():12);
   const mastered=items.filter(
-    item=>(state[item.key]?.level||0)>=SRS_INTERVALS.length-1
+    item=>(state[item.key]?.level||0)>=max
   ).length;
 
   const percent=Math.round((learned/items.length)*100);
@@ -3544,16 +3574,16 @@ function submitSrsAnswer(){
   if(correct){
     record.level=Math.min(
       (record.level||0)+1,
-      SRS_INTERVALS.length-1
+      (typeof maxLevel==="function"?maxLevel():12)
     );
     record.correct=(record.correct||0)+1;
     record.lastResult="correct";
-    record.due=now+SRS_INTERVALS[record.level];
+    record.due=now+SRS_INTERVALS[Math.max(0,Math.min(SRS_INTERVALS.length-1,record.level-1))];
 
     inlineResult.innerHTML=`
       <strong>Benar！</strong><br>
       Jawaban: <strong>${escapeHtml(item.answer)}</strong><br>
-      Muncul lagi ${formatSrsDuration(SRS_INTERVALS[record.level])}.
+      Muncul lagi ${formatSrsDuration(SRS_INTERVALS[Math.max(0,Math.min(SRS_INTERVALS.length-1,record.level-1))])}.
     `;
   }else{
     record.level=0;
@@ -3677,7 +3707,7 @@ function updateDailyLogin(){
 function updateDailyLearningRewards(){
   const state=getDailyState();
   const learned=learnedVocabularyCount();
-  const hundreds=Math.floor(learned/100);
+  const hundreds=Math.floor(learned/120);
   const newRewards=Math.max(0,hundreds-(state.rewardedHundreds||0));
 
   if(newRewards>0){
@@ -3694,10 +3724,10 @@ function achievementFishFor(count){
   if(count>=4000) return ["🐬","Lumba-lumba Cerdas"];
   if(count>=3000) return ["🦑","Cumi-cumi Tangguh"];
   if(count>=2000) return ["🐠","Ikan Tropis"];
-  if(count>=1000) return ["🐡","Ikan Buntal"];
+  if(count>=1200) return ["🐡","Ikan Buntal"];
   if(count>=500) return ["🐙","Penjelajah Laut"];
   if(count>=200) return ["🐟","Kepiting Karang"];
-  if(count>=100) return ["🐠","Ikan Kecil"];
+  if(count>=120) return ["🐠","Ikan Kecil"];
   return ["🥚","Telur Ikan"];
 }
 
@@ -3731,7 +3761,7 @@ function renderAchievementPanel(){
 
   if(list){
     const milestones=[];
-    const currentHundred=Math.floor(learned/100)*100;
+    const currentHundred=Math.floor(learned/120)*100;
     const start=Math.max(100,currentHundred-200);
     const end=Math.min(N2_VOCAB_TARGET,Math.max(500,currentHundred+300));
 
@@ -4232,18 +4262,20 @@ function renderSrsPage(){
   const items=buildSrsItems();
   const state=syncSrsState(items);
   const now=Date.now();
+  const max=(typeof maxLevel==="function"?maxLevel():12);
 
-  const due=items.filter(
-    item=>(state[item.key]?.due||0)<=now
-  ).length;
+  const due=items.filter(item=>{
+    const level=state[item.key]?.level||0;
+    return level<max && (state[item.key]?.due||0)<=now;
+  }).length;
 
   const learning=items.filter(item=>{
     const level=state[item.key]?.level||0;
-    return level>0 && level<SRS_INTERVALS.length-1;
+    return level>0 && level<max;
   }).length;
 
   const mastered=items.filter(
-    item=>(state[item.key]?.level||0)>=SRS_INTERVALS.length-1
+    item=>(state[item.key]?.level||0)>=max
   ).length;
 
   document.getElementById("srsDueCount").textContent=due;
@@ -4267,8 +4299,9 @@ function renderSrsPage(){
     const info=storyMap.get(item.storyId);
     info.total++;
 
-    if((state[item.key]?.due||0)<=now) info.due++;
-    if((state[item.key]?.level||0)>0) info.learned++;
+    const itemLevel=state[item.key]?.level||0;
+    if(itemLevel<max && (state[item.key]?.due||0)<=now) info.due++;
+    if(itemLevel>0) info.learned++;
   });
 
   const list=document.getElementById("srsStoryList");
@@ -4297,19 +4330,23 @@ function updateSrsCountersOnly(){
   const items=buildSrsItems();
   const state=syncSrsState(items);
   const now=Date.now();
+  const max=(typeof maxLevel==="function"?maxLevel():12);
 
   document.getElementById("srsDueCount").textContent=
-    items.filter(item=>(state[item.key]?.due||0)<=now).length;
+    items.filter(item=>{
+      const level=state[item.key]?.level||0;
+      return level<max && (state[item.key]?.due||0)<=now;
+    }).length;
 
   document.getElementById("srsLearningCount").textContent=
     items.filter(item=>{
       const level=state[item.key]?.level||0;
-      return level>0 && level<SRS_INTERVALS.length-1;
+      return level>0 && level<max;
     }).length;
 
   document.getElementById("srsMasteredCount").textContent=
     items.filter(
-      item=>(state[item.key]?.level||0)>=SRS_INTERVALS.length-1
+      item=>(state[item.key]?.level||0)>=max
     ).length;
 
   updateSrsOverallProgress();
@@ -4628,7 +4665,7 @@ function getStoryActivityScore(story){
 
   let score=0;
 
-  if(progress.percent>0 && progress.percent<100){
+  if(progress.percent>0 && progress.percent<120){
     score+=10000+progress.percent;
   }else if(progress.percent===100){
     score+=5000;
@@ -4659,7 +4696,7 @@ function chooseStableHomeStories(stories){
   const active=stories
     .filter(story=>{
       const progress=getStorySrsProgress(story.id);
-      return progress.percent>0 && progress.percent<100;
+      return progress.percent>0 && progress.percent<120;
     })
     .sort((a,b)=>getStoryActivityScore(b)-getStoryActivityScore(a));
 
@@ -5196,7 +5233,7 @@ function getLatestHomeStories(){
 
     let total=latestDue;
 
-    if(progress.percent>0 && progress.percent<100){
+    if(progress.percent>0 && progress.percent<120){
       total+=10000000000000+progress.percent;
     }else if(progress.percent===100){
       total+=5000000000000;
@@ -5261,7 +5298,7 @@ renderHome=function(){
         ${storyProgressHtml(story.id)}
 
         ${
-          progress.percent>0 && progress.percent<100
+          progress.percent>0 && progress.percent<120
             ? '<div class="help" style="margin-top:10px">Sedang dipelajari di SRS</div>'
             : ""
         }
@@ -5443,15 +5480,15 @@ renderCurrentSrsCard=function(){
     question.classList.add(correct?'correct-answer':'wrong-answer');
 
     if(correct){
-      record.level=Math.min((record.level||0)+1,SRS_INTERVALS.length-1);
+      record.level=Math.min((record.level||0)+1,(typeof maxLevel==="function"?maxLevel():12));
       record.correct=(record.correct||0)+1;
       record.lastResult='correct';
-      record.due=now+SRS_INTERVALS[record.level];
+      record.due=now+SRS_INTERVALS[Math.max(0,Math.min(SRS_INTERVALS.length-1,record.level-1))];
 
       inlineResult.innerHTML=`
         <div class="srs-result-title">✓ Benar！</div>
         <div>Jawaban: <strong>${escapeHtml(item.answer)}</strong></div>
-        <div>Muncul lagi ${formatSrsDuration(SRS_INTERVALS[record.level])}.</div>
+        <div>Muncul lagi ${formatSrsDuration(SRS_INTERVALS[Math.max(0,Math.min(SRS_INTERVALS.length-1,record.level-1))])}.</div>
         <div class="srs-skip-note">Tekan Enter atau Spasi untuk langsung lanjut.</div>
       `;
     }else{
@@ -5610,21 +5647,22 @@ romajiToHiragana=function(input){
 };
 
 
-/* ===== FINAL SRS ENGINE: ulang sampai benar + 10 jawaban benar untuk mastered ===== */
+/* ===== FINAL SRS ENGINE: ulang sampai benar + 12 level sampai Mastered ===== */
 (function(){
-  /* 10 tahap jawaban benar. Tahap ke-10 baru dianggap mastered. */
+  /* 12 level SRS: level 1-11 punya jadwal review, level 12 adalah Mastered. */
   window.SRS_INTERVALS=[
-    5*60*1000,          // benar 1: 5 menit
-    15*60*1000,         // benar 2: 15 menit
-    60*60*1000,         // benar 3: 1 jam
-    4*60*60*1000,       // benar 4: 4 jam
-    12*60*60*1000,      // benar 5: 12 jam
-    24*60*60*1000,      // benar 6: 1 hari
-    3*24*60*60*1000,    // benar 7: 3 hari
-    7*24*60*60*1000,    // benar 8: 7 hari
-    14*24*60*60*1000,   // benar 9: 14 hari
-    30*24*60*60*1000    // benar 10: 30 hari / mastered
-  ];
+  4*60*60*1000,        // Poin Baru: 4 jam
+  8*60*60*1000,        // Ulang 2: 8 jam
+  24*60*60*1000,       // Ulang 3: 24 jam
+  2*24*60*60*1000,     // Ulang 4: 2 hari
+  4*24*60*60*1000,     // Ulang 5: 4 hari
+  8*24*60*60*1000,     // Ulang 6: 8 hari
+  14*24*60*60*1000,    // Ulang 7: 2 minggu
+  30*24*60*60*1000,    // Ulang 8: 1 bulan
+  60*24*60*60*1000,    // Ulang 9: 2 bulan
+  120*24*60*60*1000,   // Ulang 10: 4 bulan
+  180*24*60*60*1000    // Ulang 11: 6 bulan (benar lagi => Mastered)
+];
 
   const RESULT_DELAY=8000;
   let engineTimer=null;
@@ -5633,11 +5671,11 @@ romajiToHiragana=function(input){
   window.srsResultWaiting=false;
 
   function masteryCount(record){
-    return Math.max(0,Math.min(10,Number(record?.correctStage ?? record?.level ?? 0)||0));
+    return Math.max(0,Math.min(12,Number(record?.correctStage ?? record?.level ?? 0)||0));
   }
 
   function setMasteryCount(record,count){
-    const safe=Math.max(0,Math.min(10,Number(count)||0));
+    const safe=Math.max(0,Math.min(12,Number(count)||0));
     record.correctStage=safe;
     record.level=safe;
   }
@@ -5693,7 +5731,7 @@ romajiToHiragana=function(input){
             const stage=masteryCount(record);
             return `<div style="padding:10px 0;border-bottom:1px dashed var(--line)">
               <strong>${escapeHtml(item.storyTitle)}</strong><br>
-              <span style="color:var(--muted)">Tahap ${stage}/10・${formatDueDate(record.due)} (${formatSrsDuration(Math.max(0,record.due-Date.now()))} lagi)</span>
+              <span style="color:var(--muted)">Tahap ${stage}/12・${formatDueDate(record.due)} (${formatSrsDuration(Math.max(0,record.due-Date.now()))} lagi)</span>
             </div>`;
           }).join('')}
         </div>`
@@ -5766,19 +5804,20 @@ romajiToHiragana=function(input){
     question.classList.add(correct?'correct-answer':'wrong-answer');
 
     if(correct){
-      const stage=Math.min(10,masteryCount(record)+1);
-      const interval=intervalForStage(stage);
+      const stage=Math.min(12,masteryCount(record)+1);
+      const mastered=stage>=12;
+      const interval=mastered ? 0 : intervalForStage(stage);
       setMasteryCount(record,stage);
       record.correct=(record.correct||0)+1;
       record.lastResult='correct';
       record.lastReviewed=now;
-      record.due=now+interval;
+      record.due=mastered ? 0 : now+interval;
 
       inlineResult.innerHTML=`
         <div class="srs-result-title">✓ Benar！</div>
         <div>Jawaban: <strong>${escapeHtml(item.answer)}</strong></div>
-        <div>Progres penguasaan: <strong>${stage}/10</strong></div>
-        <div>${stage>=10?'Kosakata ini sudah dianggap dikuasai.':'Review berikutnya'}: <strong>${formatSrsDuration(interval)}</strong> lagi.</div>
+        <div>Progres penguasaan: <strong>${stage}/12</strong></div>
+        <div>${mastered?'Kosakata ini sudah dianggap dikuasai / Mastered.':'Review berikutnya: <strong>'+formatSrsDuration(interval)+'</strong> lagi.'}</div>
         <div class="srs-result-actions">
           <button type="button" class="btn srs-next-question-btn" onclick="window.advanceSrsResult()">Soal Selanjutnya →</button>
           <div class="srs-skip-note">Atau tekan Enter / Spasi.</div>
@@ -5796,7 +5835,7 @@ romajiToHiragana=function(input){
       inlineResult.innerHTML=`
         <div class="srs-result-title">✕ Belum tepat.</div>
         <div>Jawaban benar: <strong>${escapeHtml(item.answer)}</strong></div>
-        <div>Progres penguasaan: <strong>${stage}/10</strong></div>
+        <div>Progres penguasaan: <strong>${stage}/12</strong></div>
         <div>Soal ini akan muncul lagi dalam sesi ini sampai dijawab benar.</div>
         <div class="srs-result-actions">
           <button type="button" class="btn srs-next-question-btn" onclick="window.advanceSrsResult()">Soal Selanjutnya →</button>
@@ -5842,9 +5881,9 @@ romajiToHiragana=function(input){
     const due=items.filter(item=>(state[item.key]?.due||0)<=now).length;
     const learning=items.filter(item=>{
       const stage=masteryCount(state[item.key]);
-      return stage>0 && stage<10;
+      return stage>0 && stage<12;
     }).length;
-    const mastered=items.filter(item=>masteryCount(state[item.key])>=10).length;
+    const mastered=items.filter(item=>masteryCount(state[item.key])>=12).length;
 
     document.getElementById('srsDueCount').textContent=due;
     document.getElementById('srsLearningCount').textContent=learning;
@@ -5860,9 +5899,9 @@ romajiToHiragana=function(input){
     document.getElementById('srsDueCount').textContent=items.filter(item=>(state[item.key]?.due||0)<=now).length;
     document.getElementById('srsLearningCount').textContent=items.filter(item=>{
       const stage=masteryCount(state[item.key]);
-      return stage>0&&stage<10;
+      return stage>0&&stage<12;
     }).length;
-    document.getElementById('srsMasteredCount').textContent=items.filter(item=>masteryCount(state[item.key])>=10).length;
+    document.getElementById('srsMasteredCount').textContent=items.filter(item=>masteryCount(state[item.key])>=12).length;
 
     updateSrsOverallProgress();
     const storyMap=new Map();
@@ -5871,7 +5910,7 @@ romajiToHiragana=function(input){
       const info=storyMap.get(item.storyId);
       info.total++;
       if((state[item.key]?.due||0)<=now) info.due++;
-      if(masteryCount(state[item.key])>=10) info.mastered++;
+      if(masteryCount(state[item.key])>=12) info.mastered++;
     });
 
     const list=document.getElementById('srsStoryList');
@@ -7557,7 +7596,7 @@ async function toggleUnderwaterAmbient(){
   const finalRetryUsed=new Set();
 
   function stageOf(record){
-    return Math.max(0,Math.min(10,Number(record?.correctStage ?? record?.level ?? 0)||0));
+    return Math.max(0,Math.min(12,Number(record?.correctStage ?? record?.level ?? 0)||0));
   }
 
   function cleanWordHtml(item){
@@ -7600,8 +7639,8 @@ async function toggleUnderwaterAmbient(){
     const filtered=items.filter(item=>{
       const stage=stageOf(state[item.key]);
       if(type==='unlearned') return stage===0;
-      if(type==='learning') return stage>0&&stage<10;
-      return stage>=10;
+      if(type==='learning') return stage>0&&stage<12;
+      return stage>=12;
     }).sort((a,b)=>cleanWordHtml(a).localeCompare(cleanWordHtml(b),'ja'));
     const titles={unlearned:'Belum Dipelajari',learning:'Sedang Belajar',mastered:'Dikuasai'};
     modal.querySelector('#srsDetailTitle').textContent=`${titles[type]} (${filtered.length})`;
@@ -7610,7 +7649,7 @@ async function toggleUnderwaterAmbient(){
       const stage=stageOf(r);
       return `<div class="srs-vocab-detail">
         <div class="srs-vocab-word">${escapeHtml(cleanWordHtml(item))}</div>
-        <div class="srs-vocab-meta">${escapeHtml(item.storyTitle)}・Progres <strong>${stage}/10</strong><br>Benar ${Number(r.correct||0)} kali・Salah ${Number(r.wrong||0)} kali</div>
+        <div class="srs-vocab-meta">${escapeHtml(item.storyTitle)}・Progres <strong>${stage}/12</strong><br>Benar ${Number(r.correct||0)} kali・Salah ${Number(r.wrong||0)} kali</div>
         <span class="srs-vocab-time">${dueText(r)}</span>
       </div>`;
     }).join(''):'<div class="empty">Tidak ada kosakata dalam kategori ini.</div>';
@@ -7640,8 +7679,8 @@ async function toggleUnderwaterAmbient(){
     const items=buildSrsItems();
     const state=syncSrsState(items);
     const unlearned=items.filter(item=>stageOf(state[item.key])===0).length;
-    const learning=items.filter(item=>{const s=stageOf(state[item.key]);return s>0&&s<10}).length;
-    const mastered=items.filter(item=>stageOf(state[item.key])>=10).length;
+    const learning=items.filter(item=>{const s=stageOf(state[item.key]);return s>0&&s<12}).length;
+    const mastered=items.filter(item=>stageOf(state[item.key])>=12).length;
     const a=document.getElementById('srsDueCount');
     const b=document.getElementById('srsLearningCount');
     const c=document.getElementById('srsMasteredCount');
@@ -7651,7 +7690,7 @@ async function toggleUnderwaterAmbient(){
     wireStats();
   }
 
-  /* Tahap 9/10 mendapat satu kesempatan cek sebelum kesalahan dicatat. */
+  /* Tahap 9/12 mendapat satu kesempatan cek sebelum kesalahan dicatat. */
   const oldSubmit=window.submitSrsAnswer;
   if(typeof oldSubmit==='function'){
     window.submitSrsAnswer=function(){
@@ -7904,7 +7943,7 @@ async function toggleUnderwaterAmbient(){
 <script id="final-srs-unique-dashboard-script">
 (function(){
   function stageOf(record){
-    return Math.max(0,Math.min(10,Number(record?.correctStage ?? record?.level ?? 0)||0));
+    return Math.max(0,Math.min(12,Number(record?.correctStage ?? record?.level ?? 0)||0));
   }
 
   function visibleWord(item){
@@ -7963,8 +8002,8 @@ async function toggleUnderwaterAmbient(){
     const filtered=uniqueSrsEntries().filter(entry=>{
       const stage=stageOf(entry.record);
       if(type==='unlearned') return stage===0;
-      if(type==='learning') return stage>0&&stage<10;
-      return stage>=10;
+      if(type==='learning') return stage>0&&stage<12;
+      return stage>=12;
     }).sort((a,b)=>a.word.localeCompare(b.word,'ja'));
 
     const titles={unlearned:'Belum Dipelajari',learning:'Sedang Belajar',mastered:'Dikuasai'};
@@ -7974,7 +8013,7 @@ async function toggleUnderwaterAmbient(){
       const stage=stageOf(r);
       return `<div class="srs-vocab-detail">
         <div class="srs-vocab-word">${escapeHtml(entry.word)}</div>
-        <div class="srs-vocab-meta">${escapeHtml(entry.item.storyTitle)}・Progres <strong>${stage}/10</strong><br>Benar ${Number(r.correct||0)} kali・Salah ${Number(r.wrong||0)} kali</div>
+        <div class="srs-vocab-meta">${escapeHtml(entry.item.storyTitle)}・Progres <strong>${stage}/12</strong><br>Benar ${Number(r.correct||0)} kali・Salah ${Number(r.wrong||0)} kali</div>
         <span class="srs-vocab-time">${dueText(r)}</span>
       </div>`;
     }).join('') : '<div class="empty">Tidak ada kosakata dalam kategori ini.</div>';
@@ -7985,8 +8024,8 @@ async function toggleUnderwaterAmbient(){
   function refreshUniqueCounts(){
     const entries=uniqueSrsEntries();
     const unlearned=entries.filter(entry=>stageOf(entry.record)===0).length;
-    const learning=entries.filter(entry=>{const stage=stageOf(entry.record);return stage>0&&stage<10}).length;
-    const mastered=entries.filter(entry=>stageOf(entry.record)>=10).length;
+    const learning=entries.filter(entry=>{const stage=stageOf(entry.record);return stage>0&&stage<12}).length;
+    const mastered=entries.filter(entry=>stageOf(entry.record)>=12).length;
     const due=document.getElementById('srsDueCount');
     const learn=document.getElementById('srsLearningCount');
     const master=document.getElementById('srsMasteredCount');
@@ -8189,7 +8228,7 @@ async function toggleUnderwaterAmbient(){
 <script id="srs-final-no-duplicate-script">
 (function(){
   function stageOf(record){
-    return Math.max(0,Math.min(10,Number(record?.correctStage ?? record?.level ?? 0)||0));
+    return Math.max(0,Math.min(12,Number(record?.correctStage ?? record?.level ?? 0)||0));
   }
 
   function cleanTargetText(html,fallback){
@@ -8332,8 +8371,8 @@ async function toggleUnderwaterAmbient(){
     const filtered=items.filter(item=>{
       const stage=stageOf(state[item.key]);
       if(type==='unlearned') return stage===0;
-      if(type==='learning') return stage>0&&stage<10;
-      return stage>=10;
+      if(type==='learning') return stage>0&&stage<12;
+      return stage>=12;
     }).sort((a,b)=>String(a.displayWord||a.answer).localeCompare(String(b.displayWord||b.answer),'ja'));
 
     const titles={unlearned:'Belum Dipelajari',learning:'Belajar',mastered:'Dikuasai'};
@@ -8343,7 +8382,7 @@ async function toggleUnderwaterAmbient(){
       const stage=stageOf(record);
       return `<div class="srs-vocab-detail">
         <div class="srs-vocab-word">${escapeHtml(item.displayWord||item.answer)}</div>
-        <div class="srs-vocab-meta">${escapeHtml(item.storyTitle)}・Progres <strong>${stage}/10</strong><br>Benar ${Number(record.correct||0)} kali・Salah ${Number(record.wrong||0)} kali</div>
+        <div class="srs-vocab-meta">${escapeHtml(item.storyTitle)}・Progres <strong>${stage}/12</strong><br>Benar ${Number(record.correct||0)} kali・Salah ${Number(record.wrong||0)} kali</div>
         <span class="srs-vocab-time">${dueText(record)}</span>
       </div>`;
     }).join('') : '<div class="empty">Tidak ada kosakata dalam kategori ini.</div>';
@@ -8355,8 +8394,8 @@ async function toggleUnderwaterAmbient(){
     const items=buildSrsItems();
     const state=syncSrsState(items);
     const unlearned=items.filter(item=>stageOf(state[item.key])===0).length;
-    const learning=items.filter(item=>{const stage=stageOf(state[item.key]);return stage>0&&stage<10}).length;
-    const mastered=items.filter(item=>stageOf(state[item.key])>=10).length;
+    const learning=items.filter(item=>{const stage=stageOf(state[item.key]);return stage>0&&stage<12}).length;
+    const mastered=items.filter(item=>stageOf(state[item.key])>=12).length;
 
     const a=document.getElementById('srsDueCount');
     const b=document.getElementById('srsLearningCount');
@@ -8653,8 +8692,8 @@ async function toggleUnderwaterAmbient(){
   }
 
   function maxLevel(){
-    // SRS memiliki 10 tahap benar (0/10 sampai 10/10).
-    return 10;
+    // SRS memiliki 12 level (0/12 sampai 12/12 Mastered).
+    return 12;
   }
 
   function srsLevel(record){
@@ -8664,7 +8703,7 @@ async function toggleUnderwaterAmbient(){
   function srsInterval(level){
     if(typeof SRS_INTERVALS !== "undefined" && Array.isArray(SRS_INTERVALS)){
       // level 1 memakai interval pertama; level 10 memakai interval terakhir.
-      const stage = Math.max(1, Math.min(10, Number(level) || 1));
+      const stage = Math.max(1, Math.min(12, Number(level) || 1));
       return SRS_INTERVALS[Math.min(SRS_INTERVALS.length - 1, stage - 1)] || 0;
     }
     return 0;
@@ -8930,7 +8969,7 @@ async function toggleUnderwaterAmbient(){
     const state = getStateSafe();
     const record = state[item?.key] || {};
     const level = srsLevel(record);
-    const progress = `${level}/10`;
+    const progress = `${level}/12`;
     if(level >= 10) return `SRS ${progress} • Dikuasai`;
     const due = Number(record.due || 0);
     if(!due || due <= Date.now()) return `SRS ${progress} • Siap dipelajari sekarang`;
@@ -9552,7 +9591,7 @@ async function toggleUnderwaterAmbient(){
 </script>
 
 
-<!-- ===== SRS FINAL FIX 10/10 + visible schedule + stable mobile keyboard ===== -->
+<!-- ===== SRS FINAL FIX 10/12 + visible schedule + stable mobile keyboard ===== -->
 <style id="srs-final-10-mobile-stability-style">
 .srs-vocab-current-time{
   display:inline-flex;
@@ -9814,15 +9853,15 @@ async function toggleUnderwaterAmbient(){
       .trim();
   }
   function recordTime(record){
-    const level=Math.max(0,Math.min(10,Number(record?.level ?? record?.correctStage ?? 0)||0));
+    const level=Math.max(0,Math.min(12,Number(record?.level ?? record?.correctStage ?? 0)||0));
     const due=Number(record?.due||0);
-    if(level>=10) return `SRS ${level}/10 • Dikuasai`;
-    if(!due || due<=Date.now()) return `SRS ${level}/10 • Siap dipelajari sekarang`;
+    if(level>=12) return `SRS ${level}/12 • Dikuasai`;
+    if(!due || due<=Date.now()) return `SRS ${level}/12 • Siap dipelajari sekarang`;
     const diff=Math.max(0,due-Date.now());
     const duration=typeof window.formatSrsDuration==='function'
       ? window.formatSrsDuration(diff)
       : `${Math.max(1,Math.ceil(diff/60000))} menit`;
-    return `SRS ${level}/10 • ${duration} lagi`;
+    return `SRS ${level}/12 • ${duration} lagi`;
   }
 
   /* Keydown lama pada beberapa browser mobile kadang tidak menyelesaikan submit.
@@ -9875,12 +9914,12 @@ async function toggleUnderwaterAmbient(){
 
     const items=typeof window.buildSrsItems==='function' ? window.buildSrsItems() : [];
     const state=typeof window.syncSrsState==='function' ? window.syncSrsState(items) : (typeof window.getSrsState==='function'?window.getSrsState():{});
-    const stageOfSafe=record=>Math.max(0,Math.min(10,Number(record?.level ?? record?.correctStage ?? 0)||0));
+    const stageOfSafe=record=>Math.max(0,Math.min(12,Number(record?.level ?? record?.correctStage ?? 0)||0));
     const filtered=items.filter(item=>{
       const stage=stageOfSafe(state[item.key]);
       if(type==='unlearned') return stage===0;
-      if(type==='learning') return stage>0&&stage<10;
-      return stage>=10;
+      if(type==='learning') return stage>0&&stage<12;
+      return stage>=12;
     }).sort((a,b)=>String(a.displayWord||a.answer).localeCompare(String(b.displayWord||b.answer),'ja'));
 
     const titles={unlearned:'Belum Dipelajari',learning:'Belajar',mastered:'Dikuasai'};
@@ -9895,7 +9934,7 @@ async function toggleUnderwaterAmbient(){
         const safe=window.escapeHtml||window.safeEscape||function(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));};
         return `<div class="srs-vocab-detail">
           <div class="srs-vocab-word">${safe(item.displayWord||item.answer)}</div>
-          <div class="srs-vocab-meta">${folder?`${safe(folder)}・`:''}Progres <strong>${stage}/10</strong><br>Benar ${Number(record.correct||0)} kali・Salah ${Number(record.wrong||0)} kali
+          <div class="srs-vocab-meta">${folder?`${safe(folder)}・`:''}Progres <strong>${stage}/12</strong><br>Benar ${Number(record.correct||0)} kali・Salah ${Number(record.wrong||0)} kali
             <span class="srs-vocab-schedule">${safe(recordTime(record))}</span>
           </div>
         </div>`;
@@ -10701,7 +10740,7 @@ async function toggleUnderwaterAmbient(){
       const level=levelOf(state);
       return `<div class="wira-srs-ready-item">
         <div class="wira-srs-ready-word">${esc(wordOf(item))}</div>
-        <div class="wira-srs-ready-meta">${esc(item.storyTitle || 'Tanpa Judul')}・${esc(item.folder || 'SRS')}・Progres <strong>${level}/10</strong></div>
+        <div class="wira-srs-ready-meta">${esc(item.storyTitle || 'Tanpa Judul')}・${esc(item.folder || 'SRS')}・Progres <strong>${level}/12</strong></div>
         <div class="wira-srs-ready-meaning">${esc(meaningOf(item))}</div>
       </div>`;
     }).join('') : '<div class="empty">Belum ada kosakata yang siap di SRS.</div>';
@@ -11177,7 +11216,7 @@ async function toggleUnderwaterAmbient(){
 
   function maxSrsLevel(){
     if(typeof window.maxLevel === 'function') return window.maxLevel();
-    return 10;
+    return 12;
   }
 
   function levelOf(record){
@@ -11718,5 +11757,32 @@ async function toggleUnderwaterAmbient(){
 })();
 </script>
 
+
+<script id="srs-12-level-final-safety">
+(function(){
+  'use strict';
+  window.SRS_INTERVALS = [
+    4*60*60*1000,
+    8*60*60*1000,
+    24*60*60*1000,
+    2*24*60*60*1000,
+    4*24*60*60*1000,
+    8*24*60*60*1000,
+    14*24*60*60*1000,
+    30*24*60*60*1000,
+    60*24*60*60*1000,
+    120*24*60*60*1000,
+    180*24*60*60*1000
+  ];
+  window.maxLevel = function(){ return 12; };
+  window.srsStageLabel = function(level){
+    const n=Math.max(0,Math.min(12,Number(level)||0));
+    if(n>=12) return 'Mastered';
+    if(n===0) return 'Belum dipelajari';
+    if(n===1) return 'Poin Baru';
+    return 'Ulang ' + n;
+  };
+})();
+</script>
 </body>
 </html>
