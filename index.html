@@ -1668,7 +1668,7 @@ footer{
 <button class="btn srs-action-btn" type="button" onclick="applyWiraSyncCode()">Masukkan Data</button>
 <button class="btn secondary" type="button" onclick="clearWiraSyncBoxes()">Bersihkan</button>
 </div>
-<div class="notice" id="wiraSyncNotice" style="display:none;margin-top:14px"></div>
+<div class="notice sync-code-note" id="wiraSyncNotice" style="display:none;margin-top:14px"></div>
 </aside>
 <div aria-live="polite" class="story-bubble-loading" id="storyBubbleLoading">
 <div class="story-bubble-text">Loading</div>
@@ -11398,6 +11398,12 @@ async function toggleUnderwaterAmbient(){
     background:linear-gradient(135deg,#43a76f,#71c990)!important;
     color:#fff!important;
   }
+  .sync-generate-btn.copied::before{content:"✓ "}
+  .sync-code-note{
+    margin-top:14px!important;
+    font-size:13px;
+    line-height:1.55;
+  }
   .sync-code-panel b{color:var(--brown)}
   .sync-code-close{
     position:sticky;
@@ -11426,6 +11432,20 @@ async function toggleUnderwaterAmbient(){
   'use strict';
 
   const SYNC_PREFIX='WIRA-N2-SYNC:';
+  const SYNC_PREFIX_V2='WIRA-N2-SYNC2:';
+  const KEY_ALIAS={
+    wiraStories:'st',
+    wiraCompletedStories:'rd',
+    wiraFolders:'fd',
+    wiraSrsState:'ws',
+    srsState:'ss',
+    wiraDailyState:'dy',
+    wiraFolderSeaIcons:'ic',
+    wiraHomeFeaturedStories:'hf',
+    wiraNavigationState:'nv',
+    wiraLastOpenedStory:'lo'
+  };
+  const ALIAS_KEY=Object.fromEntries(Object.entries(KEY_ALIAS).map(([k,v])=>[v,k]));
 
   window.toggleWiraSyncPanel=function(){
     const panel=document.getElementById('syncCodePanel');
@@ -11500,7 +11520,7 @@ async function toggleUnderwaterAmbient(){
   }
 
   function getSyncKeys(){
-    const fixed=['wiraStories','wiraCompletedStories','wiraFolders','wiraSrsState','srsState','wiraDailyState','wiraFolderSeaIcons','wiraHomeFeaturedStories','wiraNavigationState','wiraLastOpenedStory'];
+    const fixed=Object.keys(KEY_ALIAS);
     const keys=new Set(fixed);
     try{
       for(let i=0;i<localStorage.length;i++){
@@ -11511,17 +11531,39 @@ async function toggleUnderwaterAmbient(){
     return Array.from(keys).sort();
   }
 
-  function collectData(){
-    const data={};
+  function collectEntries(){
+    const entries=[];
     getSyncKeys().forEach(key=>{
       const value=localStorage.getItem(key);
-      if(value!==null) data[key]=value;
+      if(value!==null) entries.push([KEY_ALIAS[key] || key,value]);
     });
-    return {app:'Wira N2 Dokkai',type:'browser-local-database-sync',version:1,createdAt:new Date().toISOString(),data:data};
+    return entries;
   }
 
-  function toBase64Url(str){
-    const bytes=new TextEncoder().encode(str);
+  function safeJson(value,fallback){
+    try{return JSON.parse(value)}catch(_){return fallback}
+  }
+
+  function getSyncSummary(entries){
+    const byKey={};
+    entries.forEach(([k,v])=>{ byKey[ALIAS_KEY[k] || k]=v; });
+    const stories=safeJson(byKey.wiraStories,'[]');
+    const read=safeJson(byKey.wiraCompletedStories,'[]');
+    const folders=safeJson(byKey.wiraFolders,'[]');
+    const srs=safeJson(byKey.wiraSrsState || byKey.srsState,'{}');
+    const storyCount=Array.isArray(stories) ? stories.length : Object.keys(stories||{}).length;
+    const readCount=Array.isArray(read) ? read.length : Object.keys(read||{}).length;
+    const folderCount=Array.isArray(folders) ? folders.length : Object.keys(folders||{}).length;
+    const srsCount=srs && typeof srs==='object' ? Object.keys(srs).length : 0;
+    return {storyCount,readCount,folderCount,srsCount};
+  }
+
+  function collectPayload(){
+    const entries=collectEntries();
+    return {a:'Wira N2 Dokkai',t:'sync',v:2,at:new Date().toISOString(),d:entries};
+  }
+
+  function toBase64UrlFromBytes(bytes){
     let binary='';
     const chunk=0x8000;
     for(let i=0;i<bytes.length;i+=chunk){
@@ -11530,26 +11572,74 @@ async function toggleUnderwaterAmbient(){
     return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
   }
 
-  function fromBase64Url(code){
-    let b64=String(code||'').trim().replace(/^WIRA-N2-SYNC:/,'').replace(/\s+/g,'').replace(/-/g,'+').replace(/_/g,'/');
+  function bytesFromBase64Url(code){
+    let b64=String(code||'').trim().replace(/^WIRA-N2-SYNC2:/,'').replace(/^WIRA-N2-SYNC:/,'').replace(/\s+/g,'').replace(/-/g,'+').replace(/_/g,'/');
     while(b64.length%4) b64+='=';
     const binary=atob(b64);
     const bytes=new Uint8Array(binary.length);
     for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
-    return new TextDecoder().decode(bytes);
+    return bytes;
+  }
+
+  function toBase64Url(str){
+    return toBase64UrlFromBytes(new TextEncoder().encode(str));
+  }
+
+  function fromBase64Url(code){
+    return new TextDecoder().decode(bytesFromBase64Url(code));
+  }
+
+  async function gzipText(text){
+    if(!('CompressionStream' in window)) return null;
+    const stream=new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'));
+    const buffer=await new Response(stream).arrayBuffer();
+    return new Uint8Array(buffer);
+  }
+
+  async function gunzipText(bytes){
+    if(!('DecompressionStream' in window)) throw new Error('Browser ini belum mendukung kode pendek. Coba update browser.');
+    const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+    const buffer=await new Response(stream).arrayBuffer();
+    return new TextDecoder().decode(buffer);
+  }
+
+  function savePayloadData(payload){
+    if(payload && payload.v===2 && Array.isArray(payload.d)){
+      payload.d.forEach(([shortKey,value])=>{
+        const key=ALIAS_KEY[shortKey] || shortKey;
+        if(key && (key.startsWith('wira') || key==='srsState')) localStorage.setItem(key, String(value));
+      });
+      return;
+    }
+    if(payload && payload.version===1 && payload.data && typeof payload.data==='object'){
+      Object.keys(payload.data).forEach(key=>{
+        if(key.startsWith('wira') || key==='srsState') localStorage.setItem(key, String(payload.data[key]));
+      });
+      return;
+    }
+    throw new Error('Format kode tidak cocok.');
   }
 
   window.generateWiraSyncCode=async function(){
     try{
       hideNotice();
       setGenerateButton('ready');
-      const payload=collectData();
-      const code=SYNC_PREFIX + toBase64Url(JSON.stringify(payload));
+      const payload=collectPayload();
+      const json=JSON.stringify(payload);
+      let code;
+      const gz=await gzipText(json);
+      if(gz){
+        code=SYNC_PREFIX_V2 + toBase64UrlFromBytes(gz);
+      }else{
+        code=SYNC_PREFIX + toBase64Url(json);
+      }
       const out=document.getElementById('wiraSyncOutput');
       if(out) out.value=code;
       const copied=await copyText(code);
       if(copied){
+        const sum=getSyncSummary(payload.d);
         setGenerateButton('copied');
+        notice(`Kode berhasil dibuat dan otomatis dicopy. Data berisi ${sum.storyCount} cerita, ${sum.readCount} cerita selesai dibaca, ${sum.folderCount} folder, ${sum.srsCount} data SRS, achievement harian, dan navigasi terakhir.`);
       }else{
         notice('Browser tidak mengizinkan copy otomatis. Coba klik Buat Kode sekali lagi.','error');
       }
@@ -11565,21 +11655,24 @@ async function toggleUnderwaterAmbient(){
       return;
     }
     const copied=await copyText(out.value.trim());
-    if(copied){ setGenerateButton('copied'); hideNotice(); }
+    if(copied){ setGenerateButton('copied'); notice('Kode berhasil dicopy ulang.'); }
     else notice('Tidak bisa copy otomatis. Coba klik Buat Kode sekali lagi.','error');
   };
 
-  window.applyWiraSyncCode=function(){
+  window.applyWiraSyncCode=async function(){
     const input=document.getElementById('wiraSyncInput');
     const raw=input ? input.value.trim() : '';
     if(!raw){ notice('Masukkan kode progress dulu.','error'); return; }
     try{
-      const payload=JSON.parse(fromBase64Url(raw));
-      if(!payload || payload.version!==1 || !payload.data || typeof payload.data!=='object') throw new Error('Format kode tidak cocok.');
+      let text;
+      if(raw.startsWith(SYNC_PREFIX_V2)){
+        text=await gunzipText(bytesFromBase64Url(raw));
+      }else{
+        text=fromBase64Url(raw);
+      }
+      const payload=JSON.parse(text);
       if(!confirm('Kode ini akan mengganti progress di perangkat ini dengan data dari kode. Lanjutkan?')) return;
-      Object.keys(payload.data).forEach(key=>{
-        if(key.startsWith('wira') || key==='srsState') localStorage.setItem(key, String(payload.data[key]));
-      });
+      savePayloadData(payload);
       notice('Progress berhasil dimasukkan. Halaman akan dimuat ulang.');
       setTimeout(()=>location.reload(),700);
     }catch(err){
