@@ -789,6 +789,50 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
 }
 
 
+/* Kelola Cerita: tampil ringkas per folder */
+.manage-folder-group{
+  margin:0 0 22px;
+}
+.manage-folder-title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin:18px 0 12px;
+  padding:13px 16px;
+  border-radius:18px;
+  background:#eef7ff;
+  border:1px solid var(--line);
+  color:var(--brown);
+}
+.manage-folder-title h2{
+  margin:0;
+  font-size:21px;
+}
+.manage-folder-title span{
+  color:var(--muted);
+  font-size:13px;
+  font-weight:800;
+}
+.manage-empty-folder{
+  margin:0 0 14px;
+  padding:16px;
+  border:1px dashed var(--line);
+  border-radius:16px;
+  color:var(--muted);
+  background:#fbfdff;
+}
+#editorPanel .editor-note{
+  margin:0 0 16px;
+  padding:12px 14px;
+  border-radius:14px;
+  background:#eef7ff;
+  border:1px solid var(--line);
+  color:var(--muted);
+  line-height:1.6;
+}
+
+
 /* Transisi lembut dari Good Job ke konfirmasi SRS */
 .goodjob-screen{
   display:flex;
@@ -1429,7 +1473,7 @@ footer{
 <div class="brand" onclick="go('home')">𓆝 ウィラN2合格読解</div>
 <div class="navlinks">
 <button aria-label="Beranda" class="navbtn active" data-page="home" onclick="go('home')" title="Beranda"><span class="nav-icon"><svg fill="none" viewbox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M5.5 10.5V20h13v-9.5" stroke-linejoin="round" stroke-width="2"></path><path d="M9.5 20v-5h5v5" stroke-linejoin="round" stroke-width="2"></path></svg></span><span class="nav-label">Beranda</span></button>
-<button aria-label="Kumpulan Cerita" class="navbtn" data-page="stories" onclick="go('stories')" title="Kumpulan Cerita"><span class="nav-icon"><svg fill="none" viewbox="0 0 24 24"><path d="M4 5.5h6.5A2.5 2.5 0 0 1 13 8v11H6.5A2.5 2.5 0 0 0 4 21V5.5Z" stroke-linejoin="round" stroke-width="2"></path><path d="M20 5.5h-4.5A2.5 2.5 0 0 0 13 8v11h4.5A2.5 2.5 0 0 1 20 21V5.5Z" stroke-linejoin="round" stroke-width="2"></path></svg></span><span class="nav-label">Kumpulan Cerita</span></button>
+<button aria-label="Kumpulan Cerita" class="navbtn" data-page="stories" onclick="go('stories')" title="Kumpulan Cerita"><span class="nav-icon"><svg fill="none" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.8 7.4c0-.9.7-1.6 1.6-1.6h4.3c.5 0 .9.2 1.2.6l1 1.2h6.7c.9 0 1.6.7 1.6 1.6v7.4c0 .9-.7 1.6-1.6 1.6H5.4c-.9 0-1.6-.7-1.6-1.6V7.4Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.9"></path><path d="M4.2 9.2h15.6" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"></path></svg></span><span class="nav-label">Kumpulan Cerita</span></button>
 <button aria-label="Import dari File" class="navbtn" data-page="generator" onclick="go('generator')" title="Import dari File"><span class="nav-icon"><svg fill="none" viewbox="0 0 24 24"><path d="M12 3v12" stroke-linecap="round" stroke-width="2"></path><path d="m7.5 10.5 4.5 4.5 4.5-4.5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M4 20h16" stroke-linecap="round" stroke-width="2"></path></svg></span><span class="nav-label">Import dari File</span></button>
 <button aria-label="Kelola Cerita" class="navbtn" data-page="manage" onclick="go('manage')" title="Kelola Cerita"><span class="nav-icon"><svg fill="none" viewbox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" stroke-linecap="round" stroke-width="2"></path><path d="m16 17 2 2 3-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></span><span class="nav-label">Kelola Cerita</span></button>
 <button aria-label="SRS" class="navbtn" data-page="srs" onclick="go('srs')" title="SRS"><span class="nav-icon"><svg fill="none" viewbox="0 0 24 24"><path d="M7 7h10a4 4 0 0 1 4 4v2a4 4 0 0 1-4 4H9l-4 3v-3a4 4 0 0 1-2-3.5V11a4 4 0 0 1 4-4Z" stroke-linejoin="round" stroke-width="2"></path><path d="M8 12h8" stroke-linecap="round" stroke-width="2"></path></svg></span><span class="nav-label">SRS</span></button>
@@ -1527,7 +1571,7 @@ footer{
 </section>
 <section class="page" id="manage">
 <h1 class="section-title">Kelola Cerita</h1>
-<p style="color:var(--muted)">Edit isi cerita, judul, tema, deskripsi, atau hapus cerita.</p>
+<p style="color:var(--muted)">Cerita ditampilkan per folder. Edit hanya untuk judul, tema, folder, dan deskripsi.</p>
 <div class="sort-bar">
 <label for="manageSort">Urutkan cerita</label>
 <select class="sort-select" id="manageSort" onchange="renderManageList()">
@@ -1539,6 +1583,7 @@ footer{
 <div id="manageList"></div>
 <div class="form-card" id="editorPanel" style="display:none;margin-top:24px">
 <h2 style="color:var(--brown);margin-top:0">Edit Cerita</h2>
+<p class="editor-note">Bagian isi per kalimat tidak ditampilkan di halaman kelola supaya lebih ringkas. Saat disimpan, isi cerita lama tetap aman dan tidak berubah.</p>
 <input id="editId" type="hidden"/>
 <div class="editor-row">
 <div>
@@ -1560,11 +1605,6 @@ footer{
 <input id="editDescription"/>
 </div>
 </div>
-<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px">
-<h3 style="margin:0;color:var(--brown)">Isi per Kalimat</h3>
-<button class="btn light smallbtn" onclick="addSentenceEditor()">+ Tambah Kalimat</button>
-</div>
-<div id="sentenceEditors"></div>
 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
 <button class="btn" onclick="saveEditedStory()">Simpan Perubahan</button>
 <button class="btn secondary" onclick="cancelEdit()">Batal</button>
@@ -2716,93 +2756,149 @@ async function importStoryFiles(){
 
 function renderManageList(){
   const wrap=document.getElementById("manageList");
-  const stories=sortByTitle(getStories(),getSortValue("manageSort"));
+  if(!wrap) return;
+
+  const allStories=getStories();
   const folders=getFolders();
+  const sortedFolders=[...folders];
 
+  const storiesByFolder={};
+  sortedFolders.forEach(folder=>storiesByFolder[folder]=[]);
 
-  wrap.innerHTML=stories.map(s=>`
-    <div class="manage-card" id="manage-card-${encodeURIComponent(String(story.id))}">
-      <div class="manage-head">
-        <div>
-          <span class="tag">${s.theme||"読解"}</span>${completionBadge(s.id)}
-          <h3 style="margin:10px 0 5px">${s.title}</h3>
-          <p style="margin:0;color:var(--muted)">${s.description||""}</p>
+  allStories.forEach(story=>{
+    const folder=story.level||"N2";
+    if(!storiesByFolder[folder]){
+      storiesByFolder[folder]=[];
+      sortedFolders.push(folder);
+    }
+    storiesByFolder[folder].push(story);
+  });
+
+  if(!allStories.length){
+    wrap.innerHTML='<div class="empty">Belum ada cerita yang bisa dikelola.</div>';
+    return;
+  }
+
+  wrap.innerHTML=sortedFolders.map(folder=>{
+    const stories=sortByTitle(storiesByFolder[folder]||[],getSortValue("manageSort"));
+    const folderTitle=escapeHtml(folder);
+
+    return `
+      <div class="manage-folder-group">
+        <div class="manage-folder-title">
+          <h2>${folderTitle}</h2>
+          <span>${stories.length} cerita</span>
         </div>
+        ${stories.length ? stories.map(s=>{
+          const safeId=encodeURIComponent(String(s.id));
+          return `
+            <div class="manage-card" id="manage-card-${safeId}">
+              <div class="manage-head">
+                <div>
+                  <span class="tag">${escapeHtml(s.theme||"読解")}</span>${completionBadge(s.id)}
+                  <h3 style="margin:10px 0 5px">${escapeHtml(s.title||"Tanpa Judul")}</h3>
+                  <p style="margin:0;color:var(--muted)">${escapeHtml(s.description||"")}</p>
+                </div>
 
-        <div class="manage-actions">
-          <button class="btn light smallbtn" data-story-id="${encodeURIComponent(String(s.id))}" onclick="openStory(decodeURIComponent(this.dataset.storyId))">Lihat</button>
-          <button class="btn smallbtn" onclick="editStory('${s.id}')">Edit</button>
-          <button class="btn danger smallbtn" onclick="deleteStory('${s.id}')">Hapus</button>
-        </div>
-      </div>
-    </div>`).join("");
+                <div class="manage-actions">
+                  <button class="btn light smallbtn" data-story-id="${safeId}" onclick="openStory(decodeURIComponent(this.dataset.storyId))">Lihat</button>
+                  <button class="btn smallbtn" data-story-id="${safeId}" onclick="editStory(decodeURIComponent(this.dataset.storyId))">Edit</button>
+                  <button class="btn danger smallbtn" data-story-id="${safeId}" onclick="deleteStory(decodeURIComponent(this.dataset.storyId))">Hapus</button>
+                </div>
+              </div>
+            </div>`;
+        }).join("") : '<div class="manage-empty-folder">Belum ada cerita di folder ini.</div>'}
+      </div>`;
+  }).join("");
 }
 
 function editStory(id){
-  const s=getStories().find(x=>x.id===id);
-  if(!s)return;
+  const s=getStories().find(x=>String(x.id)===String(id));
+  if(!s) return;
+
   document.getElementById("editId").value=s.id;
   document.getElementById("editTitle").value=s.title||"";
   document.getElementById("editTheme").value=s.theme||"";
+
   const folderSelect=document.getElementById("editLevel");
   folderSelect.innerHTML=getFolders().map(folder=>
     `<option value="${escapeHtml(folder)}">${escapeHtml(folder)}</option>`
   ).join("");
   folderSelect.value=s.level||"N2";
+
   document.getElementById("editDescription").value=s.description||"";
-  const holder=document.getElementById("sentenceEditors");
-  holder.innerHTML="";
-  (s.content||[]).forEach(pair=>addSentenceEditor(pair[0],pair[1]));
-  document.getElementById("editorPanel").style.display="block";
+
+  document.querySelectorAll(".manage-card.editing").forEach(card=>card.classList.remove("editing"));
+
+  const panel=document.getElementById("editorPanel");
+  const card=document.getElementById(`manage-card-${encodeURIComponent(String(s.id))}`);
+
+  if(card && panel){
+    card.classList.add("editing");
+    card.appendChild(panel);
+    panel.style.display="block";
+  }else if(panel){
+    panel.style.display="block";
+  }
 }
 
 function addSentenceEditor(jp="",idn=""){
-  const holder=document.getElementById("sentenceEditors");
-  const div=document.createElement("div");
-  div.className="sentence-editor";
-  div.innerHTML=`
-    <label>Kalimat Jepang (boleh memakai HTML ruby dan strong)</label>
-    <textarea class="edit-jp">${escapeHtml(jp)}</textarea>
-    <label>Arti bahasa Indonesia</label>
-    <textarea class="edit-id">${escapeHtml(idn)}</textarea>
-    <button class="btn danger smallbtn" type="button" onclick="this.parentElement.remove()">Hapus Kalimat</button>`;
-  holder.appendChild(div);
+  // Editor per kalimat sengaja dinonaktifkan dari halaman Kelola Cerita
+  // supaya halaman tetap ringkas dan tidak ribet.
 }
 
 function escapeHtml(text){
-  return String(text).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  return String(text).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;");
 }
 
 function saveEditedStory(){
   const id=document.getElementById("editId").value;
-  const updated={
-    id,
-    title:document.getElementById("editTitle").value.trim()||"Tanpa Judul",
-    theme:document.getElementById("editTheme").value.trim()||"読解",
-    level:document.getElementById("editLevel").value.trim()||"N2",
-    description:document.getElementById("editDescription").value.trim(),
-    content:[...document.querySelectorAll(".sentence-editor")].map(box=>[
-      box.querySelector(".edit-jp").value.trim(),
-      box.querySelector(".edit-id").value.trim()
-    ]).filter(x=>x[0]||x[1])
-  };
 
-  
-    let saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
-    const index=saved.findIndex(x=>x.id===id);
-    if(index>=0)saved[index]=updated;
-    else saved.push(updated);
-    localStorage.setItem("wiraStories",JSON.stringify(saved));
+  let saved=[];
+  try{
+    saved=JSON.parse(localStorage.getItem("wiraStories")||"[]");
+    if(!Array.isArray(saved)) saved=[];
+  }catch(error){
+    saved=[];
+  }
+
+  const index=saved.findIndex(x=>String(x.id)===String(id));
+  if(index<0){
+    alert("Cerita tidak ditemukan.");
+    return;
+  }
+
+  const story=saved[index];
+  const oldFolder=story.level||"N2";
+  const newFolder=document.getElementById("editLevel").value.trim()||"N2";
+
+  story.title=document.getElementById("editTitle").value.trim()||"Tanpa Judul";
+  story.theme=document.getElementById("editTheme").value.trim()||"読解";
+  story.level=newFolder;
+  story.description=document.getElementById("editDescription").value.trim();
+
+  const folders=getFolders();
+  if(!folders.includes(newFolder)){
+    folders.push(newFolder);
+    saveFolders(folders);
+  }
+
+  localStorage.setItem("wiraStories",JSON.stringify(saved));
+
   alert("Perubahan cerita berhasil disimpan.");
   cancelEdit();
   renderManageList();
   renderCategories();
   renderHome();
+
+  if(currentOpenFolder && (currentOpenFolder===oldFolder || currentOpenFolder===newFolder)){
+    openCategory(currentOpenFolder);
+  }
 }
 
 function cancelEdit(){
   document.getElementById("editorPanel").style.display="none";
-  document.getElementById("sentenceEditors").innerHTML="";
+  document.querySelectorAll(".manage-card.editing").forEach(card=>card.classList.remove("editing"));
 }
 
 function deleteStory(id){
@@ -3616,92 +3712,135 @@ function renderAchievementPanel(){
   }
 }
 
-/* Perbarui manage card agar progress ikut terlihat */
+/* Kelola Cerita: folder minimalis dan isi muncul setelah folder diklik */
+window.manageOpenFolders=window.manageOpenFolders||new Set();
+
+function toggleManageFolder(folder){
+  const key=String(folder||"N2");
+  window.manageOpenFolders=window.manageOpenFolders||new Set();
+
+  if(window.manageOpenFolders.has(key)){
+    window.manageOpenFolders.delete(key);
+  }else{
+    window.manageOpenFolders.add(key);
+  }
+
+  renderManageList();
+}
+
+function keepEditorPanelSafe(){
+  const panel=document.getElementById("editorPanel");
+  const manage=document.getElementById("manage");
+  const list=document.getElementById("manageList");
+
+  if(panel && manage && list && list.contains(panel)){
+    panel.style.display="none";
+    manage.appendChild(panel);
+  }
+
+  document.querySelectorAll(".manage-card.editing").forEach(card=>card.classList.remove("editing"));
+}
+
 function renderManageList(){
   const wrap=document.getElementById("manageList");
-  const stories=sortByTitle(
-    getStories(),
-    getSortValue("manageSort","day")
-  );
-  const folders=getFolders();
+  if(!wrap) return;
 
-  wrap.innerHTML=stories.map(story=>{
-    const locked=isStoryLocked(story);
+  keepEditorPanelSafe();
+
+  const stories=getStories();
+  const folders=getFolders();
+  const sortValue=getSortValue("manageSort","day");
+
+  if(!stories.length){
+    wrap.innerHTML='<div class="empty">Belum ada cerita yang bisa dikelola.</div>';
+    return;
+  }
+
+  const folderNames=[];
+  folders.forEach(folder=>{
+    const name=String(folder||"N2");
+    if(!folderNames.includes(name)) folderNames.push(name);
+  });
+
+  stories.forEach(story=>{
+    const name=String(story.level||"N2");
+    if(!folderNames.includes(name)) folderNames.push(name);
+  });
+
+  const storiesByFolder={};
+  folderNames.forEach(folder=>storiesByFolder[folder]=[]);
+
+  stories.forEach(story=>{
+    const folder=String(story.level||"N2");
+    if(!storiesByFolder[folder]) storiesByFolder[folder]=[];
+    storiesByFolder[folder].push(story);
+  });
+
+  wrap.innerHTML=folderNames.map(folder=>{
+    const folderStories=sortByTitle(storiesByFolder[folder]||[],sortValue);
+    const isOpen=window.manageOpenFolders && window.manageOpenFolders.has(folder);
 
     return `
-      <div class="manage-card" id="manage-card-${encodeURIComponent(String(story.id))}">
-        <div class="manage-head">
-          <div>
-            <span class="tag">${story.theme||"読解"}</span>
-            ${completionBadge(story.id)}
-            ${locked?'<span class="lock-badge">🔒 Terkunci</span>':""}
+      <section class="manage-folder-group">
+        <button class="manage-folder-title ${isOpen?"open":""}" type="button" onclick="toggleManageFolder('${escapeJs(folder)}')">
+          <h2><span class="manage-folder-icon">📁</span>${escapeHtml(folder)}</h2>
+          <span class="manage-folder-meta">
+            ${folderStories.length} cerita
+            <span class="manage-folder-arrow">›</span>
+          </span>
+        </button>
 
-            <h3 style="margin:10px 0 5px">${story.title}</h3>
-            <p style="margin:0;color:var(--muted)">${story.description||""}</p>
-            ${storyProgressHtml(story.id)}
+        <div class="manage-folder-body ${isOpen?"open":""}">
+          ${folderStories.length ? folderStories.map(story=>{
+            const locked=isStoryLocked(story);
+            const storyId=encodeURIComponent(String(story.id));
 
-            <label style="margin-top:14px">Pindahkan ke folder</label>
-            <div class="move-folder-row">
-              <select
-                id="manage-move-${encodeURIComponent(String(story.id))}"
-                class="story-folder-select"
-                ${locked?"disabled":""}
-              >
-                ${folders.map(folder=>`
-                  <option
-                    value="${escapeHtml(folder)}"
-                    ${folder===(story.level||"N2")?"selected":""}
-                  >
-                    ${escapeHtml(folder)}
-                  </option>
-                `).join("")}
-              </select>
+            return `
+              <div class="manage-card" id="manage-card-${storyId}">
+                <div class="manage-head">
+                  <div>
+                    <span class="tag">${escapeHtml(story.theme||"読解")}</span>
+                    ${completionBadge(story.id)}
+                    ${locked?'<span class="lock-badge">🔒 Terkunci</span>':""}
 
-              <button
-                class="btn smallbtn"
-                data-story-id="${encodeURIComponent(String(story.id))}"
-                onclick="saveStoryFolderMoveFromManage(decodeURIComponent(this.dataset.storyId))"
-                ${locked?"disabled":""}
-              >
-                Simpan Folder
-              </button>
-            </div>
+                    <h3 style="margin:10px 0 5px">${escapeHtml(story.title||"Tanpa Judul")}</h3>
+                    <p style="margin:0;color:var(--muted)">${escapeHtml(story.description||"")}</p>
+                    ${storyProgressHtml(story.id)}
+                  </div>
 
-            ${
-              locked
-                ? '<div class="help">Cerita masih terkunci. Selesaikan SRS DAY sebelumnya untuk memindahkannya.</div>'
-                : ''
-            }
-          </div>
+                  <div class="manage-actions">
+                    <button
+                      class="btn light smallbtn"
+                      data-story-id="${storyId}"
+                      onclick="openStory(decodeURIComponent(this.dataset.storyId))"
+                    >
+                      Lihat
+                    </button>
 
-          <div class="manage-actions">
-            <button
-              class="btn light smallbtn"
-              data-story-id="${encodeURIComponent(String(story.id))}"
-              onclick="openStory(decodeURIComponent(this.dataset.storyId))"
-            >
-              Lihat
-            </button>
+                    <button
+                      class="btn smallbtn"
+                      data-story-id="${storyId}"
+                      onclick="editStory(decodeURIComponent(this.dataset.storyId))"
+                    >
+                      Edit
+                    </button>
 
-            <button
-              class="btn smallbtn"
-              onclick="editStory('${escapeJs(story.id)}')"
-            >
-              Edit
-            </button>
-
-            <button
-              class="btn danger smallbtn"
-              data-story-id="${encodeURIComponent(String(story.id))}"
-              onclick="deleteStory(decodeURIComponent(this.dataset.storyId))"
-            >
-              Hapus
-            </button>
-          </div>
+                    <button
+                      class="btn danger smallbtn"
+                      data-story-id="${storyId}"
+                      onclick="deleteStory(decodeURIComponent(this.dataset.storyId))"
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                </div>
+              </div>`;
+          }).join("") : '<div class="manage-empty-folder">Belum ada cerita di folder ini.</div>'}
         </div>
-      </div>`;
+      </section>`;
   }).join("");
 }
+
 
 window.addEventListener("load",()=>{
   updateDailyLogin();
@@ -10295,6 +10434,94 @@ async function toggleUnderwaterAmbient(){
     .wira-srs-ready-head h2{font-size:20px}
     .wira-srs-ready-word{font-size:20px}
   }
+
+
+/* ===== Kelola Cerita minimalist folder + collapsible ===== */
+.manage-folder-group{
+  margin:0 0 12px!important;
+}
+.manage-folder-title{
+  width:100%;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  margin:10px 0!important;
+  padding:14px 16px!important;
+  border-radius:18px!important;
+  background:#fff!important;
+  border:1px solid var(--line)!important;
+  color:var(--ink)!important;
+  box-shadow:0 8px 24px rgba(40,95,145,.06)!important;
+  cursor:pointer;
+  transition:.18s ease;
+  text-align:left;
+}
+.manage-folder-title:hover{
+  transform:translateY(-1px);
+  border-color:#a9cce9!important;
+  box-shadow:0 12px 28px rgba(40,95,145,.10)!important;
+}
+.manage-folder-title h2{
+  margin:0!important;
+  font-size:17px!important;
+  color:var(--brown)!important;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.manage-folder-icon{
+  width:34px;
+  height:34px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:12px;
+  background:#f3f9ff;
+  border:1px solid var(--line);
+  color:var(--brown);
+  font-size:17px;
+}
+.manage-folder-meta{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  color:var(--muted)!important;
+  font-size:13px!important;
+  font-weight:800!important;
+  white-space:nowrap;
+}
+.manage-folder-arrow{
+  display:inline-block;
+  transition:.18s ease;
+  color:var(--brown);
+  font-size:14px;
+}
+.manage-folder-title.open .manage-folder-arrow{
+  transform:rotate(90deg);
+}
+.manage-folder-body{
+  display:none;
+  margin:8px 0 18px;
+  padding-left:10px;
+  border-left:2px solid #e7f1fa;
+}
+.manage-folder-body.open{
+  display:block;
+}
+#editorPanel{
+  scroll-margin-top:90px;
+}
+.manage-card.editing #editorPanel{
+  margin-top:16px!important;
+}
+@media(max-width:700px){
+  .manage-folder-title{padding:12px 13px!important;border-radius:16px!important}
+  .manage-folder-title h2{font-size:16px!important}
+  .manage-folder-icon{width:31px;height:31px;border-radius:10px}
+  .manage-folder-meta{font-size:12px!important;gap:7px}
+  .manage-folder-body{padding-left:8px}
+}
 </style>
 <script id="wira-srs-ready-detail-patch-script">
 (function(){
@@ -10490,6 +10717,577 @@ async function toggleUnderwaterAmbient(){
     wrap('submitSrsAnswer');
     wrap('nextSrsQuestion');
   }, 0);
+})();
+</script>
+
+
+
+<!-- ===== Update: folder satwa laut + buku simetris + edit follow ===== -->
+<style id="wira-sea-folder-book-edit-follow-style">
+  .manage-folder-title{overflow:hidden!important;}
+  .manage-folder-title h2{min-width:0!important;}
+  .manage-folder-title .manage-folder-name{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .manage-sea-icon{
+    width:36px;
+    height:36px;
+    min-width:36px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:50%;
+    background:linear-gradient(145deg,#f8fcff,#e2f3ff);
+    border:1px solid var(--line);
+    box-shadow:0 6px 16px rgba(47,111,174,.08);
+    font-size:20px;
+    line-height:1;
+  }
+  .category-book-icon{
+    width:64px;
+    height:54px;
+    margin-bottom:16px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:16px;
+    background:linear-gradient(145deg,#ffffff,#e7f4ff);
+    border:1px solid var(--line);
+    box-shadow:0 8px 18px rgba(47,111,174,.12);
+  }
+  .category-book-icon svg{
+    width:48px;
+    height:38px;
+    display:block;
+    stroke:var(--brown);
+  }
+  .manage-card.editing{
+    scroll-margin-top:86px!important;
+  }
+  .manage-card.editing #editorPanel{
+    margin-top:16px!important;
+    scroll-margin-top:86px!important;
+  }
+  @media(max-width:700px){
+    .manage-sea-icon{
+      width:33px;
+      height:33px;
+      min-width:33px;
+      font-size:18px;
+    }
+    .category-book-icon{
+      width:58px;
+      height:50px;
+      border-radius:15px;
+    }
+    .category-book-icon svg{
+      width:44px;
+      height:35px;
+    }
+    .manage-card.editing,
+    .manage-card.editing #editorPanel{
+      scroll-margin-top:70px!important;
+    }
+  }
+</style>
+<script id="wira-sea-folder-book-edit-follow-script">
+(function(){
+  'use strict';
+
+  const SEA_ICONS=['🐟','🐠','🐡','🦀','🐙','🐬','🐢','🦭','🪼','🦑','🦈','🐳','🐋','🦞','🦐','🦦'];
+
+  function esc(value){
+    if(typeof escapeHtml==='function') return escapeHtml(String(value ?? ''));
+    return String(value ?? '').replace(/[&<>"']/g,function(m){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+    });
+  }
+
+  function escJs(value){
+    if(typeof escapeJs==='function') return escapeJs(String(value ?? ''));
+    return String(value ?? '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  }
+
+  function loadIconMap(){
+    try{
+      const parsed=JSON.parse(localStorage.getItem('wiraFolderSeaIcons') || '{}');
+      return parsed && typeof parsed==='object' && !Array.isArray(parsed) ? parsed : {};
+    }catch(_){
+      return {};
+    }
+  }
+
+  function saveIconMap(map){
+    try{ localStorage.setItem('wiraFolderSeaIcons', JSON.stringify(map)); }catch(_){ }
+  }
+
+  window.getFolderSeaIcon=function(folder){
+    const name=String(folder || 'N2');
+    const map=loadIconMap();
+    if(!map[name]){
+      const usedCount=Object.keys(map).length;
+      map[name]=SEA_ICONS[usedCount % SEA_ICONS.length];
+      saveIconMap(map);
+    }
+    return map[name];
+  };
+
+  function folderSeaIconHtml(folder){
+    return `<span class="manage-sea-icon" aria-hidden="true">${esc(window.getFolderSeaIcon(folder))}</span>`;
+  }
+
+  function bookIconHtml(){
+    return `
+      <div class="category-book-icon" aria-hidden="true">
+        <svg fill="none" viewBox="0 0 64 48">
+          <path d="M32 12c-5.5-5-14-6.8-24-5v30c10-1.8 18.5 0 24 5V12Z" stroke-width="3" stroke-linejoin="round"></path>
+          <path d="M32 12c5.5-5 14-6.8 24-5v30c-10-1.8-18.5 0-24 5V12Z" stroke-width="3" stroke-linejoin="round"></path>
+          <path d="M32 12v30" stroke-width="3" stroke-linecap="round"></path>
+          <path d="M14 15c4.7-.4 8.6.3 12 2.2M14 22c4.7-.4 8.6.3 12 2.2M50 15c-4.7-.4-8.6.3-12 2.2M50 22c-4.7-.4-8.6.3-12 2.2" stroke-width="2" stroke-linecap="round" opacity=".55"></path>
+        </svg>
+      </div>`;
+  }
+
+  function sortedFoldersForSelect(sortId){
+    const order=typeof getSortValue==='function' ? getSortValue(sortId) : 'az';
+    const folders=[...(typeof getFolders==='function' ? getFolders() : ['N1','N2','N3'])].sort(function(a,b){
+      const result=String(a).localeCompare(String(b),'ja',{numeric:true,sensitivity:'base'});
+      return order==='za' ? -result : result;
+    });
+    folders.forEach(folder=>window.getFolderSeaIcon(folder));
+    return folders;
+  }
+
+  window.renderCategories=function(){
+    const grid=document.getElementById('categoryGrid');
+    const results=document.getElementById('categoryResults');
+    if(!grid) return;
+
+    const stories=typeof getStories==='function' ? getStories() : [];
+    const folders=sortedFoldersForSelect('categorySort');
+
+    grid.innerHTML=folders.map(function(folder){
+      const count=stories.filter(story=>(story.level||'N2')===folder).length;
+      return `
+        <article class="category-card" onclick="openCategory('${escJs(folder)}')">
+          <span class="category-count">${count} cerita</span>
+          ${bookIconHtml()}
+          <h3>${esc(folder)}</h3>
+          <p>Kumpulan bacaan ${esc(folder)}</p>
+        </article>`;
+    }).join('');
+
+    if(results) results.classList.remove('active');
+    grid.style.display='grid';
+    if(typeof showFolderOverviewUi==='function') showFolderOverviewUi();
+  };
+
+  function openFoldersSet(){
+    window.manageOpenFolders=window.manageOpenFolders || new Set();
+    return window.manageOpenFolders;
+  }
+
+  window.toggleManageFolder=function(folder){
+    const key=String(folder||'N2');
+    const opened=openFoldersSet();
+    if(opened.has(key)) opened.delete(key);
+    else opened.add(key);
+    window.renderManageList();
+  };
+
+  window.renderManageList=function(){
+    const wrap=document.getElementById('manageList');
+    if(!wrap) return;
+
+    if(typeof keepEditorPanelSafe==='function') keepEditorPanelSafe();
+
+    const stories=typeof getStories==='function' ? getStories() : [];
+    const baseFolders=typeof getFolders==='function' ? getFolders() : ['N1','N2','N3'];
+    const sortValue=typeof getSortValue==='function' ? getSortValue('manageSort','day') : 'day';
+
+    if(!stories.length){
+      wrap.innerHTML='<div class="empty">Belum ada cerita yang bisa dikelola.</div>';
+      return;
+    }
+
+    const folderNames=[];
+    baseFolders.forEach(function(folder){
+      const name=String(folder||'N2');
+      if(!folderNames.includes(name)) folderNames.push(name);
+    });
+    stories.forEach(function(story){
+      const name=String(story.level||'N2');
+      if(!folderNames.includes(name)) folderNames.push(name);
+    });
+    folderNames.forEach(folder=>window.getFolderSeaIcon(folder));
+
+    const storiesByFolder={};
+    folderNames.forEach(folder=>storiesByFolder[folder]=[]);
+    stories.forEach(function(story){
+      const folder=String(story.level||'N2');
+      if(!storiesByFolder[folder]) storiesByFolder[folder]=[];
+      storiesByFolder[folder].push(story);
+    });
+
+    wrap.innerHTML=folderNames.map(function(folder){
+      const folderStories=typeof sortByTitle==='function'
+        ? sortByTitle(storiesByFolder[folder]||[],sortValue)
+        : (storiesByFolder[folder]||[]);
+      const isOpen=openFoldersSet().has(folder);
+
+      return `
+        <section class="manage-folder-group">
+          <button class="manage-folder-title ${isOpen?'open':''}" type="button" onclick="toggleManageFolder('${escJs(folder)}')">
+            <h2>${folderSeaIconHtml(folder)}<span class="manage-folder-name">${esc(folder)}</span></h2>
+            <span class="manage-folder-meta">
+              ${folderStories.length} cerita
+              <span class="manage-folder-arrow">›</span>
+            </span>
+          </button>
+
+          <div class="manage-folder-body ${isOpen?'open':''}">
+            ${folderStories.length ? folderStories.map(function(story){
+              const locked=typeof isStoryLocked==='function' ? isStoryLocked(story) : false;
+              const storyId=encodeURIComponent(String(story.id));
+              return `
+                <div class="manage-card" id="manage-card-${storyId}">
+                  <div class="manage-head">
+                    <div>
+                      <span class="tag">${esc(story.theme||'読解')}</span>
+                      ${typeof completionBadge==='function' ? completionBadge(story.id) : ''}
+                      ${locked?'<span class="lock-badge">🔒 Terkunci</span>':''}
+                      <h3 style="margin:10px 0 5px">${esc(story.title||'Tanpa Judul')}</h3>
+                      <p style="margin:0;color:var(--muted)">${esc(story.description||'')}</p>
+                      ${typeof storyProgressHtml==='function' ? storyProgressHtml(story.id) : ''}
+                    </div>
+                    <div class="manage-actions">
+                      <button class="btn light smallbtn" data-story-id="${storyId}" onclick="openStory(decodeURIComponent(this.dataset.storyId))">Lihat</button>
+                      <button class="btn smallbtn" data-story-id="${storyId}" onclick="editStory(decodeURIComponent(this.dataset.storyId))">Edit</button>
+                      <button class="btn danger smallbtn" data-story-id="${storyId}" onclick="deleteStory(decodeURIComponent(this.dataset.storyId))">Hapus</button>
+                    </div>
+                  </div>
+                </div>`;
+            }).join('') : '<div class="manage-empty-folder">Belum ada cerita di folder ini.</div>'}
+          </div>
+        </section>`;
+    }).join('');
+  };
+
+  function adjustViewportToEditor(id){
+    const panel=document.getElementById('editorPanel');
+    const card=document.getElementById(`manage-card-${encodeURIComponent(String(id))}`);
+    const target=panel || card;
+    if(!target) return;
+
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        const rect=target.getBoundingClientRect();
+        const topPad=window.innerWidth<=700 ? 68 : 88;
+        const bottomPad=26;
+        const visibleTop=topPad;
+        const visibleBottom=window.innerHeight-bottomPad;
+        let delta=0;
+
+        if(rect.top < visibleTop){
+          delta=rect.top-visibleTop;
+        }else if(rect.bottom > visibleBottom){
+          delta=Math.min(rect.top-visibleTop, rect.bottom-visibleBottom);
+        }
+
+        if(Math.abs(delta)>4){
+          window.scrollBy({top:delta,behavior:'smooth'});
+        }
+      });
+    });
+  }
+
+  const previousEditStory=window.editStory;
+  window.editStory=function(id){
+    if(typeof previousEditStory==='function') previousEditStory(id);
+
+    // Pastikan folder tetap terbuka saat cerita diedit.
+    const story=(typeof getStories==='function' ? getStories() : []).find(x=>String(x.id)===String(id));
+    if(story){
+      openFoldersSet().add(String(story.level||'N2'));
+    }
+
+    if(typeof placeEditorInsideCard==='function') placeEditorInsideCard(id);
+    adjustViewportToEditor(id);
+  };
+
+  const previousAddFolder=window.addFolder;
+  window.addFolder=function(){
+    const before=typeof getFolders==='function' ? getFolders().slice() : [];
+    if(typeof previousAddFolder==='function') previousAddFolder();
+    const after=typeof getFolders==='function' ? getFolders() : [];
+    after.forEach(folder=>window.getFolderSeaIcon(folder));
+    const newly=after.find(folder=>!before.includes(folder));
+    if(newly) openFoldersSet().add(String(newly));
+    if(typeof renderCategories==='function') renderCategories();
+    if(document.getElementById('manage')?.classList.contains('active')) window.renderManageList();
+  };
+
+  document.addEventListener('DOMContentLoaded',function(){
+    if(typeof getFolders==='function') getFolders().forEach(folder=>window.getFolderSeaIcon(folder));
+    if(document.getElementById('stories')?.classList.contains('active')) window.renderCategories();
+    if(document.getElementById('manage')?.classList.contains('active')) window.renderManageList();
+  });
+})();
+</script>
+
+
+
+<!-- PATCH WIRA: Navbar buku simetris + furigana pada daftar kosakata SRS -->
+<style id="wira-nav-book-and-srs-furigana-style">
+  /* Icon buku navigasi dibuat simetris dan sedikit lebih rapi */
+  .navbtn[data-page="stories"] .nav-icon svg{
+    width:22px!important;
+    height:22px!important;
+    stroke:currentColor!important;
+  }
+
+  /* Furigana di daftar kosakata SRS selalu terlihat, bukan blur */
+  #srsDetailModal .srs-vocab-word ruby,
+  #wiraSrsReadyModal .wira-srs-ready-word ruby{
+    ruby-position:over;
+  }
+  #srsDetailModal .srs-vocab-word rt,
+  #wiraSrsReadyModal .wira-srs-ready-word rt{
+    display:ruby-text!important;
+    color:#0f4f86!important;
+    text-shadow:none!important;
+    user-select:text!important;
+    font-size:.58em!important;
+    font-weight:800!important;
+    line-height:1.1!important;
+  }
+  #srsDetailModal .srs-vocab-word rp,
+  #wiraSrsReadyModal .wira-srs-ready-word rp{
+    display:none!important;
+  }
+  #srsDetailModal .srs-vocab-word,
+  #wiraSrsReadyModal .wira-srs-ready-word{
+    line-height:1.9!important;
+  }
+</style>
+<script id="wira-nav-book-and-srs-furigana-script">
+(function(){
+  'use strict';
+
+  const BOOK_ICON = '<svg fill="none" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.2h5.9c1.2 0 2.1.45 2.1 1.45V19.2c0-1-1-1.55-2.1-1.55H5V5.2Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.9"></path><path d="M19 5.2h-5.9c-1.2 0-2.1.45-2.1 1.45V19.2c0-1 1-1.55 2.1-1.55H19V5.2Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.9"></path><path d="M12 6.7v12.4" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"></path><path d="M7.2 8.2h3.1M7.2 11h3.1M13.7 8.2h3.1M13.7 11h3.1" stroke="currentColor" stroke-linecap="round" stroke-width="1.45"></path></svg>';
+
+  function esc(value){
+    if(typeof window.escapeHtml === 'function') return window.escapeHtml(String(value ?? ''));
+    return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function stripHtml(value){
+    const temp=document.createElement('div');
+    temp.innerHTML=String(value || '');
+    temp.querySelectorAll('rt,rp').forEach(n=>n.remove());
+    return String(temp.textContent || '').replace(/\s+/g,' ').trim();
+  }
+
+  function hasRuby(html){
+    return /<\s*ruby[\s>]/i.test(String(html || '')) || /<\s*rt[\s>]/i.test(String(html || ''));
+  }
+
+  function cleanReading(item){
+    return String(item?.readingAnswer || item?.answer || '').replace(/\s+/g,'').trim();
+  }
+
+  function plainWord(item){
+    return String(
+      item?.displayWord ||
+      stripHtml(item?.displayWordHtml) ||
+      stripHtml(item?.targetHtml) ||
+      item?.answer ||
+      'Kosakata'
+    ).replace(/\s+/g,'').trim();
+  }
+
+  function wordWithFurigana(item){
+    const targetHtml=String(item?.targetHtml || '').trim();
+    const displayHtml=String(item?.displayWordHtml || '').trim();
+    const reading=cleanReading(item);
+    const word=plainWord(item);
+
+    if(targetHtml && hasRuby(targetHtml)) return targetHtml;
+    if(displayHtml && hasRuby(displayHtml)) return displayHtml;
+    if(reading && word && reading !== word) return '<ruby>' + esc(word) + '<rt>' + esc(reading) + '</rt></ruby>';
+    if(targetHtml) return targetHtml;
+    if(displayHtml) return displayHtml;
+    return esc(word || reading || 'Kosakata');
+  }
+
+  function meaningOf(item){
+    return String(item?.meaning || stripHtml(item?.translationHtml) || 'Arti belum tersedia').trim();
+  }
+
+  function getState(){
+    if(typeof window.getSrsState === 'function') return window.getSrsState() || {};
+    try{return JSON.parse(localStorage.getItem('wiraSrsState') || localStorage.getItem('srsState') || '{}') || {}}catch(_){return {}}
+  }
+
+  function getItems(){
+    if(typeof window.buildSrsItems !== 'function') return [];
+    const items=window.buildSrsItems() || [];
+    if(typeof window.syncSrsState === 'function') window.syncSrsState(items);
+    return items;
+  }
+
+  function maxSrsLevel(){
+    if(typeof window.maxLevel === 'function') return window.maxLevel();
+    return 10;
+  }
+
+  function levelOf(record){
+    const max=maxSrsLevel();
+    return Math.max(0, Math.min(max, Number(record?.level ?? record?.correctStage ?? 0) || 0));
+  }
+
+  function timeText(record){
+    if(typeof window.recordTime === 'function') return window.recordTime(record);
+    const due=Number(record?.due || 0);
+    if(!due || due<=Date.now()) return 'Siap dipelajari sekarang';
+    const diff=due-Date.now();
+    if(typeof window.formatSrsDuration === 'function') return 'Review lagi ' + window.formatSrsDuration(diff);
+    return 'Review berikutnya nanti';
+  }
+
+  function ensureStatusModal(){
+    let modal=document.getElementById('srsDetailModal');
+    if(!modal){
+      modal=document.createElement('div');
+      modal.id='srsDetailModal';
+      modal.className='srs-detail-modal';
+      modal.innerHTML='<div class="srs-detail-card" role="dialog" aria-modal="true"><div class="srs-detail-head"><h2 id="srsDetailTitle">SRS</h2><button class="srs-detail-close" type="button" aria-label="Tutup">×</button></div><div id="srsDetailList"></div></div>';
+      document.body.appendChild(modal);
+      modal.addEventListener('click', e=>{ if(e.target===modal) modal.classList.remove('active'); });
+      modal.querySelector('.srs-detail-close')?.addEventListener('click', ()=>modal.classList.remove('active'));
+    }
+    return modal;
+  }
+
+  function ensureReadyModal(){
+    let modal=document.getElementById('wiraSrsReadyModal');
+    if(!modal){
+      modal=document.createElement('div');
+      modal.id='wiraSrsReadyModal';
+      modal.className='wira-srs-ready-modal';
+      modal.innerHTML='<div class="wira-srs-ready-card" role="dialog" aria-modal="true" aria-labelledby="wiraSrsReadyTitle"><div class="wira-srs-ready-head"><h2 id="wiraSrsReadyTitle">Kosakata siap di SRS</h2><button class="wira-srs-ready-close" type="button" aria-label="Tutup">×</button></div><p class="wira-srs-ready-summary" id="wiraSrsReadySummary"></p><div class="wira-srs-ready-list" id="wiraSrsReadyList"></div></div>';
+      document.body.appendChild(modal);
+      modal.addEventListener('click', e=>{ if(e.target===modal) modal.classList.remove('active'); });
+      modal.querySelector('.wira-srs-ready-close')?.addEventListener('click', ()=>modal.classList.remove('active'));
+    }
+    return modal;
+  }
+
+  function filteredItems(type){
+    const items=getItems();
+    const state=getState();
+    const now=Date.now();
+    const max=maxSrsLevel();
+    return items.filter(item=>{
+      const record=state[item.key] || {};
+      const level=levelOf(record);
+      if(type==='unlearned') return level===0;
+      if(type==='learning') return level>0 && level<max;
+      if(type==='mastered') return level>=max;
+      if(type==='ready') return (Number(record.due || 0)<=now) && level<max;
+      return false;
+    }).sort((a,b)=>plainWord(a).localeCompare(plainWord(b),'ja'));
+  }
+
+  function renderStatusList(type){
+    if(type==='ready') return renderReadyList();
+    const modal=ensureStatusModal();
+    const list=filteredItems(type);
+    const state=getState();
+    const max=maxSrsLevel();
+    const titles={unlearned:'Belum Dipelajari',learning:'Belajar',mastered:'Dikuasai'};
+    const titleEl=modal.querySelector('#srsDetailTitle');
+    const listEl=modal.querySelector('#srsDetailList');
+    if(titleEl) titleEl.textContent=(titles[type] || 'SRS') + ' (' + list.length + ')';
+    if(listEl){
+      listEl.innerHTML=list.length ? list.map(item=>{
+        const record=state[item.key] || {};
+        const level=levelOf(record);
+        return '<div class="srs-vocab-detail">' +
+          '<div class="srs-vocab-word">' + wordWithFurigana(item) + '</div>' +
+          '<div class="srs-vocab-meta">Cara baca: <strong>' + esc(cleanReading(item) || '-') + '</strong><br>' +
+          'Arti: <strong>' + esc(meaningOf(item)) + '</strong><br>' +
+          esc(item.storyTitle || 'Tanpa Judul') + '・Progres <strong>' + level + '/' + max + '</strong><br>' +
+          '<span class="srs-vocab-schedule">' + esc(timeText(record)) + '</span></div>' +
+        '</div>';
+      }).join('') : '<div class="empty">Tidak ada kosakata dalam kategori ini.</div>';
+    }
+    modal.classList.add('active');
+  }
+
+  function renderReadyList(){
+    const modal=ensureReadyModal();
+    const list=filteredItems('ready');
+    const state=getState();
+    const max=maxSrsLevel();
+    const title=modal.querySelector('#wiraSrsReadyTitle');
+    const summary=modal.querySelector('#wiraSrsReadySummary');
+    const listEl=modal.querySelector('#wiraSrsReadyList');
+    if(title) title.textContent=list.length + ' siap di SRS';
+    if(summary) summary.textContent=list.length ? 'Ini daftar kosakata yang sudah waktunya dilatih sekarang.' : 'Belum ada kosakata yang siap dilatih sekarang.';
+    if(listEl){
+      listEl.innerHTML=list.length ? list.map(item=>{
+        const record=state[item.key] || {};
+        const level=levelOf(record);
+        return '<div class="wira-srs-ready-item">' +
+          '<div class="wira-srs-ready-word">' + wordWithFurigana(item) + '</div>' +
+          '<div class="wira-srs-ready-meta">Cara baca: <strong>' + esc(cleanReading(item) || '-') + '</strong><br>' +
+          esc(item.storyTitle || 'Tanpa Judul') + '・Progres <strong>' + level + '/' + max + '</strong></div>' +
+          '<div class="wira-srs-ready-meaning">' + esc(meaningOf(item)) + '</div>' +
+        '</div>';
+      }).join('') : '<div class="empty">Belum ada kosakata yang siap di SRS.</div>';
+    }
+    modal.classList.add('active');
+  }
+
+  function refreshReady(){
+    const number=document.getElementById('srsReadyNumber');
+    if(number) number.textContent=filteredItems('ready').length;
+    const card=document.getElementById('srsReadyStatCard');
+    if(card){
+      card.onclick=function(){renderReadyList();};
+      card.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();renderReadyList();}};
+    }
+  }
+
+  function installBookIcon(){
+    const holder=document.querySelector('.navbtn[data-page="stories"] .nav-icon');
+    if(holder && !holder.querySelector('svg[data-wira-symmetric-book="1"]')){
+      holder.innerHTML=BOOK_ICON.replace('<svg ','<svg data-wira-symmetric-book="1" ');
+    }
+  }
+
+  window.openSrsStatusDetail=function(type){
+    return renderStatusList(type);
+  };
+  window.openSrsReadyDetail=function(){
+    return renderReadyList();
+  };
+
+  const originalRefresh=window.refreshSrsReadyButton;
+  window.refreshSrsReadyButton=function(){
+    if(typeof originalRefresh==='function') originalRefresh.apply(this, arguments);
+    refreshReady();
+  };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    installBookIcon();
+    refreshReady();
+  });
+  setTimeout(installBookIcon, 0);
+  setTimeout(refreshReady, 0);
 })();
 </script>
 
