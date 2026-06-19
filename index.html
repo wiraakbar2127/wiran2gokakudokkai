@@ -3160,7 +3160,8 @@ function extractDayNumber(story){
 function sortByTitle(items,order="day"){
   return [...items].sort((a,b)=>{
     if(order==="day"){
-      const dayDifference=extractDayNumber(a)-extractDayNumber(b);
+      // DAY terbaru tampil di atas, lalu turun sampai DAY 1.
+      const dayDifference=extractDayNumber(b)-extractDayNumber(a);
       if(dayDifference!==0) return dayDifference;
     }
 
@@ -4681,10 +4682,19 @@ function getStoryActivityScore(story){
 
   const day=extractDayNumber(story);
   if(Number.isFinite(day) && day!==Number.MAX_SAFE_INTEGER){
-    score+=Math.max(0,100-day);
+    // Cerita aktif dengan DAY lebih baru diprioritaskan di atas.
+    score+=day;
   }
 
   return score;
+}
+
+function sortStoriesByLatestDayThenActivity(stories){
+  return [...stories].sort((a,b)=>{
+    const dayDiff=extractDayNumber(b)-extractDayNumber(a);
+    if(dayDiff!==0) return dayDiff;
+    return getStoryActivityScore(b)-getStoryActivityScore(a);
+  });
 }
 
 function chooseStableHomeStories(stories){
@@ -4693,12 +4703,12 @@ function chooseStableHomeStories(stories){
     stories.map(story=>[String(story.id),story])
   );
 
-  const active=stories
-    .filter(story=>{
+  const active=sortStoriesByLatestDayThenActivity(
+    stories.filter(story=>{
       const progress=getStorySrsProgress(story.id);
       return progress.percent>0 && progress.percent<120;
     })
-    .sort((a,b)=>getStoryActivityScore(b)-getStoryActivityScore(a));
+  );
 
   const selected=[];
 
@@ -4716,8 +4726,7 @@ function chooseStableHomeStories(stories){
   active.forEach(addStory);
   savedIds.map(id=>existing.get(id)).forEach(addStory);
 
-  [...stories]
-    .sort((a,b)=>getStoryActivityScore(b)-getStoryActivityScore(a))
+  sortStoriesByLatestDayThenActivity(stories)
     .forEach(addStory);
 
   const finalStories=selected.slice(0,3);
@@ -5823,20 +5832,20 @@ romajiToHiragana=function(input){
           <div class="srs-skip-note">Atau tekan Enter / Spasi.</div>
         </div>`;
     }else{
-      /* Salah tidak menghapus seluruh progres, tetapi mundur satu tahap agar tidak terlalu menghukum. */
-      const stage=Math.max(0,masteryCount(record)-1);
+      /* Salah hanya dijadwalkan ulang 10 menit. Level tidak turun dan tidak naik. */
+      const stage=masteryCount(record);
+      const retryInterval=10*60*1000;
       setMasteryCount(record,stage);
       record.wrong=(record.wrong||0)+1;
       record.lastResult='wrong';
       record.lastReviewed=now;
-      record.due=now;
-      insertWrongItemAgain(item);
+      record.due=now+retryInterval;
 
       inlineResult.innerHTML=`
         <div class="srs-result-title">✕ Belum tepat.</div>
         <div>Jawaban benar: <strong>${escapeHtml(item.answer)}</strong></div>
-        <div>Progres penguasaan: <strong>${stage}/12</strong></div>
-        <div>Soal ini akan muncul lagi dalam sesi ini sampai dijawab benar.</div>
+        <div>Progres penguasaan tetap: <strong>${stage}/12</strong></div>
+        <div>Salah tidak reset level. Kosakata ini dijadwalkan ulang <strong>10 menit</strong> lagi.</div>
         <div class="srs-result-actions">
           <button type="button" class="btn srs-next-question-btn" onclick="window.advanceSrsResult()">Soal Selanjutnya →</button>
           <div class="srs-skip-note">Atau tekan Enter / Spasi.</div>
@@ -11782,6 +11791,289 @@ async function toggleUnderwaterAmbient(){
     if(n===1) return 'Poin Baru';
     return 'Ulang ' + n;
   };
+})();
+</script>
+
+
+<script id="srs-wrong-minus-one-high-level-confirm-final">
+(function(){
+  'use strict';
+
+  const RETRY_AFTER_WRONG = 10 * 60 * 1000;
+
+  function esc(value){
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    }[ch]));
+  }
+
+  function maxStage(){
+    return typeof window.maxLevel === 'function' ? window.maxLevel() : 12;
+  }
+
+  function stageOf(record){
+    return Math.max(0, Math.min(maxStage(), Number(record?.level ?? record?.correctStage ?? 0) || 0));
+  }
+
+  function setStage(record, stage){
+    const safe = Math.max(0, Math.min(maxStage(), Number(stage) || 0));
+    record.level = safe;
+    record.correctStage = safe;
+  }
+
+  function intervalFor(level){
+    if(Array.isArray(window.SRS_INTERVALS) && window.SRS_INTERVALS.length){
+      const idx = Math.max(0, Math.min(window.SRS_INTERVALS.length - 1, Number(level || 1) - 1));
+      return window.SRS_INTERVALS[idx] || 0;
+    }
+    return 0;
+  }
+
+  function normalizeAnswer(value){
+    let text = String(value || '').trim();
+    if(typeof window.romajiToHiragana === 'function') text = window.romajiToHiragana(text);
+    if(/n$/i.test(text)) text = text.replace(/n$/i, 'ん');
+    if(typeof window.normalizeKana === 'function') return window.normalizeKana(text);
+    return text.replace(/\s+/g, '').replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+  }
+
+  function formatDuration(ms){
+    if(typeof window.formatSrsDuration === 'function') return window.formatSrsDuration(ms);
+    const min = Math.max(1, Math.round(ms / 60000));
+    if(min < 60) return min + ' menit';
+    const hour = Math.round(min / 60);
+    if(hour < 24) return hour + ' jam';
+    return Math.round(hour / 24) + ' hari';
+  }
+
+  function getState(){
+    if(typeof window.getSrsState === 'function') return window.getSrsState() || {};
+    try{return JSON.parse(localStorage.getItem('srsState') || '{}')}catch(_){return {}}
+  }
+
+  function saveState(state){
+    if(typeof window.saveSrsState === 'function') return window.saveSrsState(state);
+    localStorage.setItem('srsState', JSON.stringify(state));
+  }
+
+  function currentParts(){
+    return {
+      item: window.srsQueue?.[window.srsCurrentIndex],
+      input: document.getElementById('srsAnswerInput'),
+      feedback: document.getElementById('srsInlineFeedback') || document.getElementById('srsInlineResult'),
+      question: document.getElementById('srsQuestionText'),
+      sentence: document.getElementById('srsSentenceText'),
+      submitBtn: document.getElementById('srsSubmitBtn') || document.querySelector('#srsPracticeArea button.btn')
+    };
+  }
+
+  function correctReadingFor(item){
+    return String(item?.readingAnswer || item?.answer || '').trim();
+  }
+
+  function updateUiAfterState(){
+    try{ if(typeof window.updateSrsCountersOnly === 'function') window.updateSrsCountersOnly(); }catch(_){ }
+    try{ if(typeof window.updateSrsOverallProgress === 'function') window.updateSrsOverallProgress(); }catch(_){ }
+    try{ if(typeof window.renderAchievementPanel === 'function') window.renderAchievementPanel(); }catch(_){ }
+    try{ if(typeof window.renderHome === 'function') window.renderHome(); }catch(_){ }
+  }
+
+  function showHighLevelConfirm(){
+    const {item,input,feedback,question,submitBtn} = currentParts();
+    if(!item || !input || !feedback) return;
+
+    window.srsHighLevelConfirming = true;
+    window.srsLocked = false;
+    window.srsResultWaiting = false;
+    input.dataset.highLevelConfirming = '1';
+    input.dataset.highLevelWarningUsed = '1';
+    input.readOnly = true;
+
+    if(question) question.classList.remove('correct','wrong','correct-answer','wrong-answer');
+    feedback.className = feedback.id === 'srsInlineFeedback' ? 'srs-final-feedback srs-high-confirm-box' : 'srs-inline-result srs-high-confirm-box';
+    feedback.style.setProperty('display','block','important');
+    feedback.style.setProperty('visibility','visible','important');
+    feedback.style.setProperty('opacity','1','important');
+    feedback.innerHTML =
+      '<div class="srs-final-check-notice" style="padding:14px;border-radius:14px;background:#fff7e8;border:1px solid #edd09b;color:#7a5016">' +
+        '<div style="margin-bottom:8px;font-weight:900">Kamu yakin jawabannya ini?</div>' +
+        '<div style="font-weight:700;color:var(--muted);margin-bottom:10px">Jawabanmu: <strong>' + esc(input.value) + '</strong></div>' +
+        '<div class="srs-result-actions" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
+          '<button type="button" class="btn" onclick="window.confirmHighLevelWrongSrs()">Iya</button>' +
+          '<button type="button" class="btn light" onclick="window.editHighLevelWrongSrs()">Ubah</button>' +
+          '<div class="srs-skip-note" style="width:100%;font-weight:800;opacity:.78">Tekan Enter untuk pilih Iya.</div>' +
+        '</div>' +
+      '</div>';
+
+    if(submitBtn){
+      submitBtn.textContent = 'Iya';
+      submitBtn.disabled = false;
+      submitBtn.onclick = window.confirmHighLevelWrongSrs;
+    }
+  }
+
+  window.editHighLevelWrongSrs = function(){
+    const {input,feedback,submitBtn,question} = currentParts();
+    window.srsHighLevelConfirming = false;
+    window.srsLocked = false;
+    window.srsResultWaiting = false;
+    if(input){
+      input.dataset.highLevelConfirming = '0';
+      input.readOnly = false;
+      input.dataset.locked = '0';
+      input.removeAttribute('data-result-locked');
+      try{ input.focus({preventScroll:true}); }catch(_){ input.focus(); }
+      try{ input.select(); }catch(_){ }
+    }
+    if(feedback){
+      feedback.innerHTML = '';
+      feedback.removeAttribute('style');
+      feedback.className = feedback.id === 'srsInlineFeedback' ? 'srs-final-feedback' : 'srs-inline-result';
+    }
+    if(question) question.classList.remove('correct','wrong','correct-answer','wrong-answer');
+    if(submitBtn){
+      submitBtn.textContent = 'Jawab';
+      submitBtn.classList.remove('secondary','next-mode');
+      submitBtn.disabled = false;
+      submitBtn.onclick = window.submitOrNextSrs || window.submitSrsAnswer;
+    }
+  };
+
+  function finishAnswer(correct){
+    const {item,input,feedback,question,sentence,submitBtn} = currentParts();
+    if(!item || !input || !feedback || !question) return;
+
+    const state = getState();
+    const record = state[item.key] || {level:0,correctStage:0,due:Date.now(),correct:0,wrong:0,lastResult:null};
+    const now = Date.now();
+    const beforeStage = stageOf(record);
+    const correctReading = correctReadingFor(item);
+
+    window.srsHighLevelConfirming = false;
+    window.srsLocked = true;
+    window.srsResultWaiting = true;
+
+    if(sentence){ sentence.innerHTML = item.correctSentenceHtml || item.questionHtml || ''; }
+    question.classList.remove('correct','wrong','correct-answer','wrong-answer');
+    feedback.className = feedback.id === 'srsInlineFeedback' ? 'srs-final-feedback' : 'srs-inline-result';
+    feedback.style.setProperty('display','block','important');
+    feedback.style.setProperty('visibility','visible','important');
+    feedback.style.setProperty('opacity','1','important');
+
+    if(correct){
+      const nextStage = Math.min(maxStage(), beforeStage + 1);
+      setStage(record, nextStage);
+      record.correct = (record.correct || 0) + 1;
+      record.lastResult = 'correct';
+      record.lastReviewed = now;
+      record.due = nextStage >= maxStage() ? 0 : now + intervalFor(nextStage);
+
+      question.classList.add('correct','correct-answer');
+      feedback.classList.add('correct');
+      feedback.innerHTML =
+        '<div class="srs-result-title">✓ Benar!</div>' +
+        '<div>Jawaban: <strong>' + esc(correctReading) + '</strong></div>' +
+        '<div>Progres: <strong>' + nextStage + '/' + maxStage() + '</strong></div>' +
+        '<div class="srs-next-time">' + (nextStage >= maxStage() ? 'Mastered / dikuasai.' : 'Muncul lagi ' + esc(formatDuration(intervalFor(nextStage))) + '.') + '</div>' +
+        '<div class="srs-skip-note">Tekan Enter atau Spasi untuk lanjut.</div>';
+    }else{
+      const nextStage = Math.max(0, beforeStage - 1);
+      setStage(record, nextStage);
+      record.wrong = (record.wrong || 0) + 1;
+      record.lastResult = 'wrong';
+      record.lastReviewed = now;
+      record.due = now + RETRY_AFTER_WRONG;
+
+      question.classList.add('wrong','wrong-answer');
+      feedback.classList.add('wrong');
+      feedback.innerHTML =
+        '<div class="srs-result-title">✕ Belum tepat.</div>' +
+        '<div>Jawaban benar: <strong>' + esc(correctReading) + '</strong></div>' +
+        '<div>Progres turun: <strong>' + beforeStage + '/' + maxStage() + ' → ' + nextStage + '/' + maxStage() + '</strong></div>' +
+        '<div class="srs-next-time">Dijadwalkan ulang <strong>10 menit</strong> lagi.</div>' +
+        '<div class="srs-skip-note">Tekan Enter atau Spasi untuk lanjut.</div>';
+    }
+
+    state[item.key] = record;
+    saveState(state);
+
+    input.dataset.locked = '1';
+    input.dataset.resultLocked = '1';
+    input.dataset.highLevelConfirming = '0';
+    input.readOnly = false;
+
+    if(submitBtn){
+      submitBtn.textContent = 'Next';
+      submitBtn.classList.add('secondary','next-mode');
+      submitBtn.disabled = false;
+      submitBtn.onclick = window.submitOrNextSrs;
+    }
+
+    try{ if(typeof window.showAllResultFurigana === 'function') window.showAllResultFurigana(); }catch(_){ }
+    updateUiAfterState();
+    try{ input.focus({preventScroll:true}); }catch(_){ input.focus(); }
+  }
+
+  window.confirmHighLevelWrongSrs = function(){
+    finishAnswer(false);
+  };
+
+  window.submitSrsAnswer = function(){
+    if(window.srsHighLevelConfirming){
+      window.confirmHighLevelWrongSrs();
+      return;
+    }
+    if(window.srsLocked || window.srsResultWaiting) return;
+
+    const {item,input} = currentParts();
+    if(!item || !input) return;
+
+    let typed = String(input.value || '').trim();
+    if(!typed) return;
+    if(typeof window.romajiToHiragana === 'function') typed = window.romajiToHiragana(typed);
+    if(/n$/i.test(typed)) typed = typed.replace(/n$/i, 'ん');
+    input.value = typed;
+
+    const correct = normalizeAnswer(typed) === normalizeAnswer(correctReadingFor(item));
+    const state = getState();
+    const record = state[item.key] || {level:0,correctStage:0,due:Date.now(),correct:0,wrong:0,lastResult:null};
+    const currentStage = stageOf(record);
+
+    if(!correct && currentStage >= 11 && input.dataset.highLevelWarningUsed !== '1'){
+      showHighLevelConfirm();
+      return;
+    }
+
+    finishAnswer(correct);
+  };
+
+  window.submitOrNextSrs = function(){
+    const input = document.getElementById('srsAnswerInput');
+    if(window.srsHighLevelConfirming){
+      window.confirmHighLevelWrongSrs();
+      return;
+    }
+    if(window.srsLocked || window.srsResultWaiting || input?.dataset?.locked === '1' || input?.dataset?.resultLocked === '1'){
+      if(typeof window.nextSrsQuestion === 'function') window.nextSrsQuestion();
+      return;
+    }
+    window.submitSrsAnswer();
+  };
+
+  const previousNext = window.nextSrsQuestion;
+  if(typeof previousNext === 'function'){
+    window.nextSrsQuestion = function(){
+      window.srsHighLevelConfirming = false;
+      window.srsResultWaiting = false;
+      const result = previousNext.apply(this, arguments);
+      const input = document.getElementById('srsAnswerInput');
+      if(input){
+        input.dataset.highLevelWarningUsed = '0';
+        input.dataset.highLevelConfirming = '0';
+      }
+      return result;
+    };
+  }
 })();
 </script>
 </body>
