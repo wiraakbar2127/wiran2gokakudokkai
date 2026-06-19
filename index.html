@@ -626,9 +626,11 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
 .achievement-panel.open{transform:translateX(0)}
 .achievement-panel h2{margin:0 0 16px;color:var(--brown)}
 .achievement-close{
-  position:absolute;
-  right:14px;
-  top:12px;
+  position:sticky;
+  top:0;
+  float:right;
+  margin:-8px -8px 4px 10px;
+  z-index:3;
   border:0;
   background:var(--soft);
   color:var(--brown);
@@ -637,6 +639,7 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
   border-radius:50%;
   cursor:pointer;
   font-size:20px;
+  box-shadow:0 6px 16px rgba(47,111,174,.15);
 }
 .daily-box{
   display:grid;
@@ -1580,6 +1583,7 @@ footer{
 <option value="za">Z–A</option>
 </select>
 </div>
+
 <div id="manageList"></div>
 <div class="form-card" id="editorPanel" style="display:none;margin-top:24px">
 <h2 style="color:var(--brown);margin-top:0">Edit Cerita</h2>
@@ -1647,6 +1651,25 @@ footer{
 <button aria-label="Suara ambient bawah air" class="ambient-toggle" id="ambientToggle" onclick="toggleUnderwaterAmbient()" title="Suara ambient bawah air">
     ♪
   </button>
+<button aria-label="Sync progress pakai kode" class="sync-code-bubble" id="syncCodeBubble" onclick="toggleWiraSyncPanel()" title="Sync progress">
+    ⇄
+  </button>
+<aside aria-label="Panel sync progress" class="sync-code-panel" id="syncCodePanel">
+<button aria-label="Tutup sync progress" class="sync-code-close" onclick="closeWiraSyncPanel()" type="button">×</button>
+<h2>Sync Progress</h2>
+<p class="sync-code-desc">Buat kode untuk memindahkan data terbaru antar HP dan PC.</p>
+<div class="sync-code-actions">
+<button class="btn sync-generate-btn" id="wiraSyncGenerateBtn" type="button" onclick="generateWiraSyncCode()">Buat Kode</button>
+</div>
+<textarea id="wiraSyncOutput" class="sync-hidden-output" readonly aria-hidden="true" tabindex="-1"></textarea>
+<label for="wiraSyncInput">Paste kode dari perangkat lain</label>
+<textarea id="wiraSyncInput" placeholder="Tempel kode dari PC/HP lain di sini." style="min-height:118px"></textarea>
+<div class="sync-code-actions">
+<button class="btn srs-action-btn" type="button" onclick="applyWiraSyncCode()">Masukkan Data</button>
+<button class="btn secondary" type="button" onclick="clearWiraSyncBoxes()">Bersihkan</button>
+</div>
+<div class="notice" id="wiraSyncNotice" style="display:none;margin-top:14px"></div>
+</aside>
 <div aria-live="polite" class="story-bubble-loading" id="storyBubbleLoading">
 <div class="story-bubble-text">Loading</div>
 </div>
@@ -11292,6 +11315,286 @@ async function toggleUnderwaterAmbient(){
   });
   setTimeout(installBookIcon, 0);
   setTimeout(refreshReady, 0);
+})();
+</script>
+
+
+
+<!-- PATCH WIRA: Sync database browser memakai kode manual -->
+<style id="wira-sync-code-style">
+  .sync-code-bubble{
+    position:fixed;
+    right:18px;
+    bottom:162px;
+    z-index:132;
+    width:56px;
+    height:56px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:linear-gradient(145deg,#ffffff,#dff1ff);
+    color:var(--brown);
+    font-size:27px;
+    font-weight:900;
+    cursor:pointer;
+    box-shadow:0 12px 32px rgba(47,111,174,.22);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:.2s;
+  }
+  .sync-code-bubble:hover{transform:translateY(-3px) scale(1.04)}
+  .sync-code-bubble.active{
+    background:linear-gradient(145deg,#dff7ff,#bde7ff);
+    box-shadow:0 0 0 6px rgba(92,151,207,.12),0 12px 32px rgba(47,111,174,.22);
+  }
+  .sync-code-panel{
+    position:fixed;
+    right:18px;
+    top:92px;
+    bottom:226px;
+    z-index:131;
+    width:min(390px,calc(100vw - 36px));
+    overflow:auto;
+    padding:22px;
+    border-radius:26px;
+    background:rgba(255,255,255,.97);
+    border:1px solid var(--line);
+    box-shadow:0 18px 55px rgba(35,82,122,.22);
+    transform:translateX(calc(100% + 44px));
+    opacity:.2;
+    pointer-events:none;
+    transition:.3s ease;
+  }
+  .sync-code-panel.open{
+    transform:translateX(0);
+    opacity:1;
+    pointer-events:auto;
+  }
+  .sync-code-panel h2{margin:0 0 8px;color:var(--brown)}
+  .sync-code-desc{
+    margin:0 0 14px;
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.55;
+  }
+  .sync-code-panel textarea{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;
+    font-size:12px;
+    line-height:1.55;
+    word-break:break-all;
+  }
+  .sync-hidden-output{
+    position:absolute!important;
+    width:1px!important;
+    height:1px!important;
+    min-height:1px!important;
+    padding:0!important;
+    border:0!important;
+    opacity:0!important;
+    pointer-events:none!important;
+    left:-9999px!important;
+  }
+  .sync-generate-btn.copied{
+    background:linear-gradient(135deg,#43a76f,#71c990)!important;
+    color:#fff!important;
+  }
+  .sync-code-panel b{color:var(--brown)}
+  .sync-code-close{
+    position:sticky;
+    top:0;
+    float:right;
+    margin:-8px -8px 4px 10px;
+    z-index:2;
+    border:0;
+    background:var(--soft);
+    color:var(--brown);
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    cursor:pointer;
+    font-size:20px;
+    box-shadow:0 6px 16px rgba(47,111,174,.15);
+  }
+  .sync-code-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  @media(max-width:700px){
+    .sync-code-bubble{right:18px;bottom:154px;width:54px;height:54px}
+    .sync-code-panel{top:145px;bottom:218px;width:calc(100vw - 36px);padding:20px}
+  }
+</style>
+<script id="wira-sync-code-script">
+(function(){
+  'use strict';
+
+  const SYNC_PREFIX='WIRA-N2-SYNC:';
+
+  window.toggleWiraSyncPanel=function(){
+    const panel=document.getElementById('syncCodePanel');
+    const bubble=document.getElementById('syncCodeBubble');
+    if(!panel) return;
+    const willOpen=!panel.classList.contains('open');
+    panel.classList.toggle('open',willOpen);
+    if(bubble) bubble.classList.toggle('active',willOpen);
+    if(willOpen){ hideNotice(); setGenerateButton('ready'); }
+  };
+
+  window.closeWiraSyncPanel=function(){
+    document.getElementById('syncCodePanel')?.classList.remove('open');
+    document.getElementById('syncCodeBubble')?.classList.remove('active');
+  };
+
+  document.addEventListener('click',function(e){
+    const panel=document.getElementById('syncCodePanel');
+    const bubble=document.getElementById('syncCodeBubble');
+    if(!panel || !panel.classList.contains('open')) return;
+    if(panel.contains(e.target) || bubble?.contains(e.target)) return;
+    window.closeWiraSyncPanel();
+  });
+
+  function notice(message,type){
+    const el=document.getElementById('wiraSyncNotice');
+    if(!el) return;
+    el.style.display='block';
+    el.textContent=message;
+    el.style.background=type==='error' ? '#fff1f1' : '#eef7ff';
+    el.style.borderColor=type==='error' ? '#f0c7c7' : 'var(--line)';
+    el.style.color=type==='error' ? '#8a3b3b' : '#315b7c';
+  }
+
+  function hideNotice(){
+    const el=document.getElementById('wiraSyncNotice');
+    if(el){ el.style.display='none'; el.textContent=''; }
+  }
+
+  function setGenerateButton(state){
+    const btn=document.getElementById('wiraSyncGenerateBtn');
+    if(!btn) return;
+    if(state==='copied'){
+      btn.textContent='Copied';
+      btn.classList.add('copied');
+    }else{
+      btn.textContent='Buat Kode';
+      btn.classList.remove('copied');
+    }
+  }
+
+  async function copyText(text){
+    try{
+      await navigator.clipboard.writeText(text);
+      return true;
+    }catch(_){
+      try{
+        const temp=document.createElement('textarea');
+        temp.value=text;
+        temp.setAttribute('readonly','');
+        temp.style.position='fixed';
+        temp.style.left='-9999px';
+        temp.style.top='0';
+        document.body.appendChild(temp);
+        temp.focus();
+        temp.select();
+        const ok=document.execCommand('copy');
+        temp.remove();
+        return !!ok;
+      }catch(__){ return false; }
+    }
+  }
+
+  function getSyncKeys(){
+    const fixed=['wiraStories','wiraCompletedStories','wiraFolders','wiraSrsState','srsState','wiraDailyState','wiraFolderSeaIcons','wiraHomeFeaturedStories','wiraNavigationState','wiraLastOpenedStory'];
+    const keys=new Set(fixed);
+    try{
+      for(let i=0;i<localStorage.length;i++){
+        const key=localStorage.key(i);
+        if(key && (key.startsWith('wira') || key==='srsState')) keys.add(key);
+      }
+    }catch(_){ }
+    return Array.from(keys).sort();
+  }
+
+  function collectData(){
+    const data={};
+    getSyncKeys().forEach(key=>{
+      const value=localStorage.getItem(key);
+      if(value!==null) data[key]=value;
+    });
+    return {app:'Wira N2 Dokkai',type:'browser-local-database-sync',version:1,createdAt:new Date().toISOString(),data:data};
+  }
+
+  function toBase64Url(str){
+    const bytes=new TextEncoder().encode(str);
+    let binary='';
+    const chunk=0x8000;
+    for(let i=0;i<bytes.length;i+=chunk){
+      binary+=String.fromCharCode.apply(null, bytes.subarray(i,i+chunk));
+    }
+    return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  }
+
+  function fromBase64Url(code){
+    let b64=String(code||'').trim().replace(/^WIRA-N2-SYNC:/,'').replace(/\s+/g,'').replace(/-/g,'+').replace(/_/g,'/');
+    while(b64.length%4) b64+='=';
+    const binary=atob(b64);
+    const bytes=new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+
+  window.generateWiraSyncCode=async function(){
+    try{
+      hideNotice();
+      setGenerateButton('ready');
+      const payload=collectData();
+      const code=SYNC_PREFIX + toBase64Url(JSON.stringify(payload));
+      const out=document.getElementById('wiraSyncOutput');
+      if(out) out.value=code;
+      const copied=await copyText(code);
+      if(copied){
+        setGenerateButton('copied');
+      }else{
+        notice('Browser tidak mengizinkan copy otomatis. Coba klik Buat Kode sekali lagi.','error');
+      }
+    }catch(err){
+      notice('Gagal membuat kode: ' + (err && err.message ? err.message : err),'error');
+    }
+  };
+
+  window.copyWiraSyncCode=async function(){
+    const out=document.getElementById('wiraSyncOutput');
+    if(!out || !out.value.trim()){
+      notice('Belum ada kode. Klik Buat Kode dulu.','error');
+      return;
+    }
+    const copied=await copyText(out.value.trim());
+    if(copied){ setGenerateButton('copied'); hideNotice(); }
+    else notice('Tidak bisa copy otomatis. Coba klik Buat Kode sekali lagi.','error');
+  };
+
+  window.applyWiraSyncCode=function(){
+    const input=document.getElementById('wiraSyncInput');
+    const raw=input ? input.value.trim() : '';
+    if(!raw){ notice('Masukkan kode progress dulu.','error'); return; }
+    try{
+      const payload=JSON.parse(fromBase64Url(raw));
+      if(!payload || payload.version!==1 || !payload.data || typeof payload.data!=='object') throw new Error('Format kode tidak cocok.');
+      if(!confirm('Kode ini akan mengganti progress di perangkat ini dengan data dari kode. Lanjutkan?')) return;
+      Object.keys(payload.data).forEach(key=>{
+        if(key.startsWith('wira') || key==='srsState') localStorage.setItem(key, String(payload.data[key]));
+      });
+      notice('Progress berhasil dimasukkan. Halaman akan dimuat ulang.');
+      setTimeout(()=>location.reload(),700);
+    }catch(err){
+      notice('Kode tidak bisa dibaca. Pastikan kode dicopy penuh dari awal sampai akhir. Detail: ' + (err && err.message ? err.message : err),'error');
+    }
+  };
+
+  window.clearWiraSyncBoxes=function(){
+    const out=document.getElementById('wiraSyncOutput');
+    const input=document.getElementById('wiraSyncInput');
+    if(out) out.value='';
+    if(input) input.value='';
+    setGenerateButton('ready');
+    hideNotice();
+  };
 })();
 </script>
 
