@@ -12877,8 +12877,7 @@ async function toggleUnderwaterAmbient(){
   .sync-code-bubble,
   #wiraSyncExportBtn,
   .sync-generate-btn,
-  .sync-file-box .srs-action-btn,
-  .navbtn[data-page="generator"]{
+  .sync-file-box .srs-action-btn{
     background:var(--wira-glass-bg)!important;
     color:var(--wira-glass-ink)!important;
     border:1px solid var(--wira-glass-border)!important;
@@ -12897,8 +12896,7 @@ async function toggleUnderwaterAmbient(){
   .sync-code-bubble:hover,
   #wiraSyncExportBtn:hover,
   .sync-generate-btn:hover,
-  .sync-file-box .srs-action-btn:hover,
-  .navbtn[data-page="generator"]:hover{
+  .sync-file-box .srs-action-btn:hover{
     background:var(--wira-glass-bg-hover)!important;
     color:var(--wira-glass-ink)!important;
     transform:translateY(-3px) scale(1.04);
@@ -12915,14 +12913,12 @@ async function toggleUnderwaterAmbient(){
   #wiraSyncExportBtn:active,
   .sync-generate-btn:active,
   .sync-file-box .srs-action-btn:active,
-  .navbtn[data-page="generator"]:active,
   #ambientToggle.playing,
   .ambient-toggle.playing,
   #achievementBubble.active,
   .achievement-bubble.active,
   #syncCodeBubble.active,
-  .sync-code-bubble.active,
-  .navbtn[data-page="generator"].active{
+  .sync-code-bubble.active{
     background:linear-gradient(145deg,var(--wira-dark-blue-1),var(--wira-dark-blue-2) 68%,var(--wira-dark-blue-3))!important;
     color:#fff!important;
     border-color:rgba(255,255,255,.56)!important;
@@ -12935,8 +12931,7 @@ async function toggleUnderwaterAmbient(){
   #achievementBubble.active:hover,
   .achievement-bubble.active:hover,
   #syncCodeBubble.active:hover,
-  .sync-code-bubble.active:hover,
-  .navbtn[data-page="generator"].active:hover{
+  .sync-code-bubble.active:hover{
     background:linear-gradient(145deg,var(--wira-dark-blue-1),var(--wira-dark-blue-2) 68%,var(--wira-dark-blue-3))!important;
     color:#fff!important;
   }
@@ -12956,8 +12951,7 @@ async function toggleUnderwaterAmbient(){
     .sync-code-bubble:hover,
     #wiraSyncExportBtn:hover,
     .sync-generate-btn:hover,
-    .sync-file-box .srs-action-btn:hover,
-    .navbtn[data-page="generator"]:hover{
+    .sync-file-box .srs-action-btn:hover{
       transform:none;
     }
   }
@@ -13106,6 +13100,32 @@ async function toggleUnderwaterAmbient(){
     border-color:rgba(255,255,255,.55)!important;
     box-shadow:0 0 0 6px rgba(32,167,101,.16),0 14px 34px rgba(20,104,61,.34),inset 0 1px 0 rgba(255,255,255,.24)!important;
     text-shadow:0 1px 2px rgba(0,0,0,.22)!important;
+  }
+</style>
+
+
+<!-- PATCH WIRA: Navbar Import Cerita disamakan lagi dengan navbar lain -->
+<style id="wira-navbar-import-same-style">
+  .navbtn[data-page="generator"]{
+    background:transparent!important;
+    color:var(--muted)!important;
+    border:0!important;
+    box-shadow:none!important;
+    text-shadow:none!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+    transform:none!important;
+    filter:none!important;
+  }
+  .navbtn[data-page="generator"]:hover,
+  .navbtn[data-page="generator"].active{
+    background:var(--soft)!important;
+    color:var(--brown)!important;
+    border:0!important;
+    box-shadow:none!important;
+    text-shadow:none!important;
+    transform:none!important;
+    filter:none!important;
   }
 </style>
 
