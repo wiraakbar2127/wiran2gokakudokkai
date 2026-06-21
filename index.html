@@ -1255,6 +1255,59 @@ footer{
   }
 }
 
+
+
+/* ===== Fix SRS: Cerita Aktif tidak memanjang, isi card bisa di-scroll ===== */
+#srs .srs-side{
+  max-height:calc(100vh - 118px);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+#srs .srs-side h3{
+  flex:0 0 auto;
+}
+#srsStoryList{
+  flex:1 1 auto;
+  min-height:0;
+  max-height:calc(100vh - 190px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding-right:6px;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+}
+#srsStoryList::-webkit-scrollbar{
+  width:8px;
+}
+#srsStoryList::-webkit-scrollbar-track{
+  background:#eef6ff;
+  border-radius:999px;
+}
+#srsStoryList::-webkit-scrollbar-thumb{
+  background:#b8d5ee;
+  border-radius:999px;
+}
+#srsStoryList::-webkit-scrollbar-thumb:hover{
+  background:#8fbce2;
+}
+@media(max-width:850px){
+  #srs .srs-side{
+    max-height:360px;
+  }
+  #srsStoryList{
+    max-height:285px;
+  }
+}
+@media(max-width:700px){
+  #srs .srs-side{
+    max-height:320px;
+  }
+  #srsStoryList{
+    max-height:245px;
+  }
+}
+
 </style>
 <style id="srs-dynamic-follow-style">
   #srsPracticeArea{scroll-margin-top:18px;scroll-margin-bottom:18px}
