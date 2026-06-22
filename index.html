@@ -1731,29 +1731,19 @@ textarea,
 </script>
 
 <div aria-label="Loading" aria-live="polite" class="loading-screen" id="loadingScreen">
-<div class="loading-card">
-<div class="loading-ocean">
-<div aria-hidden="true" class="loading-fish">
-<svg fill="none" viewbox="0 0 180 110">
-<path d="M48 55C70 28 112 24 143 46C151 51 158 54 169 55C158 56 151 60 143 66C112 88 70 82 48 55Z" fill="#ffffff" stroke="#2f6fae" stroke-linejoin="round" stroke-width="4"></path>
-<path d="M48 55L17 31V79L48 55Z" fill="#d9efff" stroke="#2f6fae" stroke-linejoin="round" stroke-width="4"></path>
-<path d="M88 38C96 47 98 62 88 72" stroke="#5c97cf" stroke-linecap="round" stroke-width="4"></path>
-<circle cx="132" cy="48" fill="#2f6fae" r="4"></circle>
-</svg>
-</div>
-<span class="loading-bubble b1"></span>
-<span class="loading-bubble b2"></span>
-<span class="loading-bubble b3"></span>
-</div>
-<div class="loading-title">
-      Loading<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span>
-</div>
-<div aria-hidden="true" class="loading-orbit orbit-1"><span class="orbit-fish">🐟</span></div>
-<div aria-hidden="true" class="loading-orbit orbit-2"><span class="orbit-fish">🐠</span></div>
-<div aria-hidden="true" class="loading-orbit orbit-3"><span class="orbit-fish">🐟</span></div>
-<div aria-hidden="true" class="loading-orbit orbit-4"><span class="orbit-fish">🐠</span></div>
-<p class="loading-subtitle" id="loadingMessage"></p>
-</div>
+  <div class="loading-minimal" role="status">
+    <div class="loading-text-row">
+      <span class="loading-label">Loading</span>
+      <span class="loading-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span>
+    </div>
+    <div class="loading-fish-lane" aria-hidden="true">
+      <span class="mini-fish fish-1"></span>
+      <span class="mini-fish fish-2"></span>
+      <span class="mini-fish fish-3"></span>
+      <span class="mini-fish fish-4"></span>
+    </div>
+    <p class="loading-subtitle" id="loadingMessage">Loading</p>
+  </div>
 </div>
 <div aria-hidden="true" class="sea-decor fish-a">
 <svg fill="none" viewbox="0 0 180 110">
@@ -2086,7 +2076,7 @@ function hideStoryBubbleLoading(){
 
 
 
-function showLoading(message="Ikan kecil sedang menyiapkan ceritamu 🐟"){
+function showLoading(message="Loading"){
   const screen=document.getElementById("loadingScreen");
   const text=document.getElementById("loadingMessage");
 
@@ -13716,40 +13706,104 @@ async function toggleUnderwaterAmbient(){
 
 
 <style id="wira-bugfix-loading-latest">
-/* ===== Bugfix: loading screen baru, ringan, tanpa card ===== */
+/* ===== Loading screen minimal, ringan, tanpa card lama ===== */
 .loading-screen{
-  background:linear-gradient(180deg, rgba(234,244,255,.96), rgba(238,246,255,.98));
-  backdrop-filter:none!important;
-}
-.loading-card{
-  background:transparent!important;
-  border:none!important;
-  box-shadow:none!important;
-  padding:0!important;
-  min-width:auto!important;
-}
-.loading-ocean{
-  position:relative!important;
-  width:180px!important;
-  height:180px!important;
+  position:fixed!important;
+  inset:0!important;
+  z-index:9999!important;
   display:flex!important;
   align-items:center!important;
   justify-content:center!important;
-  margin:0 auto!important;
+  background:linear-gradient(180deg, rgba(234,244,255,.98), rgba(238,246,255,.99))!important;
+  backdrop-filter:none!important;
 }
+.loading-screen.hidden{opacity:0;visibility:hidden;pointer-events:none;transition:opacity .22s ease, visibility .22s ease;}
+.loading-card,
+.loading-ocean,
 .loading-fish,
-.loading-bubble{display:none!important;}
-.loading-title{
-  position:relative!important;
-  z-index:3!important;
-  font-size:14px!important;
-  font-weight:800!important;
-  letter-spacing:.12em!important;
-  text-transform:uppercase!important;
-  color:var(--brown)!important;
-  background:transparent!important;
-  margin:0!important;
+.loading-bubble,
+.loading-title,
+.loading-orbit{display:none!important;}
+.loading-minimal{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  width:min(220px, 72vw);
 }
+.loading-text-row{
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  gap:3px;
+  color:var(--brown);
+  font-size:14px;
+  font-weight:800;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  line-height:1;
+}
+.loading-label{display:inline-block;}
+.loading-dots{display:inline-flex;align-items:flex-end;min-width:18px;}
+.loading-dots span{
+  display:inline-block;
+  width:6px;
+  text-align:center;
+  animation:loadingDotWiggle 1s ease-in-out infinite;
+  will-change:transform, opacity;
+}
+.loading-dots span:nth-child(2){animation-delay:.14s;}
+.loading-dots span:nth-child(3){animation-delay:.28s;}
+.loading-fish-lane{
+  position:relative;
+  width:180px;
+  max-width:72vw;
+  height:28px;
+  overflow:hidden;
+}
+.mini-fish{
+  --fish-color:#5c97cf;
+  --fish-size:16px;
+  --fish-y:14px;
+  position:absolute;
+  top:var(--fish-y);
+  left:-28px;
+  width:var(--fish-size);
+  height:9px;
+  margin-top:-4.5px;
+  background:var(--fish-color);
+  border-radius:999px;
+  transform:translate3d(0,0,0);
+  animation:fishPass linear infinite;
+  will-change:transform;
+  opacity:.95;
+}
+.mini-fish::before{
+  content:"";
+  position:absolute;
+  left:-6px;
+  top:1.5px;
+  width:0;
+  height:0;
+  border-top:3px solid transparent;
+  border-bottom:3px solid transparent;
+  border-right:6px solid var(--fish-color);
+}
+.mini-fish::after{
+  content:"";
+  position:absolute;
+  right:3px;
+  top:3px;
+  width:2px;
+  height:2px;
+  border-radius:50%;
+  background:#eef6ff;
+}
+.fish-1{--fish-size:18px;--fish-y:8px;animation-duration:4.8s;animation-delay:-.7s;}
+.fish-2{--fish-size:14px;--fish-y:20px;animation-duration:6.1s;animation-delay:-2.5s;opacity:.82;}
+.fish-3{--fish-size:16px;--fish-y:13px;animation-duration:5.4s;animation-delay:-4s;}
+.fish-4{--fish-size:12px;--fish-y:23px;animation-duration:7.2s;animation-delay:-1.4s;opacity:.78;}
 .loading-subtitle{
   position:absolute!important;
   width:1px!important;
@@ -13761,34 +13815,21 @@ async function toggleUnderwaterAmbient(){
   padding:0!important;
   border:0!important;
 }
-.loading-dots{display:inline-block;min-width:16px;text-align:left;}
-.loading-dots span{font-size:14px!important;}
-.loading-orbit{
-  position:absolute;
-  inset:0;
-  animation:wiraOrbit linear infinite;
-  will-change:transform;
+@keyframes loadingDotWiggle{
+  0%, 80%, 100%{transform:translateY(0);opacity:.35;}
+  40%{transform:translateY(-2px);opacity:1;}
 }
-.loading-orbit .orbit-fish{
-  position:absolute;
-  left:50%;
-  top:50%;
-  display:block;
-  line-height:1;
-  transform:translate(-50%,-50%) translateY(-58px);
-  font-size:16px;
-  filter:drop-shadow(0 2px 3px rgba(47,111,174,.10));
+@keyframes fishPass{
+  from{transform:translate3d(0,0,0);}
+  to{transform:translate3d(236px,0,0);}
 }
-.loading-orbit.orbit-1{animation-duration:7.2s;}
-.loading-orbit.orbit-2{animation-duration:6s;animation-delay:-1.2s;}
-.loading-orbit.orbit-3{animation-duration:8.2s;animation-delay:-2.4s;}
-.loading-orbit.orbit-4{animation-duration:5.4s;animation-delay:-3.1s;}
-.loading-orbit.orbit-2 .orbit-fish{transform:translate(-50%,-50%) rotate(28deg) translateY(-44px);font-size:14px;}
-.loading-orbit.orbit-3 .orbit-fish{transform:translate(-50%,-50%) rotate(180deg) translateY(-58px);font-size:15px;}
-.loading-orbit.orbit-4 .orbit-fish{transform:translate(-50%,-50%) rotate(210deg) translateY(-42px);font-size:13px;}
-@keyframes wiraOrbit{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@media (max-width:640px){
+  .loading-text-row{font-size:13px;}
+  .loading-fish-lane{width:160px;height:24px;}
+}
 @media (prefers-reduced-motion:reduce){
-  .loading-orbit,.loading-dots span{animation:none!important;}
+  .loading-dots span,
+  .mini-fish{animation:none!important;}
 }
 
 /* ===== Beranda: ornamen merah hanya untuk card terakhir dibaca ===== */
@@ -13804,7 +13845,6 @@ async function toggleUnderwaterAmbient(){
   background:linear-gradient(180deg,#ff7b7b,#da2828);
   box-shadow:0 10px 18px rgba(218,40,40,.18);
 }
-
 .home-latest-card{position:relative;overflow:hidden;}
 .home-latest-card::before{
   content:"";
@@ -13827,7 +13867,7 @@ async function toggleUnderwaterAmbient(){
 }
 </style>
 <script>
-/* override loading helper lama supaya tidak menambah ikan lama lagi */
+/* override loading helper lama supaya tidak menambah elemen loading lama */
 prepareLightLoadingFish=function(){};
 </script>
 
