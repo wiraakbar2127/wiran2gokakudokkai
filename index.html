@@ -281,6 +281,7 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
 }
 
 
+
 .loading-screen{
   position:fixed;
   inset:0;
@@ -288,6 +289,7 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
   display:flex;
   align-items:center;
   justify-content:center;
+  overflow:hidden;
   background:linear-gradient(180deg,#e8f5ff 0%,#f8fcff 100%);
   transition:opacity .45s ease,visibility .45s ease;
 }
@@ -296,16 +298,7 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
   visibility:hidden;
   pointer-events:none;
 }
-.loading-card{
-  width:min(280px,calc(100% - 48px));
-  text-align:center;
-  padding:28px 24px;
-  background:rgba(255,255,255,.82);
-  border:1px solid rgba(200,222,242,.9);
-  border-radius:26px;
-  box-shadow:0 18px 45px rgba(47,111,174,.14);
-  backdrop-filter:blur(10px);
-}
+.loading-card,
 .loading-ocean,
 .loading-fish,
 .loading-bubble,
@@ -313,180 +306,159 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
   display:none !important;
 }
 .loading-title{
+  position:relative;
+  z-index:2;
   margin:0;
   color:var(--brown);
-  font-size:24px;
-  font-weight:900;
+  font-size:15px;
+  font-weight:800;
+  letter-spacing:.18px;
+  text-shadow:0 1px 0 rgba(255,255,255,.8);
 }
 .loading-dots span{
   display:inline-block;
-  animation:none;
+  animation:loadingDot 1.15s ease-in-out infinite;
 }
-
-@keyframes fishSwim{
-  0%{left:-125px;transform:translateY(4px) rotate(-2deg)}
-  45%{transform:translateY(-5px) rotate(2deg)}
-  100%{left:calc(100% + 20px);transform:translateY(4px) rotate(-2deg)}
-}
-@keyframes bubbleUp{
-  0%{transform:translateY(0) scale(.75);opacity:0}
-  18%{opacity:.8}
-  100%{transform:translateY(-105px) scale(1.15);opacity:0}
-}
-@keyframes dotBounce{
-  0%,80%,100%{transform:translateY(0);opacity:.45}
-  40%{transform:translateY(-5px);opacity:1}
-}
-
-
-.goodjob-screen{
+.loading-dots span:nth-child(2){animation-delay:.16s}
+.loading-dots span:nth-child(3){animation-delay:.32s}
+.loading-sea-creature{
   position:fixed;
-  inset:0;
-  z-index:10000;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  padding:20px;
-  background:rgba(18,45,70,.38);
-  backdrop-filter:blur(6px);
+  left:-96px;
+  width:52px;
+  height:28px;
+  pointer-events:none;
+  will-change:transform,opacity;
+  animation:seaCreatureGlide 7.2s linear infinite;
+  opacity:.82;
 }
-.goodjob-screen.active{display:flex}
-.goodjob-card{
-  width:min(390px,calc(100% - 40px));
-  background:linear-gradient(180deg,#ffffff,#eef8ff);
-  border:1px solid var(--line);
-  border-radius:30px;
-  padding:30px 26px;
-  text-align:center;
-  box-shadow:0 24px 70px rgba(22,61,95,.24);
-  animation:goodJobPop .38s ease;
-}
-.goodjob-fish{
-  width:170px;
-  height:115px;
-  margin:0 auto 8px;
-}
-.goodjob-fish svg{
-  width:100%;
-  height:100%;
-  display:block;
-}
-.goodjob-card h2{
-  margin:4px 0 8px;
-  color:#28704a;
-  font-size:30px;
-}
-.goodjob-card p{
-  margin:0;
-  color:var(--muted);
-  line-height:1.7;
-}
-@keyframes goodJobPop{
-  from{transform:scale(.88);opacity:0}
-  to{transform:scale(1);opacity:1}
-}
-
-
-.story-bubble-loading{
-  position:fixed;
-  inset:0;
-  z-index:10001;
-  display:none;
-  overflow:hidden;
-  background:linear-gradient(180deg,rgba(219,242,255,.96),rgba(237,249,255,.98));
-}
-.story-bubble-loading.active{display:block}
-.story-bubble-loading .bubble{
-  position:absolute;
-  bottom:-90px;
-  border:3px solid rgba(47,111,174,.38);
-  background:rgba(255,255,255,.24);
-  border-radius:50%;
-  animation:storyBubbleRise 1s ease-in forwards;
-}
-.story-bubble-loading .bubble::after{
+.loading-sea-creature::before,
+.loading-sea-creature::after{
   content:"";
   position:absolute;
-  width:24%;
-  height:24%;
-  top:18%;
-  left:20%;
+  display:block;
+}
+.loading-sea-creature.fish{
+  top:28%;
+  border-radius:60% 50% 50% 60%;
+  background:rgba(47,111,174,.72);
+  box-shadow:0 5px 14px rgba(47,111,174,.08);
+}
+.loading-sea-creature.fish::before{
+  left:-13px;
+  top:7px;
+  width:18px;
+  height:16px;
+  background:rgba(92,151,207,.70);
+  clip-path:polygon(100% 50%,0 0,18% 50%,0 100%);
+}
+.loading-sea-creature.fish::after{
+  right:12px;
+  top:8px;
+  width:4px;
+  height:4px;
   border-radius:50%;
-  background:rgba(255,255,255,.8);
+  background:#fff;
+  box-shadow:0 0 0 1px rgba(24,50,74,.14);
 }
-.story-bubble-text{
-  position:absolute;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:var(--brown);
-  font-size:22px;
-  font-weight:900;
-  text-align:center;
-  padding:20px;
-  text-shadow:0 2px 0 rgba(255,255,255,.7);
+.loading-sea-creature.fish.small{
+  top:62%;
+  width:38px;
+  height:20px;
+  background:rgba(92,151,207,.62);
+  animation-duration:8.4s;
+  animation-delay:-2.4s;
 }
-@keyframes storyBubbleRise{
-  0%{transform:translateY(0) scale(.65);opacity:0}
-  12%{opacity:1}
-  100%{transform:translateY(-125vh) scale(1.18);opacity:.15}
+.loading-sea-creature.fish.small::before{
+  left:-10px;
+  top:5px;
+  width:14px;
+  height:11px;
+  background:rgba(47,111,174,.52);
 }
-
-
-.sort-bar{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:10px;
-  flex-wrap:wrap;
-  margin:0 0 18px;
+.loading-sea-creature.fish.small::after{
+  right:9px;
+  top:6px;
+  width:3px;
+  height:3px;
 }
-.sort-bar label{
-  margin:0;
-  color:var(--brown);
-  font-weight:800;
+.loading-sea-creature.ray{
+  top:44%;
+  width:58px;
+  height:24px;
+  background:rgba(47,111,174,.34);
+  border-radius:50% 50% 60% 60%;
+  clip-path:polygon(50% 0,100% 55%,62% 72%,50% 100%,38% 72%,0 55%);
+  animation-duration:9s;
+  animation-delay:-4.1s;
 }
-.sort-select{
-  width:auto;
-  min-width:130px;
-  border:1px solid var(--line);
-  border-radius:999px;
-  padding:9px 13px;
-  background:white;
-  color:var(--ink);
+.loading-sea-creature.jelly{
+  top:73%;
+  width:32px;
+  height:32px;
+  border-radius:50% 50% 44% 44%;
+  background:rgba(255,255,255,.60);
+  border:1px solid rgba(92,151,207,.42);
+  box-shadow:inset 0 -8px 0 rgba(220,238,255,.52);
+  animation-duration:10s;
+  animation-delay:-1.2s;
 }
-.move-folder-row{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  flex-wrap:wrap;
-  margin-top:12px;
+.loading-sea-creature.jelly::before{
+  left:6px;
+  top:26px;
+  width:20px;
+  height:18px;
+  border-left:2px solid rgba(47,111,174,.35);
+  border-right:2px solid rgba(47,111,174,.28);
+  border-radius:0 0 14px 14px;
 }
-.move-folder-row .story-folder-select{
-  flex:1;
-  min-width:150px;
+.loading-sea-creature.jelly::after{
+  left:14px;
+  top:26px;
+  width:2px;
+  height:17px;
+  background:rgba(47,111,174,.25);
+  border-radius:10px;
 }
-
-
-.srs-layout{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:20px;align-items:start}
-.srs-main,.srs-side{background:var(--card);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow)}
-.srs-main{padding:24px}.srs-side{padding:20px;position:sticky;top:94px}
-.srs-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
-.srs-stat{background:#f3f9ff;border:1px solid var(--line);border-radius:16px;padding:14px;text-align:center}
-.srs-stat strong{display:block;font-size:23px;color:var(--brown)}.srs-stat span{color:var(--muted);font-size:12px}
-.srs-card{min-height:360px;display:flex;flex-direction:column;justify-content:center}
-.srs-source{display:inline-flex;align-self:flex-start;background:var(--soft);color:var(--brown);border-radius:999px;padding:5px 10px;font-size:12px;font-weight:900;margin-bottom:18px}
-.srs-question{font-size:25px;line-height:2;color:var(--ink);margin-bottom:16px}.srs-blank{display:inline-block;min-width:110px;border-bottom:3px solid var(--brown);color:transparent;user-select:none;margin:0 4px}
-.srs-translation{background:#f5f9fd;border-left:4px solid var(--brown2);border-radius:12px;padding:14px 16px;color:#355b7d;line-height:1.7;margin-bottom:22px}
-.srs-answer-wrap{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.srs-answer{flex:1;min-width:220px;font-size:21px;letter-spacing:.03em;border:2px solid var(--line)}
-.srs-answer:focus{outline:none;border-color:var(--brown2);box-shadow:0 0 0 4px rgba(92,151,207,.12)}
-.srs-feedback{display:none;margin-top:16px;border-radius:16px;padding:16px;line-height:1.7}.srs-feedback.correct{display:block;background:#e9f8ee;border:1px solid #bce5cc;color:#28704a}.srs-feedback.wrong{display:block;background:#fff1f1;border:1px solid #f0c7c7;color:#8a3b3b}
-.srs-next-time{font-weight:900;margin-top:6px}.srs-empty{text-align:center;padding:48px 20px}.srs-empty h2{color:var(--brown)}
-.srs-list{display:flex;flex-direction:column;gap:10px}.srs-story-row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line)}.srs-story-row:last-child{border-bottom:0}.srs-story-row span{color:var(--muted);font-size:12px}
-.srs-progress{height:9px;background:#e8f2fb;border-radius:999px;overflow:hidden;margin:12px 0 20px}.srs-progress>div{height:100%;background:linear-gradient(90deg,var(--brown),var(--brown2));width:0%;transition:.25s}
-.srs-romaji-note{color:var(--muted);font-size:13px;margin-top:8px}@media(max-width:850px){.srs-layout{grid-template-columns:1fr}.srs-side{position:static}}
-
+.loading-sea-creature.whale{
+  top:18%;
+  width:68px;
+  height:35px;
+  border-radius:58% 52% 50% 58%;
+  background:rgba(47,111,174,.50);
+  animation-duration:11s;
+  animation-delay:-6.2s;
+}
+.loading-sea-creature.whale::before{
+  left:-16px;
+  top:8px;
+  width:22px;
+  height:18px;
+  background:rgba(47,111,174,.42);
+  clip-path:polygon(100% 50%,0 0,24% 50%,0 100%);
+}
+.loading-sea-creature.whale::after{
+  right:16px;
+  top:10px;
+  width:4px;
+  height:4px;
+  border-radius:50%;
+  background:#fff;
+}
+@keyframes loadingDot{
+  0%,80%,100%{transform:translateY(0);opacity:.45}
+  40%{transform:translateY(-4px);opacity:1}
+}
+@keyframes seaCreatureGlide{
+  0%{transform:translate3d(-90px,0,0) rotate(-1deg);opacity:0}
+  10%{opacity:.82}
+  50%{transform:translate3d(calc(50vw + 10px),-8px,0) rotate(1deg);opacity:.82}
+  90%{opacity:.82}
+  100%{transform:translate3d(calc(100vw + 130px),0,0) rotate(-1deg);opacity:0}
+}
+@media (prefers-reduced-motion:reduce){
+  .loading-dots span,.loading-sea-creature{animation:none!important}
+  .loading-sea-creature{display:none!important}
+}
 @media(max-width:700px){.two{grid-template-columns:1fr}.nav{align-items:flex-start;gap:12px;flex-direction:column}.jp{font-size:19px}}
 
 .danger{
@@ -1604,6 +1576,91 @@ textarea,
   background:#bd3f3b!important;
 }
 </style>
+
+<style id="wira-bugfix-loading-sort-v2">
+/* Bug fix: loading awal harus benar-benar hilang dan tidak meninggalkan teks di halaman */
+.loading-screen.hidden{
+  display:none!important;
+}
+.loading-screen.hidden .loading-title,
+.loading-screen.hidden .loading-sea-creature{
+  display:none!important;
+}
+
+/* Loading kecil untuk buka cerita: default-nya disembunyikan agar tulisan Loading tidak nyangkut */
+.story-bubble-loading{
+  display:none!important;
+  position:fixed!important;
+  inset:0!important;
+  z-index:9998!important;
+  align-items:center!important;
+  justify-content:center!important;
+  pointer-events:none!important;
+  background:rgba(232,245,255,.28)!important;
+}
+.story-bubble-loading.active{
+  display:flex!important;
+}
+.story-bubble-text{
+  color:var(--brown)!important;
+  font-size:14px!important;
+  font-weight:800!important;
+  letter-spacing:.2px!important;
+}
+.story-bubble-loading:not(.active) .story-bubble-text{
+  display:none!important;
+}
+
+/* Bug fix: tombol/area Urutkan dikembalikan rapi */
+.sort-bar{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  gap:10px!important;
+  flex-wrap:wrap!important;
+  margin:0 0 18px!important;
+  width:100%!important;
+}
+.sort-bar label{
+  margin:0!important;
+  color:var(--brown)!important;
+  font-weight:800!important;
+  white-space:nowrap!important;
+}
+.sort-select{
+  width:auto!important;
+  min-width:130px!important;
+  max-width:100%!important;
+  border-radius:999px!important;
+  padding:9px 13px!important;
+  line-height:1.2!important;
+  display:inline-block!important;
+}
+@media(max-width:700px){
+  .sort-bar{
+    justify-content:space-between!important;
+    align-items:center!important;
+    padding:10px 12px!important;
+  }
+  .sort-bar label{font-size:14px!important;}
+  .sort-select{min-width:145px!important;flex:0 1 auto!important;}
+}
+</style>
+<script id="wira-loading-safety-fix-v2">
+(function(){
+  function killInitialLoading(){
+    var screen=document.getElementById('loadingScreen');
+    if(screen){
+      screen.classList.add('hidden');
+      screen.setAttribute('aria-hidden','true');
+    }
+  }
+  window.addEventListener('load',function(){setTimeout(killInitialLoading,900);});
+  document.addEventListener('DOMContentLoaded',function(){setTimeout(killInitialLoading,2200);});
+  setTimeout(killInitialLoading,3500);
+})();
+</script>
+
 </head>
 <body>
 
@@ -1738,9 +1795,12 @@ textarea,
 </script>
 
 <div aria-label="Loading" aria-live="polite" class="loading-screen" id="loadingScreen">
-<div class="loading-card">
+<span aria-hidden="true" class="loading-sea-creature whale"></span>
+<span aria-hidden="true" class="loading-sea-creature fish"></span>
+<span aria-hidden="true" class="loading-sea-creature ray"></span>
+<span aria-hidden="true" class="loading-sea-creature fish small"></span>
+<span aria-hidden="true" class="loading-sea-creature jelly"></span>
 <div class="loading-title" id="loadingMessage">Loading<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div>
-</div>
 </div>
 <div aria-hidden="true" class="sea-decor fish-a">
 <svg fill="none" viewbox="0 0 180 110">
