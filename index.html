@@ -13134,5 +13134,267 @@ async function toggleUnderwaterAmbient(){
   }
 </style>
 
+
+
+<!-- PATCH WIRA FINAL: achievement warna beda + tombol floating tidak saling menimpa -->
+<style id="wira-achievement-floating-safe-final-style">
+  /* Susunan tombol mengambang: tidak saling menimpa */
+  #achievementBubble,
+  .achievement-bubble{
+    position:fixed!important;
+    right:18px!important;
+    bottom:22px!important;
+    z-index:150!important;
+  }
+  #ambientToggle,
+  .ambient-toggle{
+    position:fixed!important;
+    right:18px!important;
+    bottom:92px!important;
+    z-index:151!important;
+  }
+  #syncCodeBubble,
+  .sync-code-bubble{
+    position:fixed!important;
+    right:18px!important;
+    bottom:162px!important;
+    z-index:152!important;
+  }
+
+  /* Panel dibuat aman, tidak nutup tombol bawah */
+  #achievementPanel,
+  .achievement-panel{
+    z-index:145!important;
+    right:18px!important;
+    bottom:94px!important;
+  }
+  #syncCodePanel,
+  .sync-code-panel{
+    z-index:146!important;
+    right:18px!important;
+    bottom:226px!important;
+  }
+
+  /* Warna achievement */
+  .achievement-current.current-earned{
+    background:linear-gradient(145deg,#fff8d8,#ffffff)!important;
+    border:1px solid rgba(231,181,48,.55)!important;
+    box-shadow:0 12px 30px rgba(208,153,25,.16)!important;
+    color:#7a5400!important;
+  }
+  .achievement-current.current-earned small{
+    color:#8a6a18!important;
+  }
+
+  .achievement-item{
+    position:relative;
+    border:1px solid transparent;
+    transition:background .18s ease,border-color .18s ease,transform .18s ease,box-shadow .18s ease;
+  }
+  .achievement-item.earned:not(.current-achievement){
+    background:linear-gradient(145deg,#e9f8ee,#f7fff9)!important;
+    color:#28704a!important;
+    border-color:#bce5cc!important;
+    font-weight:800!important;
+  }
+  .achievement-item.current-achievement{
+    background:linear-gradient(145deg,#fff3bf,#fffdf3)!important;
+    color:#7a5400!important;
+    border-color:rgba(231,181,48,.72)!important;
+    box-shadow:0 10px 24px rgba(208,153,25,.18)!important;
+    font-weight:900!important;
+    transform:translateY(-1px);
+  }
+  .achievement-item.next-achievement{
+    background:linear-gradient(145deg,#edf8ff,#ffffff)!important;
+    color:#2f6fae!important;
+    border-color:#b8d9f5!important;
+    font-weight:850!important;
+  }
+  .achievement-label{
+    display:inline-flex;
+    align-items:center;
+    margin-top:5px;
+    padding:3px 8px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:900;
+    line-height:1.2;
+  }
+  .achievement-item.earned:not(.current-achievement) .achievement-label{
+    background:#dff5e7;
+    color:#28704a;
+  }
+  .achievement-item.current-achievement .achievement-label{
+    background:#ffe08a;
+    color:#7a5400;
+  }
+  .achievement-item.next-achievement .achievement-label{
+    background:#dceeff;
+    color:#2f6fae;
+  }
+
+  @media(max-width:700px){
+    #achievementBubble,
+    .achievement-bubble{
+      right:16px!important;
+      bottom:18px!important;
+      width:54px!important;
+      height:54px!important;
+    }
+    #ambientToggle,
+    .ambient-toggle{
+      right:16px!important;
+      bottom:86px!important;
+      width:54px!important;
+      height:54px!important;
+    }
+    #syncCodeBubble,
+    .sync-code-bubble{
+      right:16px!important;
+      bottom:154px!important;
+      width:54px!important;
+      height:54px!important;
+    }
+    #achievementPanel,
+    .achievement-panel{
+      top:145px!important;
+      bottom:86px!important;
+      width:calc(100vw - 32px)!important;
+      right:16px!important;
+    }
+    #syncCodePanel,
+    .sync-code-panel{
+      top:145px!important;
+      bottom:218px!important;
+      width:calc(100vw - 32px)!important;
+      right:16px!important;
+    }
+  }
+</style>
+<script id="wira-achievement-floating-safe-final-script">
+(function(){
+  'use strict';
+
+  function byId(id){ return document.getElementById(id); }
+
+  function setPanelOpen(panelId,bubbleId,isOpen){
+    const panel=byId(panelId);
+    const bubble=byId(bubbleId);
+    if(panel) panel.classList.toggle('open',!!isOpen);
+    if(bubble) bubble.classList.toggle('active',!!isOpen);
+  }
+
+  function closeAchievement(){ setPanelOpen('achievementPanel','achievementBubble',false); }
+  function closeSync(){ setPanelOpen('syncCodePanel','syncCodeBubble',false); }
+
+  const previousToggleAchievement=window.toggleAchievementPanel;
+  window.toggleAchievementPanel=function(){
+    const panel=byId('achievementPanel');
+    const willOpen=panel ? !panel.classList.contains('open') : true;
+    if(willOpen) closeSync();
+
+    if(typeof previousToggleAchievement==='function'){
+      previousToggleAchievement.apply(this,arguments);
+    }else{
+      setPanelOpen('achievementPanel','achievementBubble',willOpen);
+    }
+
+    const nowOpen=byId('achievementPanel')?.classList.contains('open');
+    byId('achievementBubble')?.classList.toggle('active',!!nowOpen);
+  };
+
+  const previousToggleSync=window.toggleWiraSyncPanel;
+  window.toggleWiraSyncPanel=function(){
+    const panel=byId('syncCodePanel');
+    const willOpen=panel ? !panel.classList.contains('open') : true;
+    if(willOpen) closeAchievement();
+
+    if(typeof previousToggleSync==='function'){
+      previousToggleSync.apply(this,arguments);
+    }else{
+      setPanelOpen('syncCodePanel','syncCodeBubble',willOpen);
+    }
+
+    const nowOpen=byId('syncCodePanel')?.classList.contains('open');
+    byId('syncCodeBubble')?.classList.toggle('active',!!nowOpen);
+  };
+
+  const previousCloseSync=window.closeWiraSyncPanel;
+  window.closeWiraSyncPanel=function(){
+    if(typeof previousCloseSync==='function') previousCloseSync.apply(this,arguments);
+    closeSync();
+  };
+
+  function addAchievementLabels(){
+    try{
+      if(typeof learnedVocabularyCount!=='function' || typeof ACHIEVEMENT_MILESTONES==='undefined') return;
+
+      const learned=learnedVocabularyCount();
+      const current=(typeof getCurrentAchievement==='function')
+        ? getCurrentAchievement(learned)
+        : [...ACHIEVEMENT_MILESTONES].reverse().find(item=>learned>=item.count);
+      const next=(typeof getNextAchievement==='function')
+        ? getNextAchievement(learned)
+        : ACHIEVEMENT_MILESTONES.find(item=>learned<item.count);
+
+      const currentBox=byId('achievementCurrent');
+      if(currentBox){
+        currentBox.classList.toggle('current-earned',!!(current && current.count && learned>=current.count));
+      }
+
+      const list=byId('achievementList');
+      if(!list) return;
+
+      [...list.querySelectorAll('.achievement-item')].forEach((el,index)=>{
+        const item=ACHIEVEMENT_MILESTONES[index];
+        if(!item) return;
+
+        el.classList.remove('current-achievement','next-achievement');
+        el.querySelectorAll('.achievement-label').forEach(label=>label.remove());
+
+        let labelText='';
+        if(current && item.count===current.count && learned>=item.count){
+          el.classList.add('current-achievement');
+          labelText='Sedang didapatkan';
+        }else if(learned>=item.count){
+          labelText='Sudah berhasil';
+        }else if(next && item.count===next.count){
+          el.classList.add('next-achievement');
+          labelText='Target berikutnya';
+        }
+
+        if(labelText){
+          const label=document.createElement('span');
+          label.className='achievement-label';
+          label.textContent=labelText;
+          const small=el.querySelector('small');
+          if(small) small.insertAdjacentElement('afterend',label);
+        }
+      });
+    }catch(error){
+      console.warn('Patch warna achievement gagal:',error);
+    }
+  }
+
+  const previousRenderAchievement=window.renderAchievementPanel;
+  window.renderAchievementPanel=function(){
+    if(typeof previousRenderAchievement==='function') previousRenderAchievement.apply(this,arguments);
+    addAchievementLabels();
+  };
+
+  document.addEventListener('DOMContentLoaded',function(){
+    addAchievementLabels();
+    closeSync();
+    byId('achievementBubble')?.classList.toggle('active',byId('achievementPanel')?.classList.contains('open'));
+  });
+
+  window.addEventListener('load',function(){
+    if(typeof window.renderAchievementPanel==='function') window.renderAchievementPanel();
+    addAchievementLabels();
+  });
+})();
+</script>
+
 </body>
 </html>
