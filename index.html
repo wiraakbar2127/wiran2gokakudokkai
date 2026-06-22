@@ -281,7 +281,6 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
 }
 
 
-
 .loading-screen{
   position:fixed;
   inset:0;
@@ -289,7 +288,6 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
   display:flex;
   align-items:center;
   justify-content:center;
-  overflow:hidden;
   background:linear-gradient(180deg,#e8f5ff 0%,#f8fcff 100%);
   transition:opacity .45s ease,visibility .45s ease;
 }
@@ -298,167 +296,227 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
   visibility:hidden;
   pointer-events:none;
 }
-.loading-card,
-.loading-ocean,
-.loading-fish,
-.loading-bubble,
-.loading-subtitle{
-  display:none !important;
+.loading-card{
+  width:min(360px,calc(100% - 40px));
+  text-align:center;
+  padding:34px 28px;
+  background:rgba(255,255,255,.78);
+  border:1px solid rgba(200,222,242,.9);
+  border-radius:30px;
+  box-shadow:0 20px 55px rgba(47,111,174,.16);
+  backdrop-filter:blur(10px);
 }
-.loading-title{
+.loading-ocean{
   position:relative;
-  z-index:2;
-  margin:0;
+  height:125px;
+  overflow:hidden;
+  border-radius:24px;
+  background:linear-gradient(180deg,#dff2ff,#c8e8ff);
+}
+.loading-fish{
+  position:absolute;
+  width:118px;
+  height:72px;
+  top:27px;
+  left:-125px;
+  animation:fishSwim 2.4s ease-in-out infinite;
+}
+.loading-fish svg{
+  width:100%;
+  height:100%;
+  display:block;
+}
+.loading-bubble{
+  position:absolute;
+  border:2px solid rgba(47,111,174,.32);
+  border-radius:50%;
+  animation:bubbleUp 2.2s ease-in infinite;
+}
+.loading-bubble.b1{width:12px;height:12px;left:63%;bottom:10px;animation-delay:.1s}
+.loading-bubble.b2{width:8px;height:8px;left:72%;bottom:5px;animation-delay:.8s}
+.loading-bubble.b3{width:15px;height:15px;left:80%;bottom:12px;animation-delay:1.3s}
+.loading-title{
+  margin:20px 0 5px;
   color:var(--brown);
-  font-size:15px;
-  font-weight:800;
-  letter-spacing:.18px;
-  text-shadow:0 1px 0 rgba(255,255,255,.8);
+  font-size:24px;
+  font-weight:900;
+}
+.loading-subtitle{
+  margin:0;
+  color:var(--muted);
+  font-size:14px;
 }
 .loading-dots span{
   display:inline-block;
-  animation:loadingDot 1.15s ease-in-out infinite;
+  animation:dotBounce 1.2s infinite;
 }
-.loading-dots span:nth-child(2){animation-delay:.16s}
-.loading-dots span:nth-child(3){animation-delay:.32s}
-.loading-sea-creature{
+.loading-dots span:nth-child(2){animation-delay:.18s}
+.loading-dots span:nth-child(3){animation-delay:.36s}
+
+@keyframes fishSwim{
+  0%{left:-125px;transform:translateY(4px) rotate(-2deg)}
+  45%{transform:translateY(-5px) rotate(2deg)}
+  100%{left:calc(100% + 20px);transform:translateY(4px) rotate(-2deg)}
+}
+@keyframes bubbleUp{
+  0%{transform:translateY(0) scale(.75);opacity:0}
+  18%{opacity:.8}
+  100%{transform:translateY(-105px) scale(1.15);opacity:0}
+}
+@keyframes dotBounce{
+  0%,80%,100%{transform:translateY(0);opacity:.45}
+  40%{transform:translateY(-5px);opacity:1}
+}
+
+
+.goodjob-screen{
   position:fixed;
-  left:-96px;
-  width:52px;
-  height:28px;
-  pointer-events:none;
-  will-change:transform,opacity;
-  animation:seaCreatureGlide 7.2s linear infinite;
-  opacity:.82;
+  inset:0;
+  z-index:10000;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(18,45,70,.38);
+  backdrop-filter:blur(6px);
 }
-.loading-sea-creature::before,
-.loading-sea-creature::after{
-  content:"";
-  position:absolute;
+.goodjob-screen.active{display:flex}
+.goodjob-card{
+  width:min(390px,calc(100% - 40px));
+  background:linear-gradient(180deg,#ffffff,#eef8ff);
+  border:1px solid var(--line);
+  border-radius:30px;
+  padding:30px 26px;
+  text-align:center;
+  box-shadow:0 24px 70px rgba(22,61,95,.24);
+  animation:goodJobPop .38s ease;
+}
+.goodjob-fish{
+  width:170px;
+  height:115px;
+  margin:0 auto 8px;
+}
+.goodjob-fish svg{
+  width:100%;
+  height:100%;
   display:block;
 }
-.loading-sea-creature.fish{
-  top:28%;
-  border-radius:60% 50% 50% 60%;
-  background:rgba(47,111,174,.72);
-  box-shadow:0 5px 14px rgba(47,111,174,.08);
+.goodjob-card h2{
+  margin:4px 0 8px;
+  color:#28704a;
+  font-size:30px;
 }
-.loading-sea-creature.fish::before{
-  left:-13px;
-  top:7px;
-  width:18px;
-  height:16px;
-  background:rgba(92,151,207,.70);
-  clip-path:polygon(100% 50%,0 0,18% 50%,0 100%);
+.goodjob-card p{
+  margin:0;
+  color:var(--muted);
+  line-height:1.7;
 }
-.loading-sea-creature.fish::after{
-  right:12px;
-  top:8px;
-  width:4px;
-  height:4px;
+@keyframes goodJobPop{
+  from{transform:scale(.88);opacity:0}
+  to{transform:scale(1);opacity:1}
+}
+
+
+.story-bubble-loading{
+  position:fixed;
+  inset:0;
+  z-index:10001;
+  display:none;
+  overflow:hidden;
+  background:linear-gradient(180deg,rgba(219,242,255,.96),rgba(237,249,255,.98));
+}
+.story-bubble-loading.active{display:block}
+.story-bubble-loading .bubble{
+  position:absolute;
+  bottom:-90px;
+  border:3px solid rgba(47,111,174,.38);
+  background:rgba(255,255,255,.24);
   border-radius:50%;
-  background:#fff;
-  box-shadow:0 0 0 1px rgba(24,50,74,.14);
+  animation:storyBubbleRise 1s ease-in forwards;
 }
-.loading-sea-creature.fish.small{
-  top:62%;
-  width:38px;
-  height:20px;
-  background:rgba(92,151,207,.62);
-  animation-duration:8.4s;
-  animation-delay:-2.4s;
-}
-.loading-sea-creature.fish.small::before{
-  left:-10px;
-  top:5px;
-  width:14px;
-  height:11px;
-  background:rgba(47,111,174,.52);
-}
-.loading-sea-creature.fish.small::after{
-  right:9px;
-  top:6px;
-  width:3px;
-  height:3px;
-}
-.loading-sea-creature.ray{
-  top:44%;
-  width:58px;
-  height:24px;
-  background:rgba(47,111,174,.34);
-  border-radius:50% 50% 60% 60%;
-  clip-path:polygon(50% 0,100% 55%,62% 72%,50% 100%,38% 72%,0 55%);
-  animation-duration:9s;
-  animation-delay:-4.1s;
-}
-.loading-sea-creature.jelly{
-  top:73%;
-  width:32px;
-  height:32px;
-  border-radius:50% 50% 44% 44%;
-  background:rgba(255,255,255,.60);
-  border:1px solid rgba(92,151,207,.42);
-  box-shadow:inset 0 -8px 0 rgba(220,238,255,.52);
-  animation-duration:10s;
-  animation-delay:-1.2s;
-}
-.loading-sea-creature.jelly::before{
-  left:6px;
-  top:26px;
-  width:20px;
-  height:18px;
-  border-left:2px solid rgba(47,111,174,.35);
-  border-right:2px solid rgba(47,111,174,.28);
-  border-radius:0 0 14px 14px;
-}
-.loading-sea-creature.jelly::after{
-  left:14px;
-  top:26px;
-  width:2px;
-  height:17px;
-  background:rgba(47,111,174,.25);
-  border-radius:10px;
-}
-.loading-sea-creature.whale{
+.story-bubble-loading .bubble::after{
+  content:"";
+  position:absolute;
+  width:24%;
+  height:24%;
   top:18%;
-  width:68px;
-  height:35px;
-  border-radius:58% 52% 50% 58%;
-  background:rgba(47,111,174,.50);
-  animation-duration:11s;
-  animation-delay:-6.2s;
-}
-.loading-sea-creature.whale::before{
-  left:-16px;
-  top:8px;
-  width:22px;
-  height:18px;
-  background:rgba(47,111,174,.42);
-  clip-path:polygon(100% 50%,0 0,24% 50%,0 100%);
-}
-.loading-sea-creature.whale::after{
-  right:16px;
-  top:10px;
-  width:4px;
-  height:4px;
+  left:20%;
   border-radius:50%;
-  background:#fff;
+  background:rgba(255,255,255,.8);
 }
-@keyframes loadingDot{
-  0%,80%,100%{transform:translateY(0);opacity:.45}
-  40%{transform:translateY(-4px);opacity:1}
+.story-bubble-text{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--brown);
+  font-size:22px;
+  font-weight:900;
+  text-align:center;
+  padding:20px;
+  text-shadow:0 2px 0 rgba(255,255,255,.7);
 }
-@keyframes seaCreatureGlide{
-  0%{transform:translate3d(-90px,0,0) rotate(-1deg);opacity:0}
-  10%{opacity:.82}
-  50%{transform:translate3d(calc(50vw + 10px),-8px,0) rotate(1deg);opacity:.82}
-  90%{opacity:.82}
-  100%{transform:translate3d(calc(100vw + 130px),0,0) rotate(-1deg);opacity:0}
+@keyframes storyBubbleRise{
+  0%{transform:translateY(0) scale(.65);opacity:0}
+  12%{opacity:1}
+  100%{transform:translateY(-125vh) scale(1.18);opacity:.15}
 }
-@media (prefers-reduced-motion:reduce){
-  .loading-dots span,.loading-sea-creature{animation:none!important}
-  .loading-sea-creature{display:none!important}
+
+
+.sort-bar{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+  margin:0 0 18px;
 }
+.sort-bar label{
+  margin:0;
+  color:var(--brown);
+  font-weight:800;
+}
+.sort-select{
+  width:auto;
+  min-width:130px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:9px 13px;
+  background:white;
+  color:var(--ink);
+}
+.move-folder-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:12px;
+}
+.move-folder-row .story-folder-select{
+  flex:1;
+  min-width:150px;
+}
+
+
+.srs-layout{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:20px;align-items:start}
+.srs-main,.srs-side{background:var(--card);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow)}
+.srs-main{padding:24px}.srs-side{padding:20px;position:sticky;top:94px}
+.srs-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.srs-stat{background:#f3f9ff;border:1px solid var(--line);border-radius:16px;padding:14px;text-align:center}
+.srs-stat strong{display:block;font-size:23px;color:var(--brown)}.srs-stat span{color:var(--muted);font-size:12px}
+.srs-card{min-height:360px;display:flex;flex-direction:column;justify-content:center}
+.srs-source{display:inline-flex;align-self:flex-start;background:var(--soft);color:var(--brown);border-radius:999px;padding:5px 10px;font-size:12px;font-weight:900;margin-bottom:18px}
+.srs-question{font-size:25px;line-height:2;color:var(--ink);margin-bottom:16px}.srs-blank{display:inline-block;min-width:110px;border-bottom:3px solid var(--brown);color:transparent;user-select:none;margin:0 4px}
+.srs-translation{background:#f5f9fd;border-left:4px solid var(--brown2);border-radius:12px;padding:14px 16px;color:#355b7d;line-height:1.7;margin-bottom:22px}
+.srs-answer-wrap{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.srs-answer{flex:1;min-width:220px;font-size:21px;letter-spacing:.03em;border:2px solid var(--line)}
+.srs-answer:focus{outline:none;border-color:var(--brown2);box-shadow:0 0 0 4px rgba(92,151,207,.12)}
+.srs-feedback{display:none;margin-top:16px;border-radius:16px;padding:16px;line-height:1.7}.srs-feedback.correct{display:block;background:#e9f8ee;border:1px solid #bce5cc;color:#28704a}.srs-feedback.wrong{display:block;background:#fff1f1;border:1px solid #f0c7c7;color:#8a3b3b}
+.srs-next-time{font-weight:900;margin-top:6px}.srs-empty{text-align:center;padding:48px 20px}.srs-empty h2{color:var(--brown)}
+.srs-list{display:flex;flex-direction:column;gap:10px}.srs-story-row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line)}.srs-story-row:last-child{border-bottom:0}.srs-story-row span{color:var(--muted);font-size:12px}
+.srs-progress{height:9px;background:#e8f2fb;border-radius:999px;overflow:hidden;margin:12px 0 20px}.srs-progress>div{height:100%;background:linear-gradient(90deg,var(--brown),var(--brown2));width:0%;transition:.25s}
+.srs-romaji-note{color:var(--muted);font-size:13px;margin-top:8px}@media(max-width:850px){.srs-layout{grid-template-columns:1fr}.srs-side{position:static}}
+
 @media(max-width:700px){.two{grid-template-columns:1fr}.nav{align-items:flex-start;gap:12px;flex-direction:column}.jp{font-size:19px}}
 
 .danger{
@@ -1482,10 +1540,10 @@ textarea,
 /* Rapikan header folder */
 .category-toolbar.folder-topbar{
   display:flex!important;
-  align-items:flex-start!important;
-  justify-content:flex-start!important;
-  gap:14px!important;
-  flex-wrap:wrap!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:18px!important;
+  flex-wrap:nowrap!important;
   width:100%!important;
   padding:28px!important;
   margin:0 0 22px!important;
@@ -1493,12 +1551,10 @@ textarea,
 }
 .folder-info-row{
   display:flex!important;
-  flex-direction:column!important;
-  align-items:flex-start!important;
-  gap:12px!important;
-  flex-wrap:nowrap!important;
+  align-items:center!important;
+  gap:14px!important;
+  flex-wrap:wrap!important;
   min-width:0!important;
-  width:100%!important;
 }
 #categoryTitle.folder-title,
 .category-toolbar .folder-title{
@@ -1508,18 +1564,10 @@ textarea,
   backdrop-filter:none!important;
   -webkit-backdrop-filter:none!important;
   padding:0!important;
-  margin:0!important;
+  margin:0 8px 0 0!important;
   width:auto!important;
   font-size:clamp(32px,4vw,54px)!important;
   line-height:1.05!important;
-}
-.folder-action-row{
-  display:flex!important;
-  align-items:center!important;
-  justify-content:flex-start!important;
-  gap:10px!important;
-  flex-wrap:wrap!important;
-  width:100%!important;
 }
 .folder-actions,
 #categoryActions{
@@ -1530,137 +1578,25 @@ textarea,
   margin:0!important;
 }
 .folder-back-btn{
-  margin:0!important;
+  margin-left:auto!important;
   flex:0 0 auto!important;
-  width:auto!important;
-  min-height:44px!important;
-  padding:10px 16px!important;
-  border-radius:999px!important;
+  width:58px!important;
+  height:58px!important;
+  padding:0!important;
+  border-radius:18px!important;
   display:inline-flex!important;
   align-items:center!important;
   justify-content:center!important;
-  font-size:15px!important;
+  font-size:34px!important;
   line-height:1!important;
   font-weight:900!important;
 }
 @media(max-width:700px){
   .category-toolbar.folder-topbar{padding:18px!important;align-items:flex-start!important;}
   .folder-info-row{gap:10px!important;}
-  .folder-action-row{gap:8px!important;}
-  .folder-actions,
-  #categoryActions{gap:8px!important;}
-  .folder-back-btn{min-height:38px!important;min-width:38px!important;padding:8px 12px!important;border-radius:999px!important;font-size:16px!important;}
-}
-
-/* Update folder page buttons */
-.folder-action-row{
-  justify-content:space-between!important;
-}
-#categoryActions{
-  flex:1 1 auto!important;
-}
-.folder-back-btn{
-  margin-left:auto!important;
-  min-height:35px!important;
-  min-width:38px!important;
-  padding:8px 12px!important;
-  font-size:16px!important;
-}
-.btn.danger,
-.danger{
-  background:#d9534f!important;
-  color:#fff!important;
-}
-.btn.danger:hover,
-.danger:hover{
-  background:#bd3f3b!important;
+  .folder-back-btn{width:52px!important;height:52px!important;border-radius:16px!important;}
 }
 </style>
-
-<style id="wira-bugfix-loading-sort-v2">
-/* Bug fix: loading awal harus benar-benar hilang dan tidak meninggalkan teks di halaman */
-.loading-screen.hidden{
-  display:none!important;
-}
-.loading-screen.hidden .loading-title,
-.loading-screen.hidden .loading-sea-creature{
-  display:none!important;
-}
-
-/* Loading kecil untuk buka cerita: default-nya disembunyikan agar tulisan Loading tidak nyangkut */
-.story-bubble-loading{
-  display:none!important;
-  position:fixed!important;
-  inset:0!important;
-  z-index:9998!important;
-  align-items:center!important;
-  justify-content:center!important;
-  pointer-events:none!important;
-  background:rgba(232,245,255,.28)!important;
-}
-.story-bubble-loading.active{
-  display:flex!important;
-}
-.story-bubble-text{
-  color:var(--brown)!important;
-  font-size:14px!important;
-  font-weight:800!important;
-  letter-spacing:.2px!important;
-}
-.story-bubble-loading:not(.active) .story-bubble-text{
-  display:none!important;
-}
-
-/* Bug fix: tombol/area Urutkan dikembalikan rapi */
-.sort-bar{
-  display:flex!important;
-  align-items:center!important;
-  justify-content:flex-end!important;
-  gap:10px!important;
-  flex-wrap:wrap!important;
-  margin:0 0 18px!important;
-  width:100%!important;
-}
-.sort-bar label{
-  margin:0!important;
-  color:var(--brown)!important;
-  font-weight:800!important;
-  white-space:nowrap!important;
-}
-.sort-select{
-  width:auto!important;
-  min-width:130px!important;
-  max-width:100%!important;
-  border-radius:999px!important;
-  padding:9px 13px!important;
-  line-height:1.2!important;
-  display:inline-block!important;
-}
-@media(max-width:700px){
-  .sort-bar{
-    justify-content:space-between!important;
-    align-items:center!important;
-    padding:10px 12px!important;
-  }
-  .sort-bar label{font-size:14px!important;}
-  .sort-select{min-width:145px!important;flex:0 1 auto!important;}
-}
-</style>
-<script id="wira-loading-safety-fix-v2">
-(function(){
-  function killInitialLoading(){
-    var screen=document.getElementById('loadingScreen');
-    if(screen){
-      screen.classList.add('hidden');
-      screen.setAttribute('aria-hidden','true');
-    }
-  }
-  window.addEventListener('load',function(){setTimeout(killInitialLoading,900);});
-  document.addEventListener('DOMContentLoaded',function(){setTimeout(killInitialLoading,2200);});
-  setTimeout(killInitialLoading,3500);
-})();
-</script>
-
 </head>
 <body>
 
@@ -1795,12 +1731,25 @@ textarea,
 </script>
 
 <div aria-label="Loading" aria-live="polite" class="loading-screen" id="loadingScreen">
-<span aria-hidden="true" class="loading-sea-creature whale"></span>
-<span aria-hidden="true" class="loading-sea-creature fish"></span>
-<span aria-hidden="true" class="loading-sea-creature ray"></span>
-<span aria-hidden="true" class="loading-sea-creature fish small"></span>
-<span aria-hidden="true" class="loading-sea-creature jelly"></span>
-<div class="loading-title" id="loadingMessage">Loading<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div>
+<div class="loading-card">
+<div class="loading-ocean">
+<div aria-hidden="true" class="loading-fish">
+<svg fill="none" viewbox="0 0 180 110">
+<path d="M48 55C70 28 112 24 143 46C151 51 158 54 169 55C158 56 151 60 143 66C112 88 70 82 48 55Z" fill="#ffffff" stroke="#2f6fae" stroke-linejoin="round" stroke-width="4"></path>
+<path d="M48 55L17 31V79L48 55Z" fill="#d9efff" stroke="#2f6fae" stroke-linejoin="round" stroke-width="4"></path>
+<path d="M88 38C96 47 98 62 88 72" stroke="#5c97cf" stroke-linecap="round" stroke-width="4"></path>
+<circle cx="132" cy="48" fill="#2f6fae" r="4"></circle>
+</svg>
+</div>
+<span class="loading-bubble b1"></span>
+<span class="loading-bubble b2"></span>
+<span class="loading-bubble b3"></span>
+</div>
+<div class="loading-title">
+      Loading<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span>
+</div>
+<p class="loading-subtitle" id="loadingMessage">Ikan kecil sedang menyiapkan ceritamu 🐟</p>
+</div>
 </div>
 <div aria-hidden="true" class="sea-decor fish-a">
 <svg fill="none" viewbox="0 0 180 110">
@@ -1908,11 +1857,9 @@ textarea,
 <div class="category-toolbar folder-topbar">
   <div class="folder-info-row">
     <h2 class="section-title folder-title" id="categoryTitle"></h2>
-    <div class="folder-action-row">
-      <div id="categoryActions" class="folder-actions"></div>
-      <button class="btn light smallbtn folder-back-btn" onclick="closeCategory()" aria-label="Kembali" title="Kembali">↩</button>
-    </div>
+    <div id="categoryActions" class="folder-actions"></div>
   </div>
+  <button class="btn light folder-back-btn" onclick="closeCategory()" aria-label="Kembali ke folder" title="Kembali ke folder">←</button>
 </div>
 <div class="sort-bar" id="storySortBar" style="display:none">
 <label for="folderStorySort">Urutkan cerita</label>
@@ -2135,11 +2082,11 @@ function hideStoryBubbleLoading(){
 
 
 
-function showLoading(message="Loading..."){
+function showLoading(message="Ikan kecil sedang menyiapkan ceritamu 🐟"){
   const screen=document.getElementById("loadingScreen");
   const text=document.getElementById("loadingMessage");
 
-  if(text) text.innerHTML='Loading<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span>';
+  if(text) text.textContent=message;
   if(screen) screen.classList.remove("hidden");
 }
 
@@ -2776,12 +2723,12 @@ function openCategory(folder){
   if(grid) grid.style.display="none";
   if(manager) manager.style.display="none";
   if(results) results.classList.add("active");
-  if(title) title.textContent=folder;
+  if(title) title.textContent=`Folder ${folder}`;
 
   if(actions){
     actions.innerHTML=`
-      <button class="btn danger smallbtn" onclick="deleteFolder('${escapeJs(folder)}')">× Hapus Folder</button>
       <button class="btn light smallbtn" onclick="renameFolder('${escapeJs(folder)}')">✎ Ganti Nama</button>
+      <button class="btn secondary smallbtn" onclick="deleteFolder('${escapeJs(folder)}')">× Hapus Folder</button>
     `;
   }
 
@@ -2916,7 +2863,7 @@ function deleteFolder(name){
     return;
   }
 
-  const ok=confirm(`Yakin ingin menghapus folder "${name}"?\n\nFolder ini akan dihapus dari daftar folder.`);
+  const ok=confirm(`Yakin ingin menghapus folder "${name}"?`);
   if(!ok) return;
 
   saveFolders(folders.filter(folder=>folder!==name));
@@ -3336,7 +3283,7 @@ function deleteStory(id){
   const story = getStories().find(s => s.id === id);
   if(!story) return;
 
-  if(!confirm(`Yakin ingin menghapus cerita "${story.title}"?\n\nCerita ini akan dihapus dari koleksi.`)) return;
+  if(!confirm(`Yakin ingin menghapus cerita "${story.title}"?`)) return;
 
   let saved = JSON.parse(localStorage.getItem("wiraStories") || "[]");
   saved = saved.filter(x => x.id !== id);
@@ -3826,12 +3773,12 @@ function openCategory(folder){
   if(grid) grid.style.display="none";
   if(manager) manager.style.display="none";
   if(results) results.classList.add("active");
-  if(title) title.textContent=folder;
+  if(title) title.textContent=`Folder ${folder}`;
 
   if(actions){
     actions.innerHTML=`
       <button class="btn light smallbtn" onclick="renameFolder('${escapeJs(folder)}')">✎ Ganti Nama</button>
-      <button class="btn danger smallbtn" onclick="deleteFolder('${escapeJs(folder)}')">× Hapus Folder</button>`;
+      <button class="btn secondary smallbtn" onclick="deleteFolder('${escapeJs(folder)}')">× Hapus Folder</button>`;
   }
 
   if(list){
@@ -4820,7 +4767,7 @@ function openCategory(folder){
 
   if(grid) grid.style.display="none";
   if(results) results.classList.add("active");
-  if(title) title.textContent=folder;
+  if(title) title.textContent=`Folder ${folder}`;
 
   showInsideFolderUi();
 
@@ -4830,7 +4777,7 @@ function openCategory(folder){
         onclick="renameFolder('${escapeJs(folder)}')">
         ✎ Ganti Nama
       </button>
-      <button class="btn danger smallbtn"
+      <button class="btn secondary smallbtn"
         onclick="deleteFolder('${escapeJs(folder)}')">
         × Hapus Folder
       </button>`;
@@ -5225,7 +5172,7 @@ function openCategory(folder){
 
   if(grid) grid.style.display="none";
   if(results) results.classList.add("active");
-  if(title) title.textContent=folder;
+  if(title) title.textContent=`Folder ${folder}`;
 
   showInsideFolderUi();
 
@@ -5235,7 +5182,7 @@ function openCategory(folder){
         onclick="renameFolder('${escapeJs(folder)}')">
         ✎ Ganti Nama
       </button>
-      <button class="btn danger smallbtn"
+      <button class="btn secondary smallbtn"
         onclick="deleteFolder('${escapeJs(folder)}')">
         × Hapus Folder
       </button>`;
@@ -13516,6 +13463,240 @@ async function toggleUnderwaterAmbient(){
     if(typeof window.renderAchievementPanel==='function') window.renderAchievementPanel();
     addAchievementLabels();
   });
+})();
+</script>
+
+
+
+<!-- WIRA PATCH: folder header icon layout + lightweight first loading -->
+<style id="wira-folder-header-loading-patch">
+  /* Loading pertama: kecil, ringan, ikan banyak lewat */
+  .loading-screen{
+    overflow:hidden!important;
+    background:linear-gradient(180deg,#eaf6ff 0%,#f8fcff 100%)!important;
+  }
+  .loading-card{
+    width:auto!important;
+    min-width:0!important;
+    padding:0!important;
+    border:0!important;
+    border-radius:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+  }
+  .loading-ocean{
+    position:fixed!important;
+    inset:0!important;
+    height:auto!important;
+    border-radius:0!important;
+    background:transparent!important;
+    pointer-events:none!important;
+  }
+  .loading-title{
+    position:relative!important;
+    z-index:3!important;
+    margin:0!important;
+    padding:8px 13px!important;
+    border-radius:999px!important;
+    background:rgba(255,255,255,.56)!important;
+    border:1px solid rgba(200,222,242,.60)!important;
+    color:#315f86!important;
+    font-size:13px!important;
+    line-height:1!important;
+    font-weight:900!important;
+    letter-spacing:.02em!important;
+    box-shadow:0 8px 22px rgba(47,111,174,.08)!important;
+  }
+  .loading-subtitle,
+  .loading-bubble{display:none!important;}
+  .loading-fish{
+    width:42px!important;
+    height:26px!important;
+    top:50%!important;
+    left:-70px!important;
+    opacity:.68!important;
+    animation:wiraLightFishSwim 5.8s linear infinite!important;
+    filter:drop-shadow(0 4px 6px rgba(47,111,174,.14))!important;
+  }
+  .loading-fish svg path{stroke-width:6!important;}
+  .loading-fish svg circle{r:5!important;}
+  .loading-fish.wira-fish-2{top:18%!important;animation-duration:7.4s!important;animation-delay:-1.7s!important;transform:scale(.75)!important;opacity:.42!important;}
+  .loading-fish.wira-fish-3{top:31%!important;animation-duration:6.4s!important;animation-delay:-3.1s!important;transform:scale(.62)!important;opacity:.36!important;}
+  .loading-fish.wira-fish-4{top:44%!important;animation-duration:8.5s!important;animation-delay:-4.6s!important;transform:scale(.9)!important;opacity:.50!important;}
+  .loading-fish.wira-fish-5{top:60%!important;animation-duration:7.1s!important;animation-delay:-2.4s!important;transform:scale(.68)!important;opacity:.38!important;}
+  .loading-fish.wira-fish-6{top:72%!important;animation-duration:9.2s!important;animation-delay:-5.5s!important;transform:scale(.8)!important;opacity:.34!important;}
+  .loading-fish.wira-fish-7{top:83%!important;animation-duration:6.8s!important;animation-delay:-.9s!important;transform:scale(.55)!important;opacity:.30!important;}
+  .loading-fish.wira-fish-8{top:25%!important;animation-duration:10s!important;animation-delay:-6.8s!important;transform:scale(.48)!important;opacity:.25!important;}
+  @keyframes wiraLightFishSwim{
+    0%{left:-80px;translate:0 0;}
+    50%{translate:0 -8px;}
+    100%{left:calc(100% + 80px);translate:0 0;}
+  }
+
+  /* Page dalam folder: nama folder di tengah, tombol icon kiri/kanan */
+  .category-toolbar.folder-topbar{
+    display:grid!important;
+    grid-template-columns:1fr auto 1fr!important;
+    align-items:center!important;
+    gap:12px!important;
+    width:100%!important;
+    padding:18px 20px!important;
+    margin:0 0 18px!important;
+  }
+  .category-toolbar.folder-topbar .folder-info-row{display:contents!important;}
+  #categoryActions.folder-actions{
+    grid-column:1!important;
+    justify-self:start!important;
+    display:flex!important;
+    align-items:center!important;
+    gap:9px!important;
+    margin:0!important;
+  }
+  #categoryTitle.folder-title,
+  .category-toolbar .folder-title{
+    grid-column:2!important;
+    justify-self:center!important;
+    text-align:center!important;
+    margin:0!important;
+    padding:0!important;
+    max-width:min(58vw,620px)!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+    font-size:clamp(24px,4.2vw,44px)!important;
+    line-height:1.08!important;
+  }
+  .folder-back-btn{
+    grid-column:3!important;
+    justify-self:end!important;
+    margin:0!important;
+  }
+  .folder-icon-btn,
+  .folder-back-btn{
+    width:52px!important;
+    height:52px!important;
+    min-width:52px!important;
+    padding:0!important;
+    border-radius:17px!important;
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    font-size:0!important;
+    line-height:1!important;
+  }
+  .folder-icon-btn svg,
+  .folder-back-btn svg{
+    width:22px!important;
+    height:22px!important;
+    display:block!important;
+    flex:0 0 auto!important;
+  }
+  .folder-icon-btn svg{stroke:currentColor!important;}
+  .folder-back-btn svg{stroke:currentColor!important;}
+  @media(max-width:700px){
+    .category-toolbar.folder-topbar{
+      grid-template-columns:1fr auto 1fr!important;
+      padding:14px!important;
+      gap:8px!important;
+    }
+    .folder-icon-btn,
+    .folder-back-btn{
+      width:46px!important;
+      height:46px!important;
+      min-width:46px!important;
+      border-radius:15px!important;
+    }
+    .folder-icon-btn svg,
+    .folder-back-btn svg{width:20px!important;height:20px!important;}
+    #categoryTitle.folder-title,.category-toolbar .folder-title{max-width:40vw!important;font-size:clamp(21px,6vw,30px)!important;}
+    #categoryActions.folder-actions{gap:7px!important;}
+  }
+</style>
+<script id="wira-folder-header-loading-patch-script">
+(function(){
+  'use strict';
+
+  const icons={
+    edit:'<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 20h4.8L19.3 9.5a2.1 2.1 0 0 0 0-3L17.5 4.7a2.1 2.1 0 0 0-3 0L4 15.2V20Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M13.5 5.7l4.8 4.8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    trash:'<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M9 7V5.8C9 4.8 9.8 4 10.8 4h2.4c1 0 1.8.8 1.8 1.8V7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M8 10v8.2c0 1 .8 1.8 1.8 1.8h4.4c1 0 1.8-.8 1.8-1.8V10" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M11 11.5v5M13 11.5v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    back:'<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14.5 6 8.5 12l6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  };
+
+  function escJs(value){
+    if(typeof window.escapeJs==='function') return window.escapeJs(value);
+    return String(value).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n').replace(/\r/g,'');
+  }
+
+  function normalizeFolderHeader(){
+    const title=document.getElementById('categoryTitle');
+    const actions=document.getElementById('categoryActions');
+    const back=document.querySelector('.folder-back-btn');
+    if(title){
+      title.textContent=String(title.textContent||'').replace(/^\s*Folder\s+/i,'').trim();
+      title.setAttribute('title',title.textContent);
+    }
+    const folder=title?.textContent?.trim() || (typeof currentOpenFolder!=='undefined' ? currentOpenFolder : '');
+    if(actions && folder){
+      actions.innerHTML=`
+        <button class="btn light smallbtn folder-icon-btn" onclick="renameFolder('${escJs(folder)}')" aria-label="Ganti nama folder" title="Ganti nama folder">${icons.edit}</button>
+        <button class="btn secondary smallbtn folder-icon-btn" onclick="deleteFolder('${escJs(folder)}')" aria-label="Hapus folder" title="Hapus folder">${icons.trash}</button>`;
+    }
+    if(back){
+      back.innerHTML=icons.back;
+      back.setAttribute('aria-label','Kembali');
+      back.setAttribute('title','Kembali');
+    }
+  }
+
+  function prepareLightLoadingFish(){
+    const ocean=document.querySelector('#loadingScreen .loading-ocean');
+    const fish=ocean?.querySelector('.loading-fish');
+    if(!ocean || !fish || ocean.dataset.wiraManyFish==='yes') return;
+    ocean.dataset.wiraManyFish='yes';
+    for(let i=2;i<=8;i++){
+      const clone=fish.cloneNode(true);
+      clone.classList.add('wira-fish-'+i);
+      ocean.appendChild(clone);
+    }
+    const message=document.getElementById('loadingMessage');
+    if(message) message.textContent='';
+  }
+
+  document.addEventListener('DOMContentLoaded',function(){
+    prepareLightLoadingFish();
+    normalizeFolderHeader();
+  });
+  window.addEventListener('load',function(){
+    prepareLightLoadingFish();
+    normalizeFolderHeader();
+  });
+
+  const oldOpen=window.openCategory;
+  if(typeof oldOpen==='function'){
+    window.openCategory=function(){
+      const result=oldOpen.apply(this,arguments);
+      requestAnimationFrame(normalizeFolderHeader);
+      return result;
+    };
+  }
+  const oldRefresh=window.refreshCurrentFolder;
+  if(typeof oldRefresh==='function'){
+    window.refreshCurrentFolder=function(){
+      const result=oldRefresh.apply(this,arguments);
+      requestAnimationFrame(normalizeFolderHeader);
+      return result;
+    };
+  }
+  const oldShow=window.showInsideFolderUi;
+  if(typeof oldShow==='function'){
+    window.showInsideFolderUi=function(){
+      const result=oldShow.apply(this,arguments);
+      requestAnimationFrame(normalizeFolderHeader);
+      return result;
+    };
+  }
 })();
 </script>
 
