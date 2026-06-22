@@ -297,61 +297,31 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
   pointer-events:none;
 }
 .loading-card{
-  width:min(360px,calc(100% - 40px));
+  width:min(280px,calc(100% - 48px));
   text-align:center;
-  padding:34px 28px;
-  background:rgba(255,255,255,.78);
+  padding:28px 24px;
+  background:rgba(255,255,255,.82);
   border:1px solid rgba(200,222,242,.9);
-  border-radius:30px;
-  box-shadow:0 20px 55px rgba(47,111,174,.16);
+  border-radius:26px;
+  box-shadow:0 18px 45px rgba(47,111,174,.14);
   backdrop-filter:blur(10px);
 }
-.loading-ocean{
-  position:relative;
-  height:125px;
-  overflow:hidden;
-  border-radius:24px;
-  background:linear-gradient(180deg,#dff2ff,#c8e8ff);
+.loading-ocean,
+.loading-fish,
+.loading-bubble,
+.loading-subtitle{
+  display:none !important;
 }
-.loading-fish{
-  position:absolute;
-  width:118px;
-  height:72px;
-  top:27px;
-  left:-125px;
-  animation:fishSwim 2.4s ease-in-out infinite;
-}
-.loading-fish svg{
-  width:100%;
-  height:100%;
-  display:block;
-}
-.loading-bubble{
-  position:absolute;
-  border:2px solid rgba(47,111,174,.32);
-  border-radius:50%;
-  animation:bubbleUp 2.2s ease-in infinite;
-}
-.loading-bubble.b1{width:12px;height:12px;left:63%;bottom:10px;animation-delay:.1s}
-.loading-bubble.b2{width:8px;height:8px;left:72%;bottom:5px;animation-delay:.8s}
-.loading-bubble.b3{width:15px;height:15px;left:80%;bottom:12px;animation-delay:1.3s}
 .loading-title{
-  margin:20px 0 5px;
+  margin:0;
   color:var(--brown);
   font-size:24px;
   font-weight:900;
 }
-.loading-subtitle{
-  margin:0;
-  color:var(--muted);
-  font-size:14px;
-}
 .loading-dots span{
   display:inline-block;
-  animation:dotBounce 1.2s infinite;
+  animation:none;
 }
-.loading-dots span:nth-child(2){animation-delay:.18s}
-.loading-dots span:nth-child(3){animation-delay:.36s}
 
 @keyframes fishSwim{
   0%{left:-125px;transform:translateY(4px) rotate(-2deg)}
@@ -1529,6 +1499,111 @@ textarea,
 }
 </style>
 
+
+<style id="wira-folder-clean-fix">
+/* FIX Folder page: hilangkan dekorasi kecil/card yang mengganggu di atas folder */
+.sea-decor{display:none!important;}
+
+/* Saat masuk ke folder, card judul Kumpulan Cerita disembunyikan via JS */
+#storiesHeadingCard[style*="display: none"]{display:none!important;}
+
+/* Rapikan header folder */
+.category-toolbar.folder-topbar{
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:flex-start!important;
+  gap:14px!important;
+  flex-wrap:wrap!important;
+  width:100%!important;
+  padding:28px!important;
+  margin:0 0 22px!important;
+  border-radius:28px!important;
+}
+.folder-info-row{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-start!important;
+  gap:12px!important;
+  flex-wrap:nowrap!important;
+  min-width:0!important;
+  width:100%!important;
+}
+#categoryTitle.folder-title,
+.category-toolbar .folder-title{
+  background:none!important;
+  border:0!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  padding:0!important;
+  margin:0!important;
+  width:auto!important;
+  font-size:clamp(32px,4vw,54px)!important;
+  line-height:1.05!important;
+}
+.folder-action-row{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:10px!important;
+  flex-wrap:wrap!important;
+  width:100%!important;
+}
+.folder-actions,
+#categoryActions{
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  flex-wrap:wrap!important;
+  margin:0!important;
+}
+.folder-back-btn{
+  margin:0!important;
+  flex:0 0 auto!important;
+  width:auto!important;
+  min-height:44px!important;
+  padding:10px 16px!important;
+  border-radius:999px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  font-size:15px!important;
+  line-height:1!important;
+  font-weight:900!important;
+}
+@media(max-width:700px){
+  .category-toolbar.folder-topbar{padding:18px!important;align-items:flex-start!important;}
+  .folder-info-row{gap:10px!important;}
+  .folder-action-row{gap:8px!important;}
+  .folder-actions,
+  #categoryActions{gap:8px!important;}
+  .folder-back-btn{min-height:38px!important;min-width:38px!important;padding:8px 12px!important;border-radius:999px!important;font-size:16px!important;}
+}
+
+/* Update folder page buttons */
+.folder-action-row{
+  justify-content:space-between!important;
+}
+#categoryActions{
+  flex:1 1 auto!important;
+}
+.folder-back-btn{
+  margin-left:auto!important;
+  min-height:35px!important;
+  min-width:38px!important;
+  padding:8px 12px!important;
+  font-size:16px!important;
+}
+.btn.danger,
+.danger{
+  background:#d9534f!important;
+  color:#fff!important;
+}
+.btn.danger:hover,
+.danger:hover{
+  background:#bd3f3b!important;
+}
+</style>
 </head>
 <body>
 
@@ -1664,23 +1739,7 @@ textarea,
 
 <div aria-label="Loading" aria-live="polite" class="loading-screen" id="loadingScreen">
 <div class="loading-card">
-<div class="loading-ocean">
-<div aria-hidden="true" class="loading-fish">
-<svg fill="none" viewbox="0 0 180 110">
-<path d="M48 55C70 28 112 24 143 46C151 51 158 54 169 55C158 56 151 60 143 66C112 88 70 82 48 55Z" fill="#ffffff" stroke="#2f6fae" stroke-linejoin="round" stroke-width="4"></path>
-<path d="M48 55L17 31V79L48 55Z" fill="#d9efff" stroke="#2f6fae" stroke-linejoin="round" stroke-width="4"></path>
-<path d="M88 38C96 47 98 62 88 72" stroke="#5c97cf" stroke-linecap="round" stroke-width="4"></path>
-<circle cx="132" cy="48" fill="#2f6fae" r="4"></circle>
-</svg>
-</div>
-<span class="loading-bubble b1"></span>
-<span class="loading-bubble b2"></span>
-<span class="loading-bubble b3"></span>
-</div>
-<div class="loading-title">
-      Loading<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span>
-</div>
-<p class="loading-subtitle" id="loadingMessage">Ikan kecil sedang menyiapkan ceritamu 🐟</p>
+<div class="loading-title" id="loadingMessage">Loading<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div>
 </div>
 </div>
 <div aria-hidden="true" class="sea-decor fish-a">
@@ -1766,7 +1825,7 @@ textarea,
 <div class="grid" id="homeStoryGrid"></div>
 </section>
 <section class="page" id="stories">
-<div class="section-heading-card">
+<div class="section-heading-card" id="storiesHeadingCard">
 <h1 class="section-title" id="storiesPageHeading">Kumpulan Cerita</h1>
 <p class="section-desc" id="storiesPageIntro">Pilih folder berdasarkan level bacaan.</p>
 </div>
@@ -1786,12 +1845,14 @@ textarea,
 </div>
 <div class="category-grid" id="categoryGrid"></div>
 <div class="category-results" id="categoryResults">
-<div class="category-toolbar">
-<div>
-<h2 class="section-title" id="categoryTitle" style="margin:0"></h2>
-<div id="categoryActions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
-</div>
-<button class="btn light" onclick="closeCategory()">← Kembali ke folder</button>
+<div class="category-toolbar folder-topbar">
+  <div class="folder-info-row">
+    <h2 class="section-title folder-title" id="categoryTitle"></h2>
+    <div class="folder-action-row">
+      <div id="categoryActions" class="folder-actions"></div>
+      <button class="btn light smallbtn folder-back-btn" onclick="closeCategory()" aria-label="Kembali" title="Kembali">↩</button>
+    </div>
+  </div>
 </div>
 <div class="sort-bar" id="storySortBar" style="display:none">
 <label for="folderStorySort">Urutkan cerita</label>
@@ -2014,11 +2075,11 @@ function hideStoryBubbleLoading(){
 
 
 
-function showLoading(message="Ikan kecil sedang menyiapkan ceritamu 🐟"){
+function showLoading(message="Loading..."){
   const screen=document.getElementById("loadingScreen");
   const text=document.getElementById("loadingMessage");
 
-  if(text) text.textContent=message;
+  if(text) text.innerHTML='Loading<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span>';
   if(screen) screen.classList.remove("hidden");
 }
 
@@ -2655,12 +2716,12 @@ function openCategory(folder){
   if(grid) grid.style.display="none";
   if(manager) manager.style.display="none";
   if(results) results.classList.add("active");
-  if(title) title.textContent=`Folder ${folder}`;
+  if(title) title.textContent=folder;
 
   if(actions){
     actions.innerHTML=`
+      <button class="btn danger smallbtn" onclick="deleteFolder('${escapeJs(folder)}')">× Hapus Folder</button>
       <button class="btn light smallbtn" onclick="renameFolder('${escapeJs(folder)}')">✎ Ganti Nama</button>
-      <button class="btn secondary smallbtn" onclick="deleteFolder('${escapeJs(folder)}')">× Hapus Folder</button>
     `;
   }
 
@@ -2795,7 +2856,7 @@ function deleteFolder(name){
     return;
   }
 
-  const ok=confirm(`Yakin ingin menghapus folder "${name}"?`);
+  const ok=confirm(`Yakin ingin menghapus folder "${name}"?\n\nFolder ini akan dihapus dari daftar folder.`);
   if(!ok) return;
 
   saveFolders(folders.filter(folder=>folder!==name));
@@ -3215,7 +3276,7 @@ function deleteStory(id){
   const story = getStories().find(s => s.id === id);
   if(!story) return;
 
-  if(!confirm(`Yakin ingin menghapus cerita "${story.title}"?`)) return;
+  if(!confirm(`Yakin ingin menghapus cerita "${story.title}"?\n\nCerita ini akan dihapus dari koleksi.`)) return;
 
   let saved = JSON.parse(localStorage.getItem("wiraStories") || "[]");
   saved = saved.filter(x => x.id !== id);
@@ -3705,12 +3766,12 @@ function openCategory(folder){
   if(grid) grid.style.display="none";
   if(manager) manager.style.display="none";
   if(results) results.classList.add("active");
-  if(title) title.textContent=`Folder ${folder}`;
+  if(title) title.textContent=folder;
 
   if(actions){
     actions.innerHTML=`
       <button class="btn light smallbtn" onclick="renameFolder('${escapeJs(folder)}')">✎ Ganti Nama</button>
-      <button class="btn secondary smallbtn" onclick="deleteFolder('${escapeJs(folder)}')">× Hapus Folder</button>`;
+      <button class="btn danger smallbtn" onclick="deleteFolder('${escapeJs(folder)}')">× Hapus Folder</button>`;
   }
 
   if(list){
@@ -4624,6 +4685,7 @@ function updateSrsCountersOnly(){
 }
 
 function showFolderOverviewUi(){
+  document.getElementById("storiesHeadingCard")?.style.setProperty("display","block");
   document.getElementById("storiesPageHeading")?.style.setProperty("display","block");
   document.getElementById("storiesPageIntro")?.style.setProperty("display","block");
   document.getElementById("folderManagerPanel")?.style.setProperty("display","block");
@@ -4632,6 +4694,7 @@ function showFolderOverviewUi(){
 }
 
 function showInsideFolderUi(){
+  document.getElementById("storiesHeadingCard")?.style.setProperty("display","none");
   document.getElementById("storiesPageHeading")?.style.setProperty("display","none");
   document.getElementById("storiesPageIntro")?.style.setProperty("display","none");
   document.getElementById("folderManagerPanel")?.style.setProperty("display","none");
@@ -4697,7 +4760,7 @@ function openCategory(folder){
 
   if(grid) grid.style.display="none";
   if(results) results.classList.add("active");
-  if(title) title.textContent=`Folder ${folder}`;
+  if(title) title.textContent=folder;
 
   showInsideFolderUi();
 
@@ -4707,7 +4770,7 @@ function openCategory(folder){
         onclick="renameFolder('${escapeJs(folder)}')">
         ✎ Ganti Nama
       </button>
-      <button class="btn secondary smallbtn"
+      <button class="btn danger smallbtn"
         onclick="deleteFolder('${escapeJs(folder)}')">
         × Hapus Folder
       </button>`;
@@ -5102,7 +5165,7 @@ function openCategory(folder){
 
   if(grid) grid.style.display="none";
   if(results) results.classList.add("active");
-  if(title) title.textContent=`Folder ${folder}`;
+  if(title) title.textContent=folder;
 
   showInsideFolderUi();
 
@@ -5112,7 +5175,7 @@ function openCategory(folder){
         onclick="renameFolder('${escapeJs(folder)}')">
         ✎ Ganti Nama
       </button>
-      <button class="btn secondary smallbtn"
+      <button class="btn danger smallbtn"
         onclick="deleteFolder('${escapeJs(folder)}')">
         × Hapus Folder
       </button>`;
