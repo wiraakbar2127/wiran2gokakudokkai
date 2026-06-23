@@ -3414,7 +3414,7 @@ function getStrongTargets(jp){
 function buildSrsItems(){const done=new Set(getCompletedStories().map(String));const items=[];getStories().filter(s=>done.has(String(s.id))).forEach(story=>{(story.content||[]).forEach((pair,si)=>{const jp=Array.isArray(pair)?pair[0]:pair?.japanese||pair?.jp||"";const idn=Array.isArray(pair)?pair[1]:pair?.indonesian||pair?.id||"";getStrongTargets(jp).forEach((t,ti)=>items.push({key:`${story.id}::${si}::${ti}`,storyId:String(story.id),storyTitle:story.title||"Tanpa Judul",folder:story.level||"N2",questionHtml:t.questionHtml,translationHtml:String(idn||""),answer:t.answer}))})});return items}
 function syncSrsState(items){const s=getSrsState(),now=Date.now();items.forEach(i=>{if(!s[i.key])s[i.key]={level:0,due:now,correct:0,wrong:0,lastResult:null}});saveSrsState(s);return s}
 function getDueSrsItems(){const items=buildSrsItems(),s=syncSrsState(items),now=Date.now();return items.filter(i=>(s[i.key]?.due||0)<=now).sort((a,b)=>(s[a.key]?.due||0)-(s[b.key]?.due||0))}
-function renderSrsPage(){const items=buildSrsItems(),s=syncSrsState(items),now=Date.now();document.getElementById("srsDueCount").textContent=items.filter(i=>(s[i.key]?.due||0)<=now).length;document.getElementById("srsLearningCount").textContent=items.filter(i=>{const l=s[i.key]?.level||0;return l>0&&l<(typeof maxLevel==="function"?maxLevel():12)}).length;document.getElementById("srsMasteredCount").textContent=items.filter(i=>(s[i.key]?.level||0)>=(typeof maxLevel==="function"?maxLevel():12)).length;const map=new Map();items.forEach(i=>{if(!map.has(i.storyId))map.set(i.storyId,{title:i.storyTitle,total:0,due:0});const info=map.get(i.storyId);info.total++;if((s[i.key]?.due||0)<=now)info.due++});document.getElementById("srsStoryList").innerHTML=map.size?[...map.values()].map(x=>`<div class="srs-story-row"><div><strong>${escapeHtml(x.title)}</strong></div><span>${x.due}/${x.total} due</span></div>`).join(""):'<div class="empty">Belum ada cerita yang selesai dibaca.</div>';startSrsSession()}
+function renderSrsPage(){const items=buildSrsItems(),s=syncSrsState(items),now=Date.now();document.getElementById("srsDueCount").textContent=items.filter(i=>(s[i.key]?.due||0)<=now).length;document.getElementById("srsLearningCount").textContent=items.filter(i=>{const l=s[i.key]?.level||0;return l>0&&l<(typeof maxLevel==="function"?maxLevel():12)}).length;document.getElementById("srsMasteredCount").textContent=items.filter(i=>(s[i.key]?.level||0)>=(typeof maxLevel==="function"?maxLevel():12)).length;const map=new Map();items.forEach(i=>{if(!map.has(i.storyId))map.set(i.storyId,{title:i.storyTitle,total:0,due:0});const info=map.get(i.storyId);info.total++;if((s[i.key]?.due||0)<=now)info.due++});document.getElementById("srsStoryList").innerHTML=map.size?[...map.values()].slice(0,6).map(x=>`<div class="srs-story-row"><div><strong>${escapeHtml(x.title)}</strong></div><span>${x.due}/${x.total} due</span></div>`).join(""):'<div class="empty">Belum ada cerita yang selesai dibaca.</div>';startSrsSession()}
 function startSrsSession(){srsQueue=getDueSrsItems();srsCurrentIndex=0;srsLocked=false;renderCurrentSrsCard()}
 function renderCurrentSrsCard(){const area=document.getElementById("srsPracticeArea"),bar=document.querySelector("#srsProgress>div");if(!area)return;if(!srsQueue.length||srsCurrentIndex>=srsQueue.length){if(bar)bar.style.width="100%";area.innerHTML='<div class="srs-empty"><h2>復習完了！</h2><p>Tidak ada latihan yang jatuh tempo sekarang.</p><button class="btn" onclick="renderSrsPage()">Periksa Lagi</button></div>';return}const item=srsQueue[srsCurrentIndex];if(bar)bar.style.width=`${(srsCurrentIndex/srsQueue.length)*100}%`;area.innerHTML=`<div class="srs-card"><div class="srs-source">${escapeHtml(item.storyTitle)}・${escapeHtml(item.folder)}</div><div id="srsQuestionText" class="srs-question">
         <div id="srsSentenceText">${item.questionHtml}</div>
@@ -12529,7 +12529,7 @@ async function toggleUnderwaterAmbient(){
         if(dayDiff) return dayDiff;
         return String(b.id).localeCompare(String(a.id));
       });
-      list.innerHTML = stories.length ? stories.map(info=>`
+      list.innerHTML = stories.length ? stories.slice(0,6).map(info=>`
         <div class="srs-story-row">
           <div><strong>${escapeHtml(info.title)}</strong><br><span>${info.mastered}/${info.total} dikuasai</span></div>
           <span>${info.due} due</span>
@@ -12758,7 +12758,7 @@ async function toggleUnderwaterAmbient(){
         return String(b.id).localeCompare(String(a.id));
       });
       list.innerHTML = stories.length
-        ? stories.map(info => `
+        ? stories.slice(0,6).map(info => `
           <div class="srs-story-row">
             <div><strong>${esc(info.title)}</strong><br><span>${info.mastered}/${info.total} dikuasai</span></div>
             <span>${info.due} due</span>
@@ -13838,6 +13838,14 @@ async function toggleUnderwaterAmbient(){
 /* override loading helper lama supaya tidak menambah elemen loading lama */
 prepareLightLoadingFish=function(){};
 </script>
+
+
+<style id="wira-srs-active-limit-6-20260623">
+/* Batasi daftar Cerita Aktif di halaman SRS: tampilkan maksimal 6 card */
+#srsStoryList .srs-story-row:nth-of-type(n+7){
+  display:none!important;
+}
+</style>
 
 </body>
 </html>
