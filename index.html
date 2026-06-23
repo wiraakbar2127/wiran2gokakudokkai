@@ -13971,5 +13971,172 @@ prepareLightLoadingFish=function(){};
 }
 </style>
 
+
+
+<style id="wira-folder-story-card-beranda-20260623">
+/* Kumpulan Cerita > dalam folder: card disamakan dengan beranda, tetap ada tombol SRS */
+#storyList{
+  grid-template-columns:repeat(auto-fit,minmax(250px,1fr))!important;
+  align-items:stretch!important;
+}
+#storyList .story-card{
+  min-height:320px!important;
+  padding:22px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  gap:0!important;
+}
+#storyList .story-top-row{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  margin-bottom:0!important;
+  min-height:28px!important;
+}
+#storyList .story-chip-group{
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  flex-wrap:wrap!important;
+  min-width:0!important;
+}
+#storyList .tag{
+  max-width:170px!important;
+}
+#storyList .story-card h3{
+  margin:12px 0 7px!important;
+  min-height:58px!important;
+  max-height:58px!important;
+  display:-webkit-box!important;
+  -webkit-line-clamp:2!important;
+  -webkit-box-orient:vertical!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  word-break:break-word!important;
+}
+#storyList .story-card p{
+  min-height:48px!important;
+  max-height:48px!important;
+  display:-webkit-box!important;
+  -webkit-line-clamp:2!important;
+  -webkit-box-orient:vertical!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  word-break:break-word!important;
+}
+#storyList .story-progress-wrap{
+  margin-top:auto!important;
+  padding-top:16px!important;
+}
+#storyList .folder-card-actions{
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  flex-wrap:wrap!important;
+  margin-top:12px!important;
+  min-height:38px!important;
+}
+#storyList .folder-card-actions .btn{
+  min-height:36px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+}
+#storyList .srs-card-button{
+  min-width:82px!important;
+}
+@media(max-width:700px){
+  #storyList{grid-template-columns:1fr!important;}
+  #storyList .story-card{min-height:292px!important;padding:20px!important;}
+  #storyList .story-card h3{font-size:21px!important;min-height:53px!important;max-height:53px!important;}
+  #storyList .tag{max-width:145px!important;}
+}
+</style>
+
+<script id="wira-folder-story-card-beranda-20260623-script">
+/* Override terakhir agar card cerita di dalam folder rapi seperti beranda */
+function openCategory(folder){
+  currentOpenFolder=folder;
+  saveNavigationState("stories",folder);
+  pushInternalHistory("stories",folder);
+
+  const stories=sortByTitle(
+    getStories().filter(story=>(story.level||"N2")===folder),
+    getSortValue("folderStorySort","day")
+  );
+
+  const grid=document.getElementById("categoryGrid");
+  const results=document.getElementById("categoryResults");
+  const title=document.getElementById("categoryTitle");
+  const actions=document.getElementById("categoryActions");
+  const list=document.getElementById("storyList");
+
+  if(grid) grid.style.display="none";
+  if(results) results.classList.add("active");
+  if(title) title.textContent=`Folder ${folder}`;
+
+  showInsideFolderUi();
+
+  if(actions){
+    actions.innerHTML=`
+      <button class="btn light smallbtn" onclick="renameFolder('${escapeJs(folder)}')">✎ Ganti Nama</button>
+      <button class="btn secondary smallbtn" onclick="deleteFolder('${escapeJs(folder)}')">× Hapus Folder</button>`;
+  }
+
+  if(list){
+    list.innerHTML=stories.length
+      ? stories.map(story=>{
+          const locked=isStoryLocked(story);
+          const completed=isStoryCompleted(story.id);
+          const storyId=encodeURIComponent(String(story.id));
+          const titleText=escapeHtml(story.title||"Tanpa Judul");
+          const descText=escapeHtml(story.description||"Cerita bahasa Jepang dengan furigana interaktif.");
+          const themeText=escapeHtml(story.theme||"読解");
+
+          return `
+            <article class="story-card ${locked?"locked-card":""}" data-story-id="${storyId}">
+              <div class="story-top-row">
+                <div class="story-chip-group">
+                  <span class="tag">${themeText}</span>
+                  ${completionBadge(story.id)}
+                  ${locked?'<span class="lock-badge">🔒 Terkunci</span>':""}
+                </div>
+              </div>
+
+              <h3 data-story-id="${storyId}"
+                onclick="openStory(decodeURIComponent(this.dataset.storyId))"
+                style="cursor:${locked?"not-allowed":"pointer"}"
+                title="${titleText}">
+                ${titleText}
+              </h3>
+
+              <p title="${descText}">${descText}</p>
+              ${storyProgressHtml(story.id)}
+
+              <div class="folder-card-actions">
+                <button class="btn light smallbtn"
+                  data-story-id="${storyId}"
+                  onclick="openStory(decodeURIComponent(this.dataset.storyId))">
+                  Baca
+                </button>
+                ${!locked && completed ? `
+                  <button class="btn srs-card-button smallbtn"
+                    data-story-id="${storyId}"
+                    onclick="startStorySrsFromCard(decodeURIComponent(this.dataset.storyId))">
+                    SRS
+                  </button>` : ""}
+              </div>
+            </article>`;
+        }).join("")
+      : `<div class="empty">Belum ada cerita di folder ${escapeHtml(folder)}.</div>`;
+  }
+
+  if(typeof updateAmbientButtonVisibility==="function"){
+    updateAmbientButtonVisibility();
+  }
+}
+</script>
+
 </body>
 </html>
