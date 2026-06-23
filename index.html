@@ -47,11 +47,11 @@ border:1px solid var(--line);box-shadow:var(--shadow);margin-bottom:30px;positio
 .section-title{font-size:25px;color:var(--brown);margin:24px 0 14px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}
 .story-card{background:var(--card);border:1px solid var(--line);border-radius:26px;padding:22px;
-box-shadow:var(--shadow);cursor:pointer;transition:.2s;display:flex;flex-direction:column;min-height:232px;overflow:hidden}
+box-shadow:var(--shadow);cursor:pointer;transition:.2s}
 .story-card:hover{transform:translateY(-3px)}
-.story-card .tag{display:inline-block;background:var(--soft);color:var(--brown);border-radius:999px;padding:4px 10px;font-size:12px;align-self:flex-start;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.story-card h3{font-size:23px;margin:12px 0 7px;line-height:1.25;min-height:58px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;word-break:break-word}
-.story-card p{color:var(--muted);margin:0;line-height:1.55;min-height:48px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;word-break:break-word}
+.story-card .tag{display:inline-block;background:var(--soft);color:var(--brown);border-radius:999px;padding:4px 10px;font-size:12px}
+.story-card h3{font-size:23px;margin:12px 0 7px}
+.story-card p{color:var(--muted);margin:0}
 
 .category-grid{
   display:grid;
@@ -568,36 +568,26 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
 }
 .danger:hover{background:#bd3f3b!important}
 
-.story-progress-wrap{margin-top:auto;padding-top:16px;width:100%}
+.story-progress-wrap{margin-top:14px}
 .story-progress-head{
   display:flex;
-  align-items:center;
   justify-content:space-between;
   gap:10px;
   font-size:12px;
   font-weight:800;
   color:var(--muted);
-  margin-bottom:7px;
-  line-height:1.2;
+  margin-bottom:6px;
 }
-.story-progress-head span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.story-progress-head span:last-child{white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right;color:var(--brown)}
 .story-progress{
-  height:11px;
+  height:10px;
   border-radius:999px;
   overflow:hidden;
   background:#e8eef4;
-  border:1px solid rgba(47,111,174,.10);
 }
-.story-progress > div{height:100%;transition:.3s;width:0;min-width:0;border-radius:999px}
+.story-progress > div{height:100%;transition:.3s}
 .story-progress.red > div{background:#db6868}
 .story-progress.yellow > div{background:#e3b63f}
 .story-progress.green > div{background:#43a76f}
-#storyList .story-card{min-height:360px}
-#storyList .story-card .move-folder-row,
-#storyList .story-card label,
-#storyList .story-card > div:not(.story-progress-wrap):not(.story-progress-head):not(.story-progress){flex-shrink:0}
-@media(max-width:700px){.story-card{min-height:220px}.story-card h3{font-size:21px;min-height:53px}.story-card p{min-height:46px}}
 
 .locked-card{
   opacity:.68;
@@ -2177,8 +2167,8 @@ function setStoryCompleted(id){
 
 function completionBadge(id){
   return isStoryCompleted(id)
-    ? '<span class="read-status" aria-label="Sudah dibaca" title="Sudah dibaca">✓</span>'
-    : '';
+    ? '<span class="read-status">✓ Sudah Dibaca</span>'
+    : '<span class="read-status unread">Belum Dibaca</span>';
 }
 
 let currentStoryId=null;
@@ -3667,16 +3657,13 @@ function getStorySrsProgress(storyId){
     item=>(state[item.key]?.level||0)>=max
   ).length;
 
-  const rawPercent=(learned/items.length)*100;
-  const percent=Math.round(rawPercent);
-  const precisePercent=Number(rawPercent.toFixed(2));
+  const percent=Math.round((learned/items.length)*100);
 
   return {
     total:items.length,
     learned,
     mastered,
     percent,
-    precisePercent,
     complete:learned===items.length
   };
 }
@@ -3689,19 +3676,14 @@ function storyProgressHtml(storyId){
       ? "yellow"
       : "red";
 
-  const width=Math.max(0,Math.min(100,Number(progress.precisePercent||0))).toFixed(2);
-  const label=progress.total
-    ? `${progress.learned}/${progress.total} (${progress.precisePercent}%)`
-    : "0/0 (0%)";
-
   return `
-    <div class="story-progress-wrap" aria-label="Progres SRS ${label}">
+    <div class="story-progress-wrap">
       <div class="story-progress-head">
         <span>Progres SRS</span>
-        <span>${label}</span>
+        <span>${progress.percent}%</span>
       </div>
       <div class="story-progress ${color}">
-        <div style="width:${width}%"></div>
+        <div style="width:${progress.percent}%"></div>
       </div>
     </div>`;
 }
@@ -13925,217 +13907,460 @@ prepareLightLoadingFish=function(){};
 </style>
 
 
-<style id="wira-read-check-icon-only-20260623">
-/* Status sudah dibaca: cukup icon ceklis hijau, ukuran setara chip tema */
-.story-card .read-status,
-.manage-card .read-status,
-.read-status{
-  display:inline-flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  width:25px!important;
-  height:25px!important;
-  min-width:25px!important;
-  padding:0!important;
-  margin-left:0!important;
-  border-radius:999px!important;
-  background:#e5f8ed!important;
-  border:1px solid #bde9cf!important;
-  color:#19a25a!important;
-  font-size:14px!important;
-  line-height:1!important;
-  font-weight:1000!important;
-  flex:0 0 auto!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.75)!important;
-}
-.read-status.unread{
+<!-- PATCH WIRA: UI heading control cards + compact sort + folder modal + card click polish -->
+<style id="wira-final-ui-polish-20260623">
+/* Subjudul utama tidak berdiri sendiri sebagai card, kecuali Import yang sengaja punya card sendiri */
+#home > .section-title,
+#homeChoiceDesc,
+#storiesHeadingCard,
+#folderManagerPanel,
+#manage > .section-heading-card{
   display:none!important;
 }
-.story-chip-group .tag,
-.manage-card .tag{
-  min-height:25px;
-  display:inline-flex;
-  align-items:center;
-}
-@media(max-width:640px){
-  .story-card .read-status,
-  .manage-card .read-status,
-  .read-status{
-    width:24px!important;
-    height:24px!important;
-    min-width:24px!important;
-    font-size:13px!important;
-  }
-  .story-chip-group .tag,
-  .manage-card .tag{min-height:24px;}
-}
-</style>
 
-
-
-<style id="wira-folder-story-card-beranda-20260623">
-/* Kumpulan Cerita > dalam folder: card disamakan dengan beranda, tetap ada tombol SRS */
-#storyList{
-  grid-template-columns:repeat(auto-fit,minmax(250px,1fr))!important;
-  align-items:stretch!important;
-}
-#storyList .story-card{
-  min-height:320px!important;
-  padding:22px!important;
-  display:flex!important;
-  flex-direction:column!important;
-  gap:0!important;
-}
-#storyList .story-top-row{
+/* Card kontrol pengurutan yang berisi judul + deskripsi */
+#home .sort-bar,
+#folderSortBar,
+#storySortBar,
+#manage .sort-bar{
   display:flex!important;
   align-items:center!important;
   justify-content:space-between!important;
-  gap:12px!important;
-  margin-bottom:0!important;
-  min-height:28px!important;
+  gap:14px!important;
+  flex-wrap:wrap!important;
+  padding:16px 18px!important;
+  border-radius:24px!important;
+  margin:18px 0 18px!important;
 }
-#storyList .story-chip-group{
+
+/* Label Urutkan cerita/folder disembunyikan */
+#home .sort-bar > label,
+#folderSortBar > label,
+#storySortBar > label,
+#manage .sort-bar > label{
+  display:none!important;
+}
+
+.wira-control-copy{
+  flex:1 1 260px;
+  min-width:0;
+}
+.wira-control-copy h1,
+.wira-control-copy h2{
+  margin:0 0 5px!important;
+  padding:0!important;
+  background:none!important;
+  border:0!important;
+  box-shadow:none!important;
+  color:var(--brown)!important;
+  font-size:clamp(20px,3.4vw,30px)!important;
+  line-height:1.2!important;
+}
+.wira-control-copy p{
+  margin:0!important;
+  color:#446b8d!important;
+  font-size:14px!important;
+  font-weight:750!important;
+  line-height:1.45!important;
+}
+.wira-sort-actions{
   display:flex!important;
   align-items:center!important;
-  gap:8px!important;
-  flex-wrap:wrap!important;
-  min-width:0!important;
+  justify-content:flex-end!important;
+  gap:10px!important;
+  flex:0 0 auto!important;
 }
-#storyList .tag{
-  max-width:170px!important;
+.sort-select{
+  width:145px!important;
+  max-width:145px!important;
+  min-width:120px!important;
+  flex:0 0 auto!important;
+  height:42px!important;
+  border-radius:15px!important;
+  font-weight:850!important;
+  padding:0 34px 0 13px!important;
 }
-#storyList .story-card h3{
-  margin:12px 0 7px!important;
-  min-height:58px!important;
-  max-height:58px!important;
-  display:-webkit-box!important;
-  -webkit-line-clamp:2!important;
-  -webkit-box-orient:vertical!important;
-  overflow:hidden!important;
-  text-overflow:ellipsis!important;
-  word-break:break-word!important;
-}
-#storyList .story-card p{
-  min-height:48px!important;
-  max-height:48px!important;
-  display:-webkit-box!important;
-  -webkit-line-clamp:2!important;
-  -webkit-box-orient:vertical!important;
-  overflow:hidden!important;
-  text-overflow:ellipsis!important;
-  word-break:break-word!important;
-}
-#storyList .story-progress-wrap{
-  margin-top:auto!important;
-  padding-top:16px!important;
-}
-#storyList .folder-card-actions{
-  display:flex!important;
-  align-items:center!important;
-  gap:8px!important;
-  flex-wrap:wrap!important;
-  margin-top:12px!important;
-  min-height:38px!important;
-}
-#storyList .folder-card-actions .btn{
-  min-height:36px!important;
+
+/* Tombol tambah folder: biru tua dan compact */
+.icon-add-folder-btn{
+  width:42px!important;
+  height:42px!important;
+  min-width:42px!important;
+  padding:0!important;
+  border-radius:15px!important;
   display:inline-flex!important;
   align-items:center!important;
   justify-content:center!important;
+  background:linear-gradient(135deg,#18324a,#24557f)!important;
+  color:#fff!important;
+  box-shadow:0 10px 22px rgba(24,50,74,.22)!important;
+  font-size:24px!important;
+  line-height:1!important;
+  font-weight:900!important;
 }
-#storyList .srs-card-button{
-  min-width:82px!important;
+.icon-add-folder-btn:hover{transform:translateY(-1px)!important;}
+
+/* Import cerita dari file punya card judul sendiri */
+#generator .section-heading-card{
+  width:fit-content;
+  max-width:100%;
+  padding:15px 18px!important;
+  margin:24px 0 18px!important;
+  background:linear-gradient(135deg,rgba(255,255,255,.82),rgba(255,255,255,.58))!important;
+  border:1px solid rgba(255,255,255,.72)!important;
+  border-radius:22px!important;
+  box-shadow:0 12px 30px rgba(24,67,108,.12)!important;
+  backdrop-filter:blur(12px) saturate(1.12);
+  -webkit-backdrop-filter:blur(12px) saturate(1.12);
 }
-@media(max-width:700px){
-  #storyList{grid-template-columns:1fr!important;}
-  #storyList .story-card{min-height:292px!important;padding:20px!important;}
-  #storyList .story-card h3{font-size:21px!important;min-height:53px!important;max-height:53px!important;}
-  #storyList .tag{max-width:145px!important;}
+#generator .section-heading-card .section-title{
+  display:block!important;
+  width:auto!important;
+  margin:0!important;
+  padding:0!important;
+  background:none!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+#generator .section-heading-card .section-desc{
+  color:#446b8d!important;
+  margin:6px 0 0!important;
+  font-size:14px!important;
+  line-height:1.45!important;
+  font-weight:750!important;
+}
+
+/* Card cerita lebih seimbang dan teks panjang dipotong rapi */
+.story-card{
+  min-height:248px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  position:relative!important;
+  cursor:pointer;
+}
+.story-card h3{
+  display:-webkit-box!important;
+  -webkit-line-clamp:2!important;
+  -webkit-box-orient:vertical!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  min-height:2.55em!important;
+  line-height:1.28!important;
+}
+.story-card p{
+  display:-webkit-box!important;
+  -webkit-line-clamp:2!important;
+  -webkit-box-orient:vertical!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  min-height:3em!important;
+  line-height:1.5!important;
+}
+.story-card .story-progress-wrap{margin-top:auto!important;}
+.story-card button,.story-card select,.story-card input{cursor:pointer;}
+.locked-card{cursor:not-allowed!important;}
+
+/* Status sudah dibaca: cukup ceklis hijau, ukuran serasi dengan tag tema */
+.read-status{
+  width:28px!important;
+  height:28px!important;
+  min-width:28px!important;
+  padding:0!important;
+  border-radius:999px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  background:#e8f8ef!important;
+  color:#1f9d55!important;
+  border:1px solid rgba(31,157,85,.28)!important;
+  font-size:0!important;
+  line-height:1!important;
+  margin-left:6px!important;
+  vertical-align:middle!important;
+}
+.read-status::before{content:"✓";font-size:15px;font-weight:950;}
+.read-status.unread{display:none!important;}
+
+.story-top-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;}
+.story-chip-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;}
+.latest-dot-badge{flex:0 0 auto;width:20px;height:20px;border-radius:50%;background:linear-gradient(180deg,#f45b55,#d92f2f);box-shadow:0 6px 14px rgba(217,47,47,.24), inset 0 1px 0 rgba(255,255,255,.45);border:2px solid rgba(255,255,255,.95);display:inline-block;}
+
+.story-progress-head{font-size:12px!important;font-weight:900!important;color:#315f86!important;}
+.story-progress-head span:last-child{font-variant-numeric:tabular-nums;}
+.story-progress{height:9px!important;border-radius:999px!important;overflow:hidden!important;}
+
+.wira-folder-modal{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(15,44,72,.28);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+.wira-folder-modal.active{display:flex!important;}
+.wira-folder-dialog{width:min(390px,100%);background:linear-gradient(145deg,rgba(255,255,255,.95),rgba(239,248,255,.91));border:1px solid rgba(255,255,255,.78);border-radius:28px;box-shadow:0 24px 70px rgba(24,67,108,.24);padding:24px;text-align:center;animation:wiraFolderPop .18s ease-out;}
+@keyframes wiraFolderPop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.wira-folder-dialog h2{margin:0 0 16px!important;color:var(--brown)!important;font-size:24px!important;}
+.wira-folder-dialog input{text-align:center;font-weight:850;height:48px;border-radius:16px!important;}
+.wira-folder-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
+.wira-folder-actions .btn{width:100%;border-radius:16px!important;font-weight:900;}
+.wira-folder-actions .btn.add{background:linear-gradient(135deg,#35b977,#22a764)!important;}
+.wira-folder-actions .btn.cancel{background:linear-gradient(135deg,#ef6b6b,#d94040)!important;}
+.wira-folder-error{display:none;margin-top:10px;color:#c53939;font-weight:850;font-size:13px;}.wira-folder-error.show{display:block;}
+
+@media(max-width:640px){
+  #home .sort-bar,#folderSortBar,#storySortBar,#manage .sort-bar{padding:14px!important;border-radius:20px!important;}
+  .wira-control-copy{flex-basis:100%;}
+  .wira-sort-actions{width:100%;justify-content:space-between!important;}
+  .sort-select{width:132px!important;max-width:132px!important;min-width:112px!important;height:40px!important;}
+  .icon-add-folder-btn{width:40px!important;height:40px!important;min-width:40px!important;}
 }
 </style>
+<script id="wira-final-ui-polish-20260623">
+(function(){
+  'use strict';
+  const $=id=>document.getElementById(id);
 
-<script id="wira-folder-story-card-beranda-20260623-script">
-/* Override terakhir agar card cerita di dalam folder rapi seperti beranda */
-function openCategory(folder){
-  currentOpenFolder=folder;
-  saveNavigationState("stories",folder);
-  pushInternalHistory("stories",folder);
+  function safeHtml(value){
+    if(typeof escapeHtml==='function') return escapeHtml(value);
+    return String(value??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+  }
+  function safeJs(value){
+    if(typeof escapeJs==='function') return escapeJs(value);
+    return String(value??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n').replace(/\r/g,'');
+  }
+  function sortStoriesForSelect(list,selectId){
+    const mode=($(selectId)?.value)||'day';
+    const arr=[...list];
+    if(mode==='az') return arr.sort((a,b)=>String(a.title||'').localeCompare(String(b.title||''),'id'));
+    if(mode==='za') return arr.sort((a,b)=>String(b.title||'').localeCompare(String(a.title||''),'id'));
+    return arr.sort((a,b)=>(Number(a.day||a.id)||0)-(Number(b.day||b.id)||0));
+  }
+  function encodeId(id){return encodeURIComponent(String(id));}
 
-  const stories=sortByTitle(
-    getStories().filter(story=>(story.level||"N2")===folder),
-    getSortValue("folderStorySort","day")
-  );
+  window.completionBadge=function(id){
+    return (typeof isStoryCompleted==='function' && isStoryCompleted(id))
+      ? '<span class="read-status" aria-label="Sudah dibaca" title="Sudah dibaca"></span>'
+      : '';
+  };
 
-  const grid=document.getElementById("categoryGrid");
-  const results=document.getElementById("categoryResults");
-  const title=document.getElementById("categoryTitle");
-  const actions=document.getElementById("categoryActions");
-  const list=document.getElementById("storyList");
+  window.storyProgressHtml=function(storyId){
+    const progress=typeof getStorySrsProgress==='function'
+      ? getStorySrsProgress(storyId)
+      : {total:0,learned:0,percent:0};
+    const total=Number(progress.total||0);
+    const learned=Number(progress.learned||0);
+    const percent=total?Math.max(0,Math.min(100,Math.round((learned/total)*100))):0;
+    const color=percent===100?'green':percent>0?'yellow':'red';
+    return `
+      <div class="story-progress-wrap">
+        <div class="story-progress-head">
+          <span>Progres SRS</span>
+          <span>${learned}/${total} (${percent}%)</span>
+        </div>
+        <div class="story-progress ${color}" aria-label="Progres SRS ${percent}%">
+          <div style="width:${percent}%"></div>
+        </div>
+      </div>`;
+  };
 
-  if(grid) grid.style.display="none";
-  if(results) results.classList.add("active");
-  if(title) title.textContent=`Folder ${folder}`;
-
-  showInsideFolderUi();
-
-  if(actions){
-    actions.innerHTML=`
-      <button class="btn light smallbtn" onclick="renameFolder('${escapeJs(folder)}')">✎ Ganti Nama</button>
-      <button class="btn secondary smallbtn" onclick="deleteFolder('${escapeJs(folder)}')">× Hapus Folder</button>`;
+  function storyCardHtml(story,options={}){
+    const locked=typeof isStoryLocked==='function' ? isStoryLocked(story) : false;
+    const completed=typeof isStoryCompleted==='function' ? isStoryCompleted(story.id) : false;
+    const latest=(typeof getLastOpenedStoryId==='function' && String(story.id)===String(getLastOpenedStoryId()));
+    const open=`openStory(decodeURIComponent(this.dataset.storyId))`;
+    const buttons=options.folder && !locked
+      ? `<div class="story-card-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+          <button class="btn light smallbtn" data-story-id="${encodeId(story.id)}" onclick="event.stopPropagation();openStory(decodeURIComponent(this.dataset.storyId))">Baca</button>
+          ${completed?`<button class="btn srs-card-button smallbtn" data-story-id="${encodeId(story.id)}" onclick="event.stopPropagation();startStorySrsFromCard(decodeURIComponent(this.dataset.storyId))">SRS</button>`:''}
+        </div>`
+      : '';
+    return `
+      <article class="story-card ${latest?'home-latest-card':''} ${locked?'locked-card':''}"
+        data-story-id="${encodeId(story.id)}"
+        onclick="${locked?'return false':open}">
+        <div class="story-top-row">
+          <div class="story-chip-group">
+            <span class="tag">${safeHtml(story.theme||'読解')}</span>
+            ${completionBadge(story.id)}
+            ${locked?'<span class="lock-badge">🔒 Terkunci</span>':''}
+          </div>
+          ${latest?'<span class="latest-dot-badge" aria-label="Cerita terakhir dibuka" title="Cerita terakhir dibuka"></span>':''}
+        </div>
+        <h3>${safeHtml(story.title||'Tanpa Judul')}</h3>
+        <p>${safeHtml(story.description||'Cerita bahasa Jepang dengan furigana interaktif.')}</p>
+        ${storyProgressHtml(story.id)}
+        ${buttons}
+      </article>`;
   }
 
-  if(list){
-    list.innerHTML=stories.length
-      ? stories.map(story=>{
-          const locked=isStoryLocked(story);
-          const completed=isStoryCompleted(story.id);
-          const storyId=encodeURIComponent(String(story.id));
-          const titleText=escapeHtml(story.title||"Tanpa Judul");
-          const descText=escapeHtml(story.description||"Cerita bahasa Jepang dengan furigana interaktif.");
-          const themeText=escapeHtml(story.theme||"読解");
+  window.renderHome=function(){
+    const grid=$('homeStoryGrid');
+    if(!grid) return;
+    let stories=[];
+    if(typeof getLatestHomeStories==='function') stories=getLatestHomeStories();
+    else if(typeof chooseStableHomeStories==='function') stories=chooseStableHomeStories(typeof getStories==='function'?getStories():[]);
+    else stories=(typeof getStories==='function'?getStories():[]).slice(0,3);
+    stories=sortStoriesForSelect(stories,'homeSort');
+    if(typeof saveHomeFeaturedIds==='function') saveHomeFeaturedIds(stories.map(s=>s.id));
+    grid.innerHTML=(stories.length?stories.map(s=>storyCardHtml(s)).join(''):'')+
+      `<article class="story-card" onclick="go('generator')">
+        <span class="tag">新しい物語</span>
+        <h3>Import Cerita Baru</h3>
+        <p>Upload file JSON yang sudah dibuat, lalu simpan ke koleksi cerita.</p>
+      </article>`;
+  };
 
-          return `
-            <article class="story-card ${locked?"locked-card":""}" data-story-id="${storyId}">
-              <div class="story-top-row">
-                <div class="story-chip-group">
-                  <span class="tag">${themeText}</span>
-                  ${completionBadge(story.id)}
-                  ${locked?'<span class="lock-badge">🔒 Terkunci</span>':""}
-                </div>
-              </div>
+  window.openCategory=function(folder){
+    window.currentOpenFolder=folder;
+    if(typeof saveNavigationState==='function') saveNavigationState('stories',folder);
+    if(typeof pushInternalHistory==='function') pushInternalHistory('stories',folder);
+    const stories=sortStoriesForSelect((typeof getStories==='function'?getStories():[]).filter(story=>(story.level||'N2')===folder),'folderStorySort');
+    const grid=$('categoryGrid'),results=$('categoryResults'),title=$('categoryTitle'),actions=$('categoryActions'),list=$('storyList');
+    if(grid) grid.style.display='none';
+    if(results) results.classList.add('active');
+    if(title) title.textContent=`Folder ${folder}`;
+    if(typeof showInsideFolderUi==='function') showInsideFolderUi();
+    if(actions){
+      actions.innerHTML=`<button class="btn light smallbtn" onclick="event.stopPropagation();renameFolder('${safeJs(folder)}')">✎</button>
+        <button class="btn secondary smallbtn" onclick="event.stopPropagation();deleteFolder('${safeJs(folder)}')">🗑</button>`;
+    }
+    if(list){
+      list.innerHTML=stories.length?stories.map(story=>storyCardHtml(story,{folder:true})).join(''):`<div class="empty">Belum ada cerita di folder ${safeHtml(folder)}.</div>`;
+    }
+    if(typeof updateAmbientButtonVisibility==='function') updateAmbientButtonVisibility();
+  };
+  window.refreshCurrentFolder=function(){ if(window.currentOpenFolder) openCategory(window.currentOpenFolder); };
 
-              <h3 data-story-id="${storyId}"
-                onclick="openStory(decodeURIComponent(this.dataset.storyId))"
-                style="cursor:${locked?"not-allowed":"pointer"}"
-                title="${titleText}">
-                ${titleText}
-              </h3>
-
-              <p title="${descText}">${descText}</p>
-              ${storyProgressHtml(story.id)}
-
-              <div class="folder-card-actions">
-                <button class="btn light smallbtn"
-                  data-story-id="${storyId}"
-                  onclick="openStory(decodeURIComponent(this.dataset.storyId))">
-                  Baca
-                </button>
-                ${!locked && completed ? `
-                  <button class="btn srs-card-button smallbtn"
-                    data-story-id="${storyId}"
-                    onclick="startStorySrsFromCard(decodeURIComponent(this.dataset.storyId))">
-                    SRS
-                  </button>` : ""}
-              </div>
-            </article>`;
-        }).join("")
-      : `<div class="empty">Belum ada cerita di folder ${escapeHtml(folder)}.</div>`;
+  function wrapSort(bar){
+    if(!bar) return null;
+    bar.querySelectorAll(':scope > label').forEach(label=>label.style.display='none');
+    let actions=bar.querySelector(':scope > .wira-sort-actions');
+    if(!actions){
+      actions=document.createElement('div');
+      actions.className='wira-sort-actions';
+      const select=bar.querySelector(':scope > select');
+      if(select){bar.insertBefore(actions,select);actions.appendChild(select);}
+      else bar.appendChild(actions);
+    }
+    return actions;
+  }
+  function ensureCopy(bar,cls,heading,desc,level='h2'){
+    if(!bar) return;
+    let copy=bar.querySelector(':scope > .'+cls);
+    if(!copy){
+      copy=document.createElement('div');
+      copy.className='wira-control-copy '+cls;
+      copy.innerHTML=`<${level}>${heading}</${level}><p>${desc}</p>`;
+      bar.insertBefore(copy,bar.firstChild);
+    }else{
+      const h=copy.querySelector('h1,h2'); if(h) h.textContent=heading;
+      const p=copy.querySelector('p'); if(p) p.textContent=desc;
+    }
   }
 
-  if(typeof updateAmbientButtonVisibility==="function"){
-    updateAmbientButtonVisibility();
+  function ensureFolderModal(){
+    if($('wiraFolderModal')) return;
+    const modal=document.createElement('div');
+    modal.id='wiraFolderModal';
+    modal.className='wira-folder-modal';
+    modal.innerHTML=`<div class="wira-folder-dialog" role="dialog" aria-modal="true" aria-labelledby="wiraFolderTitle">
+      <h2 id="wiraFolderTitle">Nama Folder</h2>
+      <input id="wiraFolderInput" autocomplete="off" placeholder="Contoh: N2, Romantis, Misteri">
+      <div id="wiraFolderError" class="wira-folder-error"></div>
+      <div class="wira-folder-actions">
+        <button type="button" class="btn add" id="wiraFolderAddBtn">Tambah</button>
+        <button type="button" class="btn cancel" id="wiraFolderCancelBtn">Cancel</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click',e=>{if(e.target===modal) closeAddFolderPopup();});
+    $('wiraFolderCancelBtn')?.addEventListener('click',closeAddFolderPopup);
+    $('wiraFolderAddBtn')?.addEventListener('click',createFolderFromPopup);
+    $('wiraFolderInput')?.addEventListener('keydown',e=>{if(e.key==='Enter') createFolderFromPopup(); if(e.key==='Escape') closeAddFolderPopup();});
   }
-}
+  window.openAddFolderPopup=function(){
+    ensureFolderModal();
+    const modal=$('wiraFolderModal'),input=$('wiraFolderInput'),error=$('wiraFolderError');
+    if(error){error.textContent='';error.classList.remove('show');}
+    if(input) input.value='';
+    modal?.classList.add('active');
+    setTimeout(()=>input?.focus(),30);
+  };
+  window.closeAddFolderPopup=function(){ $('wiraFolderModal')?.classList.remove('active'); };
+  function showFolderError(msg){const error=$('wiraFolderError'); if(error){error.textContent=msg;error.classList.add('show');}else alert(msg);}
+  window.createFolderFromPopup=function(){
+    const input=$('wiraFolderInput');
+    const name=(input?.value||'').trim();
+    if(!name){showFolderError('Nama folder belum diisi.');return;}
+    const folders=typeof getFolders==='function'?getFolders():[];
+    if(folders.some(folder=>String(folder).toLowerCase()===name.toLowerCase())){showFolderError('Folder tersebut sudah ada.');return;}
+    if(typeof saveFolders==='function') saveFolders([...folders,name]);
+    closeAddFolderPopup();
+    if(typeof getFolderSeaIcon==='function') getFolderSeaIcon(name);
+    if(typeof renderCategories==='function') renderCategories();
+    if($('manage')?.classList.contains('active') && typeof renderManageList==='function') renderManageList();
+  };
+  window.addFolder=function(){ openAddFolderPopup(); };
+
+  function wrapGeneratorHeading(){
+    const title=document.querySelector('#generator > .section-title');
+    if(!title || title.closest('.section-heading-card')) return;
+    const card=document.createElement('div');
+    card.className='section-heading-card';
+    title.parentNode.insertBefore(card,title);
+    card.appendChild(title);
+    const desc=document.createElement('p');
+    desc.className='section-desc';
+    desc.textContent='Upload file cerita JSON dari perangkatmu.';
+    card.appendChild(desc);
+  }
+
+  function applyLayout(){
+    const oldHomeTitle=document.querySelector('#home > .section-title');
+    if(oldHomeTitle) oldHomeTitle.style.display='none';
+    const homeDesc=$('homeChoiceDesc'); if(homeDesc) homeDesc.style.display='none';
+    const homeBar=document.querySelector('#home .sort-bar');
+    ensureCopy(homeBar,'home-control-copy','Cerita Pilihan','Pilih cerita yang ingin kamu baca, lalu lanjutkan progres bacaan dan SRS-mu.','h2');
+    wrapSort(homeBar);
+
+    $('storiesHeadingCard')?.style.setProperty('display','none','important');
+    $('folderManagerPanel')?.style.setProperty('display','none','important');
+    const folderBar=$('folderSortBar');
+    ensureCopy(folderBar,'folder-control-copy','Kumpulan Cerita','Pilih folder berdasarkan level bacaan.','h1');
+    const folderActions=wrapSort(folderBar);
+    if(folderActions && !$('openAddFolderPopupBtn')){
+      const btn=document.createElement('button');
+      btn.id='openAddFolderPopupBtn';
+      btn.type='button';
+      btn.className='btn icon-add-folder-btn';
+      btn.setAttribute('aria-label','Tambah folder');
+      btn.title='Tambah folder';
+      btn.textContent='+';
+      btn.onclick=e=>{e.preventDefault();e.stopPropagation();openAddFolderPopup();};
+      folderActions.appendChild(btn);
+    }
+    wrapSort($('storySortBar'));
+
+    const manageTitle=document.querySelector('#manage > .section-heading-card');
+    if(manageTitle) manageTitle.style.display='none';
+    const manageBar=document.querySelector('#manage .sort-bar');
+    ensureCopy(manageBar,'manage-control-copy','Kelola Cerita','Cerita ditampilkan per folder. Edit hanya untuk judul, tema, folder, dan deskripsi.','h1');
+    wrapSort(manageBar);
+
+    wrapGeneratorHeading();
+    ensureFolderModal();
+  }
+
+  const oldShowFolderOverviewUi=window.showFolderOverviewUi;
+  window.showFolderOverviewUi=function(){
+    if(typeof oldShowFolderOverviewUi==='function') oldShowFolderOverviewUi();
+    applyLayout();
+    $('storiesHeadingCard')?.style.setProperty('display','none','important');
+    $('folderManagerPanel')?.style.setProperty('display','none','important');
+    $('folderSortBar')?.style.setProperty('display','flex');
+  };
+  const oldGo=window.go;
+  if(typeof oldGo==='function'){
+    window.go=function(){ oldGo.apply(this,arguments); setTimeout(()=>{applyLayout(); if(arguments[0]==='home') renderHome();},0); };
+  }
+  document.addEventListener('DOMContentLoaded',()=>{applyLayout(); setTimeout(()=>{try{renderHome();}catch(e){}},0);});
+  window.addEventListener('load',()=>{applyLayout(); setTimeout(()=>{try{renderHome();}catch(e){}},0);});
+  setTimeout(applyLayout,0);
+})();
 </script>
 
 </body>
