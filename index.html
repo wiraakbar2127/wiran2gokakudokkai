@@ -47,11 +47,11 @@ border:1px solid var(--line);box-shadow:var(--shadow);margin-bottom:30px;positio
 .section-title{font-size:25px;color:var(--brown);margin:24px 0 14px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}
 .story-card{background:var(--card);border:1px solid var(--line);border-radius:26px;padding:22px;
-box-shadow:var(--shadow);cursor:pointer;transition:.2s}
+box-shadow:var(--shadow);cursor:pointer;transition:.2s;display:flex;flex-direction:column;min-height:232px;overflow:hidden}
 .story-card:hover{transform:translateY(-3px)}
-.story-card .tag{display:inline-block;background:var(--soft);color:var(--brown);border-radius:999px;padding:4px 10px;font-size:12px}
-.story-card h3{font-size:23px;margin:12px 0 7px}
-.story-card p{color:var(--muted);margin:0}
+.story-card .tag{display:inline-block;background:var(--soft);color:var(--brown);border-radius:999px;padding:4px 10px;font-size:12px;align-self:flex-start;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.story-card h3{font-size:23px;margin:12px 0 7px;line-height:1.25;min-height:58px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;word-break:break-word}
+.story-card p{color:var(--muted);margin:0;line-height:1.55;min-height:48px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;word-break:break-word}
 
 .category-grid{
   display:grid;
@@ -568,26 +568,36 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
 }
 .danger:hover{background:#bd3f3b!important}
 
-.story-progress-wrap{margin-top:14px}
+.story-progress-wrap{margin-top:auto;padding-top:16px;width:100%}
 .story-progress-head{
   display:flex;
+  align-items:center;
   justify-content:space-between;
   gap:10px;
   font-size:12px;
   font-weight:800;
   color:var(--muted);
-  margin-bottom:6px;
+  margin-bottom:7px;
+  line-height:1.2;
 }
+.story-progress-head span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.story-progress-head span:last-child{white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right;color:var(--brown)}
 .story-progress{
-  height:10px;
+  height:11px;
   border-radius:999px;
   overflow:hidden;
   background:#e8eef4;
+  border:1px solid rgba(47,111,174,.10);
 }
-.story-progress > div{height:100%;transition:.3s}
+.story-progress > div{height:100%;transition:.3s;width:0;min-width:0;border-radius:999px}
 .story-progress.red > div{background:#db6868}
 .story-progress.yellow > div{background:#e3b63f}
 .story-progress.green > div{background:#43a76f}
+#storyList .story-card{min-height:360px}
+#storyList .story-card .move-folder-row,
+#storyList .story-card label,
+#storyList .story-card > div:not(.story-progress-wrap):not(.story-progress-head):not(.story-progress){flex-shrink:0}
+@media(max-width:700px){.story-card{min-height:220px}.story-card h3{font-size:21px;min-height:53px}.story-card p{min-height:46px}}
 
 .locked-card{
   opacity:.68;
@@ -2167,8 +2177,8 @@ function setStoryCompleted(id){
 
 function completionBadge(id){
   return isStoryCompleted(id)
-    ? '<span class="read-status">✓ Sudah Dibaca</span>'
-    : '<span class="read-status unread">Belum Dibaca</span>';
+    ? '<span class="read-status" aria-label="Sudah dibaca" title="Sudah dibaca">✓</span>'
+    : '';
 }
 
 let currentStoryId=null;
@@ -3657,13 +3667,16 @@ function getStorySrsProgress(storyId){
     item=>(state[item.key]?.level||0)>=max
   ).length;
 
-  const percent=Math.round((learned/items.length)*100);
+  const rawPercent=(learned/items.length)*100;
+  const percent=Math.round(rawPercent);
+  const precisePercent=Number(rawPercent.toFixed(2));
 
   return {
     total:items.length,
     learned,
     mastered,
     percent,
+    precisePercent,
     complete:learned===items.length
   };
 }
@@ -3676,14 +3689,19 @@ function storyProgressHtml(storyId){
       ? "yellow"
       : "red";
 
+  const width=Math.max(0,Math.min(100,Number(progress.precisePercent||0))).toFixed(2);
+  const label=progress.total
+    ? `${progress.learned}/${progress.total} (${progress.precisePercent}%)`
+    : "0/0 (0%)";
+
   return `
-    <div class="story-progress-wrap">
+    <div class="story-progress-wrap" aria-label="Progres SRS ${label}">
       <div class="story-progress-head">
         <span>Progres SRS</span>
-        <span>${progress.percent}%</span>
+        <span>${label}</span>
       </div>
       <div class="story-progress ${color}">
-        <div style="width:${progress.percent}%"></div>
+        <div style="width:${width}%"></div>
       </div>
     </div>`;
 }
@@ -13905,5 +13923,53 @@ prepareLightLoadingFish=function(){};
   .latest-dot-badge{width:18px;height:18px;}
 }
 </style>
+
+
+<style id="wira-read-check-icon-only-20260623">
+/* Status sudah dibaca: cukup icon ceklis hijau, ukuran setara chip tema */
+.story-card .read-status,
+.manage-card .read-status,
+.read-status{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:25px!important;
+  height:25px!important;
+  min-width:25px!important;
+  padding:0!important;
+  margin-left:0!important;
+  border-radius:999px!important;
+  background:#e5f8ed!important;
+  border:1px solid #bde9cf!important;
+  color:#19a25a!important;
+  font-size:14px!important;
+  line-height:1!important;
+  font-weight:1000!important;
+  flex:0 0 auto!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.75)!important;
+}
+.read-status.unread{
+  display:none!important;
+}
+.story-chip-group .tag,
+.manage-card .tag{
+  min-height:25px;
+  display:inline-flex;
+  align-items:center;
+}
+@media(max-width:640px){
+  .story-card .read-status,
+  .manage-card .read-status,
+  .read-status{
+    width:24px!important;
+    height:24px!important;
+    min-width:24px!important;
+    font-size:13px!important;
+  }
+  .story-chip-group .tag,
+  .manage-card .tag{min-height:24px;}
+}
+</style>
+
 </body>
 </html>
