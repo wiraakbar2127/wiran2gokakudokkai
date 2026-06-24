@@ -114,7 +114,7 @@ box-shadow:var(--shadow);cursor:pointer;transition:.2s}
   margin-bottom:14px;
 }
 
-.empty{padding:30px;text-align:center;border:1px dashed var(--line);border-radius:18px;color:var(--muted)}
+.empty{padding:30px;text-align:center;border:1px dashed var(--line);border-radius:16px;color:var(--muted)}
 .story-head{text-align:center;margin-bottom:22px}
 .story-head h1{font-size:clamp(29px,5vw,48px);color:var(--brown);margin:0 0 5px}
 .story-head p{color:var(--muted)}
@@ -132,7 +132,7 @@ label{display:block;font-weight:800;margin:14px 0 7px;color:var(--brown)}
 input,textarea{width:100%;border:1px solid var(--line);border-radius:13px;padding:13px;background:white;color:var(--ink)}
 textarea{min-height:220px;resize:vertical;line-height:1.7}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.help{font-size:13px;color:var(--muted);margin-top:8px}
+.help{font-size:12px;color:var(--muted);margin-top:8px}
 .prompt-box{display:none;margin-top:18px;padding:18px;border-radius:16px;background:#eef7ff;border:1px solid var(--line);white-space:pre-wrap}
 .notice{margin-top:16px;padding:14px 16px;background:#eef7ff;border:1px solid #c8def2;border-radius:14px;color:#315b7c}
 
@@ -405,7 +405,7 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
   to{transform:translate3d(236px,0,0);}
 }
 @media(max-width:640px){
-  .loading-text-row{font-size:13px;}
+  .loading-text-row{font-size:12px;}
   .loading-fish-lane{width:160px;height:24px;}
 }
 @media(prefers-reduced-motion:reduce){
@@ -558,7 +558,7 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
 .srs-next-time{font-weight:900;margin-top:6px}.srs-empty{text-align:center;padding:48px 20px}.srs-empty h2{color:var(--brown)}
 .srs-list{display:flex;flex-direction:column;gap:10px}.srs-story-row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line)}.srs-story-row:last-child{border-bottom:0}.srs-story-row span{color:var(--muted);font-size:12px}
 .srs-progress{height:9px;background:#e8f2fb;border-radius:999px;overflow:hidden;margin:12px 0 20px}.srs-progress>div{height:100%;background:linear-gradient(90deg,var(--brown),var(--brown2));width:0%;transition:.25s}
-.srs-romaji-note{color:var(--muted);font-size:13px;margin-top:8px}@media(max-width:850px){.srs-layout{grid-template-columns:1fr}.srs-side{position:static}}
+.srs-romaji-note{color:var(--muted);font-size:12px;margin-top:8px}@media(max-width:850px){.srs-layout{grid-template-columns:1fr}.srs-side{position:static}}
 
 @media(max-width:700px){.two{grid-template-columns:1fr}.nav{align-items:flex-start;gap:12px;flex-direction:column}.jp{font-size:19px}}
 
@@ -710,7 +710,7 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
   margin:14px 0;
   text-align:center;
   padding:16px;
-  border-radius:18px;
+  border-radius:16px;
   background:linear-gradient(145deg,#edf8ff,#fff);
   font-weight:900;
 }
@@ -849,7 +849,7 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
   gap:12px;
   margin:18px 0 12px;
   padding:13px 16px;
-  border-radius:18px;
+  border-radius:16px;
   background:#eef7ff;
   border:1px solid var(--line);
   color:var(--brown);
@@ -860,7 +860,7 @@ h1,h2,h3,.btn,.navbtn{letter-spacing:.02em}
 }
 .manage-folder-title span{
   color:var(--muted);
-  font-size:13px;
+  font-size:12px;
   font-weight:800;
 }
 .manage-empty-folder{
@@ -1032,7 +1032,7 @@ select:disabled{
   margin-bottom:18px;
   padding:14px 18px;
   border:1px solid #cfe2f3;
-  border-radius:18px;
+  border-radius:16px;
   background:#f7fbff;
   font-size:38px;
   font-weight:800;
@@ -1045,7 +1045,7 @@ select:disabled{
   margin-bottom:7px;
   text-align:center;
   color:var(--muted);
-  font-size:13px;
+  font-size:12px;
   font-weight:700;
 }
 .srs-target-word ruby rt,
@@ -1253,7 +1253,7 @@ footer{
 .navbtn{
   display:inline-flex;
   align-items:center;
-  gap:7px;
+  gap:5px;
 }
 .navbtn .nav-icon{
   width:18px;
@@ -7203,7 +7203,7 @@ async function toggleUnderwaterAmbient(){
   }
 
   #srs.page.active .srs-translation-restored{
-    font-size:13px;
+    font-size:12px;
     margin:9px 0 10px;
     padding:9px 11px;
   }
@@ -7246,7 +7246,7 @@ async function toggleUnderwaterAmbient(){
   #srs.page.active .srs-result-actions{
     display:grid;
     grid-template-columns:1fr;
-    gap:7px;
+    gap:5px;
   }
   #srs.page.active .srs-next-question-btn{
     width:100%;
@@ -7970,7 +7970,7 @@ async function toggleUnderwaterAmbient(){
 .srs-vocab-detail{padding:13px 0;border-bottom:1px dashed var(--line)}
 .srs-vocab-detail:last-child{border-bottom:0}
 .srs-vocab-word{font-size:21px;font-weight:900;color:#244f73}
-.srs-vocab-meta{margin-top:5px;color:var(--muted);font-size:13px;line-height:1.6}
+.srs-vocab-meta{margin-top:5px;color:var(--muted);font-size:12px;line-height:1.6}
 .srs-vocab-time{display:inline-block;margin-top:5px;padding:4px 9px;border-radius:999px;background:#eef7ff;color:#2f6fae;font-size:12px;font-weight:800}
 .srs-final-check-notice{
   margin-top:12px;padding:12px 14px;border-radius:13px;
@@ -8878,7 +8878,7 @@ async function toggleUnderwaterAmbient(){
   }
   .srs-final-label{
     color:var(--muted);
-    font-size:13px;
+    font-size:12px;
     font-weight:900;
     margin-bottom:12px;
   }
@@ -8912,7 +8912,7 @@ async function toggleUnderwaterAmbient(){
     margin:18px auto 0;
     max-width:590px;
     padding:16px 18px;
-    border-radius:18px;
+    border-radius:16px;
     line-height:1.7;
     font-weight:850;
     animation:srsFinalFeedbackPop .18s ease-out;
@@ -8950,7 +8950,7 @@ async function toggleUnderwaterAmbient(){
   }
   .srs-final-next-note{
     margin-top:10px;
-    font-size:13px;
+    font-size:12px;
     opacity:.85;
   }
   .srs-final-answer-wrap{
@@ -10888,7 +10888,7 @@ async function toggleUnderwaterAmbient(){
   }
   .wira-srs-ready-meta{
     color:var(--muted);
-    font-size:13px;
+    font-size:12px;
     line-height:1.55;
   }
   .wira-srs-ready-meaning{
@@ -11821,14 +11821,14 @@ async function toggleUnderwaterAmbient(){
   .sync-code-desc{
     margin:0 0 14px;
     color:var(--muted);
-    font-size:13px;
+    font-size:12px;
     line-height:1.55;
   }
   .sync-file-box{
     margin:14px 0;
     padding:15px;
     border:1px solid var(--line);
-    border-radius:18px;
+    border-radius:16px;
     background:#f7fbff;
   }
   .sync-file-box h3{
@@ -11839,7 +11839,7 @@ async function toggleUnderwaterAmbient(){
   .sync-file-box p{
     margin:0 0 12px;
     color:var(--muted);
-    font-size:13px;
+    font-size:12px;
     line-height:1.55;
   }
   #wiraSyncFileInput{display:none!important}
@@ -11850,7 +11850,7 @@ async function toggleUnderwaterAmbient(){
   .sync-generate-btn.done::before{content:"✓ "}
   .sync-code-note{
     margin-top:14px!important;
-    font-size:13px;
+    font-size:12px;
     line-height:1.55;
   }
   .sync-code-panel b{color:var(--brown)}
@@ -12239,7 +12239,7 @@ async function toggleUnderwaterAmbient(){
   }
 
   function renderSessionFinished(){
-    const area = document.getElementById('srsPracticeArea');
+    const area = document.getElementById('srsDetailList');
     if(!area) return;
     const upcoming = nextScheduledItems();
     const scheduleHtml = upcoming.length
@@ -13796,7 +13796,7 @@ async function toggleUnderwaterAmbient(){
   to{transform:translate3d(236px,0,0);}
 }
 @media (max-width:640px){
-  .loading-text-row{font-size:13px;}
+  .loading-text-row{font-size:12px;}
   .loading-fish-lane{width:160px;height:24px;}
 }
 @media (prefers-reduced-motion:reduce){
@@ -14099,7 +14099,7 @@ prepareLightLoadingFish=function(){};
 .wira-folder-actions .btn{width:100%;border-radius:16px!important;font-weight:900;}
 .wira-folder-actions .btn.add{background:linear-gradient(135deg,#35b977,#22a764)!important;}
 .wira-folder-actions .btn.cancel{background:linear-gradient(135deg,#ef6b6b,#d94040)!important;}
-.wira-folder-error{display:none;margin-top:10px;color:#c53939;font-weight:850;font-size:13px;}.wira-folder-error.show{display:block;}
+.wira-folder-error{display:none;margin-top:10px;color:#c53939;font-weight:850;font-size:12px;}.wira-folder-error.show{display:block;}
 
 @media(max-width:640px){
   #home .sort-bar,#folderSortBar,#storySortBar,#manage .sort-bar{padding:14px!important;border-radius:20px!important;}
@@ -14360,6 +14360,409 @@ prepareLightLoadingFish=function(){};
   document.addEventListener('DOMContentLoaded',()=>{applyLayout(); setTimeout(()=>{try{renderHome();}catch(e){}},0);});
   window.addEventListener('load',()=>{applyLayout(); setTimeout(()=>{try{renderHome();}catch(e){}},0);});
   setTimeout(applyLayout,0);
+})();
+</script>
+
+
+
+<!-- PATCH WIRA: filter level SRS kecil di popup card Belajar -->
+<style id="wira-srs-level-filter-style-20260624">
+  /* PATCH WIRA: filter SRS dibuat super kecil seperti icon angka di popup card Belajar */
+  .srs-level-filter-box{
+    margin:8px 0 12px;
+    padding:8px 10px;
+    border:1px solid rgba(200,222,242,.9);
+    border-radius:16px;
+    background:rgba(255,255,255,.72);
+    box-shadow:0 6px 14px rgba(47,111,174,.05);
+  }
+  .srs-level-filter-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:7px;
+  }
+  .srs-level-filter-title{
+    margin:0;
+    color:var(--brown);
+    font-size:12px;
+    font-weight:900;
+    line-height:1.2;
+  }
+  .srs-level-filter-desc{display:none}
+  .srs-level-clear-btn{
+    border:1px solid rgba(200,222,242,.95);
+    background:#fff;
+    color:var(--brown);
+    border-radius:999px;
+    padding:4px 8px;
+    font-size:10px;
+    font-weight:900;
+    cursor:pointer;
+    white-space:nowrap;
+    box-shadow:0 4px 10px rgba(47,111,174,.06);
+  }
+  .srs-level-grid{
+    display:flex;
+    flex-wrap:wrap;
+    gap:5px;
+    align-items:center;
+  }
+  .srs-level-card{
+    --srs-dot:#5c97cf;
+    appearance:none;
+    position:relative;
+    width:30px;
+    height:30px;
+    min-width:30px;
+    border:1.5px solid rgba(255,255,255,.92);
+    background:var(--srs-dot);
+    color:#fff;
+    border-radius:50%;
+    padding:0;
+    cursor:pointer;
+    text-align:center;
+    box-shadow:0 5px 10px rgba(40,95,145,.12);
+    transition:transform .16s ease, box-shadow .16s ease, outline-color .16s ease, filter .16s ease;
+  }
+  .srs-level-card:hover{
+    transform:translateY(-1px) scale(1.04);
+    box-shadow:0 7px 14px rgba(40,95,145,.17);
+    filter:saturate(1.05);
+  }
+  .srs-level-card.active{
+    outline:2px solid rgba(47,111,174,.22);
+    box-shadow:0 0 0 2px rgba(255,255,255,.95),0 8px 18px rgba(47,111,174,.22);
+    transform:translateY(-1px) scale(1.07);
+  }
+  .srs-level-card:nth-child(1){--srs-dot:#e57373}
+  .srs-level-card:nth-child(2){--srs-dot:#f06292}
+  .srs-level-card:nth-child(3){--srs-dot:#ba68c8}
+  .srs-level-card:nth-child(4){--srs-dot:#9575cd}
+  .srs-level-card:nth-child(5){--srs-dot:#5c6bc0}
+  .srs-level-card:nth-child(6){--srs-dot:#42a5f5}
+  .srs-level-card:nth-child(7){--srs-dot:#26a69a}
+  .srs-level-card:nth-child(8){--srs-dot:#66bb6a}
+  .srs-level-card:nth-child(9){--srs-dot:#9ccc65}
+  .srs-level-card:nth-child(10){--srs-dot:#ffb74d}
+  .srs-level-card:nth-child(11){--srs-dot:#ff8a65}
+  .srs-level-card:nth-child(12){--srs-dot:#2f6fae}
+  .srs-level-no{
+    display:block;
+    font-size:13px;
+    font-weight:1000;
+    line-height:30px;
+    letter-spacing:-.02em;
+  }
+  .srs-level-count{
+    position:absolute;
+    right:-4px;
+    top:-5px;
+    min-width:14px;
+    height:14px;
+    padding:0 3px;
+    border-radius:999px;
+    background:#fff;
+    color:var(--srs-dot);
+    border:1px solid rgba(200,222,242,.9);
+    font-size:8px;
+    font-weight:1000;
+    line-height:13px;
+    box-shadow:0 3px 7px rgba(40,95,145,.11);
+  }
+  .srs-level-mini{display:none}
+  .srs-level-result-card{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:24px;
+    box-shadow:var(--shadow);
+    padding:20px;
+  }
+  .srs-level-result-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:14px;
+  }
+  .srs-level-result-head h3{
+    margin:0;
+    color:var(--brown);
+    font-size:20px;
+  }
+  .srs-level-result-head p{
+    margin:4px 0 0;
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.45;
+  }
+  .srs-level-vocab-list{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+    max-height:520px;
+    overflow:auto;
+    padding-right:4px;
+  }
+  .srs-level-vocab-item{
+    border:1px solid #d8e8f6;
+    background:#f7fbff;
+    border-radius:17px;
+    padding:12px;
+    min-width:0;
+  }
+  .srs-level-vocab-word{
+    font-weight:900;
+    font-size:18px;
+    color:var(--ink);
+    line-height:1.35;
+    word-break:break-word;
+  }
+  .srs-level-vocab-meta{
+    margin-top:6px;
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.45;
+  }
+  .srs-level-vocab-meaning{
+    margin-top:8px;
+    color:#315675;
+    font-size:12px;
+    line-height:1.45;
+  }
+  .srs-level-empty{
+    padding:28px 16px;
+    text-align:center;
+    border:1px dashed var(--line);
+    border-radius:20px;
+    color:var(--muted);
+    background:#f8fcff;
+  }
+  @media(max-width:900px){
+    .srs-level-vocab-list{grid-template-columns:1fr}
+  }
+  @media(max-width:560px){
+    .srs-level-filter-box{padding:7px 8px;border-radius:14px}
+    .srs-level-filter-head,
+    .srs-level-result-head{flex-direction:column;align-items:stretch}
+    .srs-level-grid{gap:5px}
+    .srs-level-card{width:28px;height:28px;min-width:28px}
+    .srs-level-no{font-size:12px;line-height:28px}
+    .srs-level-count{font-size:8px;min-width:13px;height:13px;line-height:12px;right:-4px;top:-5px;padding:0 2px}
+  }
+</style>
+<script id="wira-srs-level-filter-script-20260624">
+(function(){
+  'use strict';
+
+  let activeSrsLevelFilter = null;
+
+  function esc(value){
+    if(typeof safeEscape === 'function') return safeEscape(value);
+    if(typeof escapeHtml === 'function') return escapeHtml(value);
+    return String(value ?? '').replace(/[&<>\"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m]));
+  }
+
+  function stripHtml(html){
+    const temp=document.createElement('div');
+    temp.innerHTML=String(html || '');
+    temp.querySelectorAll('rt,rp,script,style').forEach(n=>n.remove());
+    return String(temp.textContent || '').replace(/\s+/g,' ').trim();
+  }
+
+  function getItems(){
+    return typeof window.buildSrsItems === 'function' ? window.buildSrsItems() : [];
+  }
+
+  function getState(items){
+    if(typeof syncSrsState === 'function') return syncSrsState(items || getItems());
+    if(typeof getSrsState === 'function') return getSrsState() || {};
+    try{return JSON.parse(localStorage.getItem('wiraSrsState') || '{}') || {}}catch(_){return {}}
+  }
+
+  function levelOf(record){
+    const max = (typeof window.maxLevel === 'function') ? window.maxLevel() : 12;
+    const raw = Number(record?.level ?? record?.correctStage ?? 0) || 0;
+    return Math.max(0, Math.min(max, raw));
+  }
+
+  function dueLabel(record){
+    const level = levelOf(record);
+    if(level >= 12) return 'Mastered';
+    const due = Number(record?.due || 0);
+    if(!due || due <= Date.now()) return 'Siap review';
+    const diff = due - Date.now();
+    if(typeof formatSrsDuration === 'function') return formatSrsDuration(diff) + ' lagi';
+    const hour = Math.ceil(diff / 3600000);
+    return hour < 24 ? hour + ' jam lagi' : Math.ceil(hour / 24) + ' hari lagi';
+  }
+
+  function itemWord(item){
+    return item?.displayWord || stripHtml(item?.displayWordHtml) || item?.answer || '-';
+  }
+
+  function itemMeaning(item){
+    return item?.meaning || stripHtml(item?.translationHtml) || 'Arti belum tersedia';
+  }
+
+  function ensureFilterBox(){
+    const modal = document.getElementById('srsDetailModal');
+    const card = modal?.querySelector('.srs-detail-card');
+    const head = modal?.querySelector('.srs-detail-head');
+    if(!modal || !card || !head || !modal.classList.contains('active')) return null;
+
+    let box = document.getElementById('srsLevelFilterBox');
+    if(!box){
+      box = document.createElement('div');
+      box.id = 'srsLevelFilterBox';
+      box.className = 'srs-level-filter-box';
+      box.innerHTML = `
+        <div class="srs-level-filter-head">
+          <div>
+            <h2 class="srs-level-filter-title">Filter SRS</h2>
+            <p class="srs-level-filter-desc">Klik angka level untuk melihat kosakata.</p>
+          </div>
+          <button type="button" class="srs-level-clear-btn" onclick="clearSrsLevelFilter()">Semua</button>
+        </div>
+        <div id="srsLevelFilterGrid" class="srs-level-grid"></div>
+      `;
+    }
+    if(box.parentElement !== card || box.previousElementSibling !== head){
+      head.insertAdjacentElement('afterend', box);
+    }
+    return box;
+  }
+
+  function renderLevelCards(){
+    ensureFilterBox();
+    const grid = document.getElementById('srsLevelFilterGrid');
+    if(!grid) return;
+
+    const items = getItems();
+    const state = getState(items);
+    const counts = Array.from({length:12},()=>({total:0,due:0}));
+
+    items.forEach(item=>{
+      const record = state[item.key] || {};
+      const level = levelOf(record);
+      if(level >= 1 && level <= 12){
+        counts[level-1].total++;
+        if(level < 12 && Number(record.due || 0) <= Date.now()) counts[level-1].due++;
+      }
+    });
+
+    grid.innerHTML = counts.map((info,index)=>{
+      const level = index + 1;
+      const active = activeSrsLevelFilter === level;
+      const mini = level === 12 ? 'Mastered' : (info.due ? `${info.due} siap` : 'Belum due');
+      return `
+        <button type="button" class="srs-level-card ${active?'active':''}" onclick="setSrsLevelFilter(${level})" aria-pressed="${active?'true':'false'}" title="SRS ${level} - ${info.total} kosakata">
+          <span class="srs-level-no">${level}</span>
+          <span class="srs-level-count">${info.total}</span>
+          <span class="srs-level-mini">${mini}</span>
+        </button>`;
+    }).join('');
+  }
+
+  window.setSrsLevelFilter = function(level){
+    level = Math.max(1, Math.min(12, Number(level) || 1));
+    activeSrsLevelFilter = activeSrsLevelFilter === level ? null : level;
+    renderLevelCards();
+    if(activeSrsLevelFilter){
+      renderSrsLevelResult(activeSrsLevelFilter);
+    }else if(typeof window.openSrsStatusDetail === 'function'){
+      window.openSrsStatusDetail('learning');
+    }
+  };
+
+  window.clearSrsLevelFilter = function(){
+    activeSrsLevelFilter = null;
+    if(typeof window.openSrsStatusDetail === 'function'){
+      window.openSrsStatusDetail('learning');
+    }else{
+      renderLevelCards();
+    }
+  };
+
+  window.renderSrsLevelResult = function(level){
+    const area = document.getElementById('srsDetailList');
+    if(!area) return;
+
+    const items = getItems();
+    const state = getState(items);
+    const filtered = items
+      .filter(item => levelOf(state[item.key]) === Number(level))
+      .sort((a,b)=>{
+        const da = Number((state[a.key] || {}).due || 0);
+        const db = Number((state[b.key] || {}).due || 0);
+        if(da !== db) return da - db;
+        return itemWord(a).localeCompare(itemWord(b),'ja');
+      });
+
+    const title = `Kosakata SRS ${level}`;
+    const desc = level >= 12
+      ? 'Ini kosakata yang sudah masuk tahap mastered.'
+      : 'Ini kosakata yang sedang berada di level ini, lengkap dengan status review berikutnya.';
+
+    area.innerHTML = `
+      <div class="srs-level-result-card">
+        <div class="srs-level-result-head">
+          <div>
+            <h3>${esc(title)}</h3>
+            <p>${esc(desc)}</p>
+          </div>
+          <button type="button" class="btn secondary" onclick="clearSrsLevelFilter()">Kembali</button>
+        </div>
+        ${filtered.length ? `
+          <div class="srs-level-vocab-list">
+            ${filtered.map(item=>{
+              const record = state[item.key] || {};
+              const wordHtml = item.displayWordHtml || esc(itemWord(item));
+              const reading = item.readingAnswer || item.answer || '-';
+              return `
+                <div class="srs-level-vocab-item">
+                  <div class="srs-level-vocab-word">${wordHtml}</div>
+                  <div class="srs-level-vocab-meta">読み方: <strong>${esc(reading)}</strong>・${esc(dueLabel(record))}</div>
+                  <div class="srs-level-vocab-meta">${esc(item.storyTitle || 'Tanpa Judul')}・${esc(item.folder || 'N2')}</div>
+                  <div class="srs-level-vocab-meaning">${esc(itemMeaning(item))}</div>
+                </div>`;
+            }).join('')}
+          </div>` : `<div class="srs-level-empty">Belum ada kosakata di SRS ${level}.</div>`}
+      </div>`;
+  };
+
+  const oldOpenSrsStatusDetail = window.openSrsStatusDetail;
+  if(typeof oldOpenSrsStatusDetail === 'function'){
+    window.openSrsStatusDetail = function(type){
+      const result = oldOpenSrsStatusDetail.apply(this, arguments);
+      const oldBox = document.getElementById('srsLevelFilterBox');
+      if(type === 'learning'){
+        renderLevelCards();
+        if(activeSrsLevelFilter) renderSrsLevelResult(activeSrsLevelFilter);
+      }else{
+        activeSrsLevelFilter = null;
+        oldBox?.remove();
+      }
+      return result;
+    };
+  }
+
+  const oldUpdateCounters = window.updateSrsCountersOnly;
+  if(typeof oldUpdateCounters === 'function'){
+    window.updateSrsCountersOnly = function(){
+      oldUpdateCounters.apply(this, arguments);
+      const modal=document.getElementById('srsDetailModal');
+      if(modal?.classList.contains('active') && document.getElementById('srsLevelFilterBox')) renderLevelCards();
+    };
+  }
+
+  document.addEventListener('click', function(event){
+    if(event.target?.closest?.('#srsDetailModal .srs-detail-close')){
+      activeSrsLevelFilter = null;
+      document.getElementById('srsLevelFilterBox')?.remove();
+    }
+  });
 })();
 </script>
 
