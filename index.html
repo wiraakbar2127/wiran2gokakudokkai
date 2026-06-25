@@ -1773,21 +1773,6 @@ textarea,
 })();
 </script>
 
-<div aria-label="Loading" aria-live="polite" class="loading-screen" id="loadingScreen">
-  <div class="loading-minimal" role="status">
-    <div class="loading-text-row">
-      <span class="loading-label">Loading</span>
-      <span class="loading-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span>
-    </div>
-    <div class="loading-fish-lane" aria-hidden="true">
-      <span class="mini-fish fish-1"></span>
-      <span class="mini-fish fish-2"></span>
-      <span class="mini-fish fish-3"></span>
-      <span class="mini-fish fish-4"></span>
-    </div>
-    <p class="loading-subtitle" id="loadingMessage">Loading</p>
-  </div>
-</div>
 <div aria-hidden="true" class="sea-decor fish-a">
 <svg fill="none" viewbox="0 0 180 110">
 <path d="M48 55C70 28 112 24 143 46C151 51 158 54 169 55C158 56 151 60 143 66C112 88 70 82 48 55Z" stroke="#2f6fae" stroke-linejoin="round" stroke-width="4"></path>
@@ -3472,12 +3457,10 @@ window.addEventListener("load",()=>{
     state.storyId||null
   );
 
-  hideLoading(1800);
+
 });
 
-window.setTimeout(()=>{
-  hideLoading(0);
-},2300);
+
 
 
 /* ===== Kontrol lanjutan soal SRS ===== */
