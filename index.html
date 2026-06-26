@@ -2,53 +2,6 @@
 
 <html lang="id">
 <head>
-
-<script>
-(function(){
-'use strict';
-const listenerMap=new WeakMap();
-const origAdd=EventTarget.prototype.addEventListener;
-EventTarget.prototype.addEventListener=function(type,listener,opts){
-  if(typeof listener==='function'){
-    let m=listenerMap.get(this);
-    if(!m){m=new Set();listenerMap.set(this,m);}
-    const key=type+'_'+listener.toString().slice(0,120);
-    if(m.has(key)) return;
-    m.add(key);
-  }
-  return origAdd.call(this,type,listener,opts);
-};
-
-const raf=window.requestAnimationFrame.bind(window);
-let hidden=document.hidden;
-document.addEventListener('visibilitychange',()=>hidden=document.hidden,{passive:true});
-
-window.requestAnimationFrame=function(cb){
-  if(hidden) return setTimeout(()=>cb(performance.now()),1000);
-  return raf(cb);
-};
-
-const oldSetTimeout=window.setTimeout;
-window.setTimeout=function(fn,delay,...args){
-  if(delay===0) delay=1;
-  return oldSetTimeout(fn,delay,...args);
-};
-
-document.addEventListener('DOMContentLoaded',()=>{
-  document.querySelectorAll('img').forEach(img=>{
-    img.loading='lazy';
-    img.decoding='async';
-  });
-},{once:true});
-})();
-</script>
-<style>
-.page,.card,.reader-card,.story-card,.srs-card,section{
-content-visibility:auto;
-contain-intrinsic-size:800px;
-}
-</style>
-
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>ウィラN2合格読解</title>
@@ -2117,7 +2070,7 @@ textarea,
 <path d="M96 52C104 62 105 78 96 88" stroke="#5c97cf" stroke-linecap="round" stroke-width="5"></path>
 </svg>
 </div>
-<h2>Good Job!</h2>
+<h2>Good Job! 👍</h2>
 <p>Kamu sudah menyelesaikan cerita dan menghafal semua kosakatanya.</p>
 </div>
 </div>
@@ -3735,7 +3688,31 @@ function storyProgressHtml(storyId){
     </div>`;
 }
 
+
+function getOpenedStories(){
+  try{
+    return JSON.parse(localStorage.getItem("wiraOpenedStories") || "[]");
+  }catch{
+    return [];
+  }
+}
+
+function markStoryOpened(id){
+  const opened = new Set(getOpenedStories());
+  opened.add(String(id));
+  localStorage.setItem("wiraOpenedStories", JSON.stringify([...opened]));
+}
+
+function isStoryOpened(id){
+  return getOpenedStories().includes(String(id));
+}
+
+
 function isStoryLocked(story){
+  if(isStoryOpened(story.id)){
+    return false;
+  }
+
   const day=extractDayNumber(story);
   if(!Number.isFinite(day) || day===Number.MAX_SAFE_INTEGER || day<=1){
     return false;
@@ -3784,6 +3761,7 @@ function openStory(id){
   }
 
   rememberLastOpenedStory(id);
+  markStoryOpened(id);
   showStoryBubbleLoading();
 
   window.setTimeout(()=>{
@@ -14809,28 +14787,6 @@ prepareLightLoadingFish=function(){};
       document.getElementById('srsLevelFilterBox')?.remove();
     }
   });
-})();
-</script>
-
-
-<script id="jp-ime-nn-fix">
-(function(){
-  const old = window.romajiToHiragana;
-  if(typeof old !== 'function') return;
-
-  window.romajiToHiragana = function(input){
-    let text = String(input || "").toLowerCase();
-
-    // simpan nn sebagai placeholder sementara
-    text = text.replace(/nn/g,'\uE000');
-
-    let result = old(text);
-
-    // kembalikan placeholder menjadi ん
-    result = result.replace(/\uE000/g,'ん');
-
-    return result;
-  };
 })();
 </script>
 
