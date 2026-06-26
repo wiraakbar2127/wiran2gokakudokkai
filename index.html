@@ -3440,7 +3440,8 @@ function formatSrsDuration(ms){
   }
   return `${days} hari`;
 }
-function romajiToHiragana(input){let text=String(input||"").toLowerCase();if(/[ぁ-ん]/.test(text)&&!/[a-z]/.test(text))return text;const map={kya:"きゃ",kyu:"きゅ",kyo:"きょ",sha:"しゃ",shu:"しゅ",sho:"しょ",cha:"ちゃ",chu:"ちゅ",cho:"ちょ",nya:"にゃ",nyu:"にゅ",nyo:"にょ",hya:"ひゃ",hyu:"ひゅ",hyo:"ひょ",mya:"みゃ",myu:"みゅ",myo:"みょ",rya:"りゃ",ryu:"りゅ",ryo:"りょ",gya:"ぎゃ",gyu:"ぎゅ",gyo:"ぎょ",ja:"じゃ",ju:"じゅ",jo:"じょ",bya:"びゃ",byu:"びゅ",byo:"びょ",pya:"ぴゃ",pyu:"ぴゅ",pyo:"ぴょ",shi:"し",chi:"ち",tsu:"つ",fu:"ふ",ka:"か",ki:"き",ku:"く",ke:"け",ko:"こ",sa:"さ",si:"し",su:"す",se:"せ",so:"そ",ta:"た",ti:"ち",tu:"つ",te:"て",to:"と",na:"な",ni:"に",nu:"ぬ",ne:"ね",no:"の",ha:"は",hi:"ひ",hu:"ふ",he:"へ",ho:"ほ",ma:"ま",mi:"み",mu:"む",me:"め",mo:"も",ya:"や",yu:"ゆ",yo:"よ",ra:"ら",ri:"り",ru:"る",re:"れ",ro:"ろ",wa:"わ",wo:"を",ga:"が",gi:"ぎ",gu:"ぐ",ge:"げ",go:"ご",za:"ざ",ji:"じ",zu:"ず",ze:"ぜ",zo:"ぞ",da:"だ",di:"ぢ",du:"づ",de:"で",do:"ど",ba:"ば",bi:"び",bu:"ぶ",be:"べ",bo:"ぼ",pa:"ぱ",pi:"ぴ",pu:"ぷ",pe:"ぺ",po:"ぽ",a:"あ",i:"い",u:"う",e:"え",o:"お",n:"ん"};let out="",i=0;while(i<text.length){const ch=text[i];if(/[ぁ-ん]/.test(ch)){out+=ch;i++;continue}if(i+1<text.length&&text[i]===text[i+1]&&/[bcdfghjklmpqrstvwxyz]/.test(text[i])&&text[i]!=="n"){out+="っ";i++;continue}let matched=false;for(const len of [3,2,1]){const part=text.slice(i,i+len);if(map[part]){if(part==="n"&&i+1<text.length&&/[aiueoy]/.test(text[i+1]))continue;out+=map[part];i+=len;matched=true;break}}if(!matched){out+=ch;i++}}return out}
+function romajiToHiragana(input){let text=String(input||"").toLowerCase();if(/[ぁ-ん]/.test(text)&&!/[a-z]/.test(text))return text;const map={kya:"きゃ",kyu:"きゅ",kyo:"きょ",sha:"しゃ",shu:"しゅ",sho:"しょ",cha:"ちゃ",chu:"ちゅ",cho:"ちょ",nya:"にゃ",nyu:"にゅ",nyo:"にょ",hya:"ひゃ",hyu:"ひゅ",hyo:"ひょ",mya:"みゃ",myu:"みゅ",myo:"みょ",rya:"りゃ",ryu:"りゅ",ryo:"りょ",gya:"ぎゃ",gyu:"ぎゅ",gyo:"ぎょ",ja:"じゃ",ju:"じゅ",jo:"じょ",bya:"びゃ",byu:"びゅ",byo:"びょ",pya:"ぴゃ",pyu:"ぴゅ",pyo:"ぴょ",shi:"し",chi:"ち",tsu:"つ",fu:"ふ",ka:"か",ki:"き",ku:"く",ke:"け",ko:"こ",sa:"さ",si:"し",su:"す",se:"せ",so:"そ",ta:"た",ti:"ち",tu:"つ",te:"て",to:"と",na:"な",ni:"に",nu:"ぬ",ne:"ね",no:"の",ha:"は",hi:"ひ",hu:"ふ",he:"へ",ho:"ほ",ma:"ま",mi:"み",mu:"む",me:"め",mo:"も",ya:"や",yu:"ゆ",yo:"よ",ra:"ら",ri:"り",ru:"る",re:"れ",ro:"ろ",wa:"わ",wo:"を",ga:"が",gi:"ぎ",gu:"ぐ",ge:"げ",go:"ご",za:"ざ",ji:"じ",zu:"ず",ze:"ぜ",zo:"ぞ",da:"だ",di:"ぢ",du:"づ",de:"で",do:"ど",ba:"ば",bi:"び",bu:"ぶ",be:"べ",bo:"ぼ",pa:"ぱ",pi:"ぴ",pu:"ぷ",pe:"ぺ",po:"ぽ",a:"あ",i:"い",u:"う",e:"え",o:"お"};let out="",i=0;while(i<text.length){const ch=text[i];if(/[ぁ-ん]/.test(ch)){out+=ch;i++;continue}if(text.slice(i,i+2)==="nn"){out+="ん";i+=2;continue}
+if(i+1<text.length&&text[i]===text[i+1]&&/[bcdfghjklmpqrstvwxyz]/.test(text[i])&&text[i]!=="n"){out+="っ";i++;continue}let matched=false;for(const len of [3,2,1]){const part=text.slice(i,i+len);if(map[part]){if(part==="n"&&i+1<text.length&&/[aiueoy]/.test(text[i+1]))continue;out+=map[part];i+=len;matched=true;break}}if(!matched){out+=ch;i++}}return out}
 function resetSrsProgress(){if(!confirm("Yakin ingin menghapus seluruh progres SRS?"))return;localStorage.removeItem("wiraSrsState");renderSrsPage()}
 
 
@@ -3658,14 +3659,27 @@ function getStorySrsProgress(storyId){
   ).length;
 
   const percent=Math.round((learned/items.length)*100);
+  const complete=learned===items.length;
+  if(complete){
+    markStorySrsCompleted(storyId);
+  }
 
   return {
     total:items.length,
     learned,
     mastered,
     percent,
-    complete:learned===items.length
+    complete
   };
+}
+
+
+function hasEverCompletedStorySrs(storyId){
+  return localStorage.getItem("wiraStorySrsCompleted_"+String(storyId))==="true";
+}
+
+function markStorySrsCompleted(storyId){
+  localStorage.setItem("wiraStorySrsCompleted_"+String(storyId),"true");
 }
 
 function storyProgressHtml(storyId){
@@ -3688,31 +3702,17 @@ function storyProgressHtml(storyId){
     </div>`;
 }
 
-
-function hasEverCompletedStory(storyId){
-  try{
-    const key="storyEverCompleted";
-    const data=JSON.parse(localStorage.getItem(key)||"{}");
-    return !!data[String(storyId)];
-  }catch(e){
-    return false;
-  }
-}
-
-function markStoryCompleted(storyId){
-  try{
-    const key="storyEverCompleted";
-    const data=JSON.parse(localStorage.getItem(key)||"{}");
-    data[String(storyId)]=true;
-    localStorage.setItem(key,JSON.stringify(data));
-  }catch(e){}
-}
-
 function isStoryLocked(story){
-  const currentProgress=getStorySrsProgress(story.id);
+  const progress=getStorySrsProgress(story.id);
 
-  if(currentProgress.complete){
-    markStoryCompleted(story.id);
+  // Jika cerita ini sudah pernah dibaca atau pernah memiliki progres SRS,
+  // jangan dikunci lagi.
+  if(
+    isStoryCompleted(story.id) ||
+    progress.learned>0 ||
+    hasEverCompletedStorySrs(story.id)
+  ){
+    return false;
   }
 
   const day=extractDayNumber(story);
@@ -3720,32 +3720,22 @@ function isStoryLocked(story){
     return false;
   }
 
-  const previous=getStories()
-    .filter(item =>
+  const earlier=getStories()
+    .filter(item=>
       (item.level||"N2")===(story.level||"N2") &&
-      extractDayNumber(item)===day-1
-    )[0];
+      extractDayNumber(item)<day
+    )
+    .sort((a,b)=>extractDayNumber(a)-extractDayNumber(b));
 
-  if(!previous){
-    return false;
-  }
-
-  const prevProgress=getStorySrsProgress(previous.id);
-
-  if(prevProgress.complete){
-    markStoryCompleted(previous.id);
-  }
-
-  return !hasEverCompletedStory(previous.id);
+  return earlier.some(item=>!hasEverCompletedStorySrs(item.id));
 }
-
 
 function lockedStoryMessage(story){
   const earlier=getStories()
     .filter(item=>
       (item.level||"N2")===(story.level||"N2") &&
       extractDayNumber(item)<extractDayNumber(story) &&
-      !getStorySrsProgress(item.id).complete
+      !hasEverCompletedStorySrs(item.id)
     )
     .sort((a,b)=>extractDayNumber(a)-extractDayNumber(b));
 
