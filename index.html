@@ -3688,9 +3688,57 @@ function storyProgressHtml(storyId){
     </div>`;
 }
 
-function isStoryLocked(story){
-  return false;
+
+function hasEverCompletedStory(storyId){
+  try{
+    const key="storyEverCompleted";
+    const data=JSON.parse(localStorage.getItem(key)||"{}");
+    return !!data[String(storyId)];
+  }catch(e){
+    return false;
+  }
 }
+
+function markStoryCompleted(storyId){
+  try{
+    const key="storyEverCompleted";
+    const data=JSON.parse(localStorage.getItem(key)||"{}");
+    data[String(storyId)]=true;
+    localStorage.setItem(key,JSON.stringify(data));
+  }catch(e){}
+}
+
+function isStoryLocked(story){
+  const currentProgress=getStorySrsProgress(story.id);
+
+  if(currentProgress.complete){
+    markStoryCompleted(story.id);
+  }
+
+  const day=extractDayNumber(story);
+  if(!Number.isFinite(day) || day===Number.MAX_SAFE_INTEGER || day<=1){
+    return false;
+  }
+
+  const previous=getStories()
+    .filter(item =>
+      (item.level||"N2")===(story.level||"N2") &&
+      extractDayNumber(item)===day-1
+    )[0];
+
+  if(!previous){
+    return false;
+  }
+
+  const prevProgress=getStorySrsProgress(previous.id);
+
+  if(prevProgress.complete){
+    markStoryCompleted(previous.id);
+  }
+
+  return !hasEverCompletedStory(previous.id);
+}
+
 
 function lockedStoryMessage(story){
   const earlier=getStories()
