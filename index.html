@@ -3688,44 +3688,8 @@ function storyProgressHtml(storyId){
     </div>`;
 }
 
-
-function getOpenedStories(){
-  try{
-    return JSON.parse(localStorage.getItem("wiraOpenedStories") || "[]");
-  }catch{
-    return [];
-  }
-}
-
-function markStoryOpened(id){
-  const opened = new Set(getOpenedStories());
-  opened.add(String(id));
-  localStorage.setItem("wiraOpenedStories", JSON.stringify([...opened]));
-}
-
-function isStoryOpened(id){
-  return getOpenedStories().includes(String(id));
-}
-
-
 function isStoryLocked(story){
-  if(isStoryOpened(story.id)){
-    return false;
-  }
-
-  const day=extractDayNumber(story);
-  if(!Number.isFinite(day) || day===Number.MAX_SAFE_INTEGER || day<=1){
-    return false;
-  }
-
-  const earlier=getStories()
-    .filter(item=>
-      (item.level||"N2")===(story.level||"N2") &&
-      extractDayNumber(item)<day
-    )
-    .sort((a,b)=>extractDayNumber(a)-extractDayNumber(b));
-
-  return earlier.some(item=>!getStorySrsProgress(item.id).complete);
+  return false;
 }
 
 function lockedStoryMessage(story){
@@ -3761,7 +3725,6 @@ function openStory(id){
   }
 
   rememberLastOpenedStory(id);
-  markStoryOpened(id);
   showStoryBubbleLoading();
 
   window.setTimeout(()=>{
